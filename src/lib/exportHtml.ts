@@ -81,15 +81,16 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
             `).join("")}
           </div>`;
         return `
-          <div style="border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:10px;overflow:hidden">
-            <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:#EEF0F3">
+          <details open style="border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:10px;overflow:hidden">
+            <summary class="ms-summary" style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:#EEF0F3;user-select:none">
+              <span class="ms-chev">▶</span>
               <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
               <div style="font-size:13px;font-weight:500;flex:1;color:#1A1D23">${esc(m.title)}</div>
               ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:#8A909B">${esc(m.due)}</span>` : ""}
               ${statusBadge(m.status)}
-            </div>
+            </summary>
             ${subtasksHtml}
-          </div>`;
+          </details>`;
       }).join("");
 
   // ── Risk register ───────────────────────────────────────────────────────────
@@ -167,6 +168,10 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{background:#F8F9FB;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;color:#1A1D23;line-height:1.6;padding:32px 20px}
     @media print{body{background:#fff;padding:0}.doc{border:none;border-radius:0}}
+    details>summary{list-style:none;cursor:pointer}
+    details>summary::-webkit-details-marker{display:none}
+    .ms-chev{display:inline-block;font-size:9px;color:#B4BAC4;flex-shrink:0;transition:transform .18s;transform:rotate(90deg)}
+    details:not([open])>.ms-summary .ms-chev{transform:rotate(0deg)}
   </style>
 </head>
 <body>
