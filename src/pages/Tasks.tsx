@@ -5,7 +5,6 @@ import { useStore } from "../store/store";
 import { DateInput, StateTag, TaskMarker, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
-import { CONTEXTS } from "../lib/constants";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
 
 export function Tasks() {
@@ -13,19 +12,16 @@ export function Tasks() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const contexts = CONTEXTS[workspace];
   const [text, setText] = useState("");
-  const [context, setContext] = useState(contexts[0]);
   const [due, setDue] = useState("");
   const [group, setGroup] = useState<TaskGroup>("today");
   const [project, setProject] = useState("");
-  const [filterContext, setFilterContext] = useState<string | null>(null);
   const [filterProject, setFilterProject] = useState<string | null>(null);
   const [nextOnly, setNextOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtask: Subtask } | null>(null);
 
-  useEffect(() => { setContext(contexts[0]); setProject(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setProject(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // press T anywhere to focus quick capture
   useEffect(() => {
@@ -52,7 +48,7 @@ export function Tasks() {
       text: text.trim(),
       done: false,
       next: false,
-      context,
+      context: "",
       project: project || null,
       ...(due ? { due } : {}),
     };
@@ -62,7 +58,6 @@ export function Tasks() {
   };
 
   const matches = (t: Task) =>
-    (!filterContext || t.context === filterContext) &&
     (!filterProject || t.project === filterProject) &&
     (!nextOnly || (t.next && !t.done));
 
@@ -161,9 +156,6 @@ export function Tasks() {
           <option value="">No project</option>
           {data.projects.map((p) => <option key={p.id} value={p.title}>{p.title}</option>)}
         </select>
-        <select className="input" style={{ width: 105, fontSize: 12.5 }} value={context} onChange={(e) => setContext(e.target.value)}>
-          {contexts.map((c) => <option key={c}>{c}</option>)}
-        </select>
         <select className="input" style={{ width: 105, fontSize: 12.5 }} value={group} onChange={(e) => setGroup(e.target.value as TaskGroup)}>
           <option value="today">Today</option>
           <option value="upcoming">Upcoming</option>
@@ -181,16 +173,6 @@ export function Tasks() {
         >
           Next actions only
         </button>
-        {contexts.map((c) => (
-          <button
-            key={c}
-            className="chip context"
-            style={{ cursor: "pointer", borderColor: filterContext === c ? "var(--accent)" : undefined, color: filterContext === c ? "var(--accent-ink)" : undefined }}
-            onClick={() => setFilterContext(filterContext === c ? null : c)}
-          >
-            {c}
-          </button>
-        ))}
         {projectTitles.map((p) => (
           <button
             key={p}
@@ -232,7 +214,6 @@ export function Tasks() {
                       {t.project}
                     </button>
                   )}
-                  <span className="chip context">{t.context}</span>
                   {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{t.due}</span>}
                   <button
                     className="icon-btn"

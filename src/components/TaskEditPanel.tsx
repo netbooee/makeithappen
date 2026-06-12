@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
-import { CONTEXTS } from "../lib/constants";
 import { DateInput } from "./ui";
 import type { Task, TaskGroup } from "../lib/types";
 
@@ -12,7 +11,7 @@ const GROUPS: { key: TaskGroup; label: string }[] = [
 ];
 
 export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => void }) {
-  const { data, workspace, updateTask, moveTask, deleteTask } = useStore();
+  const { data, updateTask, moveTask, deleteTask } = useStore();
 
   let task: Task | undefined;
   let group: TaskGroup = "today";
@@ -27,10 +26,6 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
   if (!task) return null;
 
   const set = (patch: Partial<Task>) => updateTask(task!.id, patch);
-  const contexts = CONTEXTS[workspace].includes(task.context)
-    ? CONTEXTS[workspace]
-    : [task.context, ...CONTEXTS[workspace]];
-
   const flow = task.state ?? "normal";
   const setFlow = (f: "normal" | "delegated" | "waiting") => {
     if (f === "normal") set({ state: undefined, to: undefined, waitFor: undefined });
@@ -111,17 +106,9 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
             );
           })()}
 
-          <div className="row">
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-              <label className="field-label">Context</label>
-              <select className="input" value={task.context} onChange={(e) => set({ context: e.target.value })}>
-                {contexts.map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-              <label className="field-label">Due</label>
-              <DateInput value={task.due} onChange={(v) => set({ due: v || undefined })} />
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="field-label">Due</label>
+            <DateInput value={task.due} onChange={(v) => set({ due: v || undefined })} />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
