@@ -67,9 +67,16 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     ? `<div style="font-size:12.5px;color:#9CA3AF">No milestones yet.</div>`
     : project.milestones.map((m) => {
         const dotColor = m.status === "complete" ? "#10B981" : m.status === "active" ? "#4F6BED" : "#B4BAC4";
-        const subtasksHtml = m.subtasks.length === 0 ? "" : `
+        const sorted = [...m.subtasks].sort((a, b) => {
+          if (a.done !== b.done) return a.done ? 1 : -1;
+          if (!a.due && !b.due) return 0;
+          if (!a.due) return 1;
+          if (!b.due) return -1;
+          return new Date(a.due).getTime() - new Date(b.due).getTime();
+        });
+        const subtasksHtml = sorted.length === 0 ? "" : `
           <div style="padding:6px 14px 8px">
-            ${m.subtasks.map((s) => `
+            ${sorted.map((s) => `
               <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid #F3F4F6">
                 <div style="width:14px;height:14px;border-radius:50%;${s.done ? "background:#10B981;border:1.5px solid #10B981;display:flex;align-items:center;justify-content:center" : "border:1.5px solid #D1D5DB"};flex-shrink:0">
                   ${s.done ? `<span style="color:white;font-size:9px;font-weight:700">✓</span>` : ""}

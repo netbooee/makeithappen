@@ -511,7 +511,7 @@ function MilestoneCard({
               if (!a.due && !b.due) return 0;
               if (!a.due) return 1;
               if (!b.due) return -1;
-              return new Date(b.due).getTime() - new Date(a.due).getTime();
+              return new Date(a.due).getTime() - new Date(b.due).getTime();
             })
             .map((s) => (
               <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
