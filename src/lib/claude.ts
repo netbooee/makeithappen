@@ -2,6 +2,7 @@ import { supabase, supabaseConfigured } from "./supabase";
 import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
 
 const devApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const MODEL = "claude-sonnet-4-20250514";
 
 /** True when the AI will actually work (either a dev key or the proxy endpoint is available). */
@@ -38,7 +39,7 @@ async function callClaudeProxy(
   const { data: { session } } = await supabase!.auth.getSession();
   if (!session) throw new Error("not_authenticated");
 
-  const res = await fetch("/.netlify/functions/ai", {
+  const res = await fetch(`${supabaseUrl}/functions/v1/ai`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
