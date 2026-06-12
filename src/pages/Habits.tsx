@@ -1,0 +1,272 @@
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Check, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
+import { useStore } from "../store/store";
+import { habitHistory } from "../data/seed";
+import type { Habit } from "../lib/types";
+
+const EMOJIS = ["🏃", "📚", "🧘", "🌙", "📥", "🎯", "💬", "💧", "🥗", "✍️", "🎸", "🧹"];
+const CADENCES = ["Daily", "Weekly", "Weekdays", "Every 2 days"];
+
+function Ring({ done, onClick }: { done: boolean; onClick: () => void }) {
+  const [justDone, setJustDone] = useState(false);
+  const r = 22, c = 2 * Math.PI * r;
+  return (
+    <button
+      className={"ring-btn" + (justDone ? " just-done" : "")}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!done) { setJustDone(true); setTimeout(() => setJustDone(false), 500); }
+        onClick();
+      }}
+      title={done ? "Mark as not done" : "Complete habit"}
+    >
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="4" />
+        <circle
+          cx="26" cy="26" r={r} fill="none"
+          stroke={done ? "var(--next)" : "var(--border-strong)"}
+          strokeWidth="4" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={done ? 0 : c}
+        />
+      </svg>
+      <span className="ring-check" style={{ color: done ? "#fff" : "var(--ink-4)", opacity: done ? 1 : 0.45 }}>
+        <Check size={20} strokeWidth={3} />
+      </span>
+    </button>
+  );
+}
+
+export function HabitList() {
+  const { data, toggleHabit, addHabit, workspace } = useStore();
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState(EMOJIS[0]);
+  const [cadence, setCadence] = useState(CADENCES[0]);
+
+  const submit = () => {
+    if (!name.trim()) return;
+    const habit: Habit = { id: "h" + Date.now(), name: name.trim(), icon: emoji, streak: 0, doneToday: false, cadence };
+    addHabit(habit);
+    setAdding(false);
+    setName("");
+  };
+
+  const doneCount = data.habits.filter((h) => h.doneToday).length;
+
+  return (
+    <div className="page fade" style={{ maxWidth: 680 }}>
+      <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
+        <div style={{ flex: 1 }}>
+          <div className="page-title">Habits</div>
+          <div className="page-sub">{doneCount} of {data.habits.length} done today</div>
+        </div>
+        <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus /> New habit</button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {data.habits.map((h) => (
+          <div
+            key={h.id}
+            className={"card habit-card" + (h.doneToday ? " done-today" : "")}
+            onClick={() => navigate(`/habits/${h.id}`)}
+          >
+            <span style={{ fontSize: 26 }}>{h.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="habit-name">{h.name}</div>
+              <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{h.cadence}</div>
+            </div>
+            <span className="streak-badge">🔥 {h.streak}</span>
+            <Ring done={h.doneToday} onClick={() => toggleHabit(h.id)} />
+          </div>
+        ))}
+      </div>
+
+      {adding && (
+        <div className="modal-center">
+          <div className="overlay-bg" onClick={() => setAdding(false)} style={{ position: "fixed" }} />
+          <div className="modal-card card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>New habit</div>
+            <input className="input" autoFocus placeholder="Habit name" value={name} onChange={(e) => setName(e.target.value)} />
+            <div>
+              <div className="field-label" style={{ marginBottom: 7 }}>Emoji</div>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                {EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    style={{ fontSize: 19, padding: 5, borderRadius: 7, background: emoji === e ? "var(--accent-soft)" : "transparent", border: emoji === e ? "1px solid var(--accent)" : "1px solid transparent" }}
+                    onClick={() => setEmoji(e)}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="field-label" style={{ marginBottom: 7 }}>Cadence</div>
+              <div className="segmented" style={{ display: "flex" }}>
+                {CADENCES.map((c) => (
+                  <button key={c} className={cadence === c ? "active" : ""} style={{ flex: 1 }} onClick={() => setCadence(c)}>{c}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+              Will be added to your <b>{workspace}</b> workspace.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={submit}>Create habit</button>
+              <button className="btn btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HabitDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data, toggleHabit, updateHabit, deleteHabit } = useStore();
+  const habit = data.habits.find((h) => h.id === id);
+
+  const [editingHabit, setEditingHabit] = useState(false);
+  const [editName, setEditName] = useState(habit?.name ?? "");
+  const [editEmoji, setEditEmoji] = useState(habit?.icon ?? EMOJIS[0]);
+  const [editCadence, setEditCadence] = useState(habit?.cadence ?? CADENCES[0]);
+
+  const history = useMemo(() => {
+    if (!habit) return [];
+    let seedNum = 7;
+    for (const ch of habit.id) seedNum = seedNum * 31 + ch.charCodeAt(0);
+    return habitHistory(seedNum % 100000);
+  }, [habit]);
+
+  if (!habit) {
+    return (
+      <div className="page fade">
+        <div className="page-title">Habit not found</div>
+        <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={() => navigate("/habits")}>Back to habits</button>
+      </div>
+    );
+  }
+
+  const longest = Math.max(habit.streak, 14 + (habit.streak % 9) * 3);
+
+  return (
+    <div className="page fade" style={{ maxWidth: 760 }}>
+      <button
+        onClick={() => navigate("/habits")}
+        style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-3)", marginBottom: 16, fontWeight: 500 }}
+      >
+        <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> All habits
+      </button>
+
+      <div className="page-head" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <span style={{ fontSize: 34 }}>{habit.icon}</span>
+        <div style={{ flex: 1 }}>
+          <div className="page-title">{habit.name}</div>
+          <div className="page-sub">{habit.cadence}</div>
+        </div>
+        <button
+          className="icon-btn"
+          style={{ color: "var(--ink-4)" }}
+          onClick={() => { setEditName(habit.name); setEditEmoji(habit.icon); setEditCadence(habit.cadence); setEditingHabit(true); }}
+          title="Edit habit"
+        >
+          <Pencil size={16} />
+        </button>
+        <Ring done={habit.doneToday} onClick={() => toggleHabit(habit.id)} />
+      </div>
+
+      {editingHabit && (
+        <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>Edit habit</div>
+          <input
+            className="input"
+            autoFocus
+            placeholder="Habit name"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+          />
+          <div>
+            <div className="field-label" style={{ marginBottom: 7 }}>Emoji</div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  style={{ fontSize: 19, padding: 5, borderRadius: 7, background: editEmoji === e ? "var(--accent-soft)" : "transparent", border: editEmoji === e ? "1px solid var(--accent)" : "1px solid transparent" }}
+                  onClick={() => setEditEmoji(e)}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="field-label" style={{ marginBottom: 7 }}>Cadence</div>
+            <div className="segmented" style={{ display: "flex" }}>
+              {CADENCES.map((c) => (
+                <button key={c} className={editCadence === c ? "active" : ""} style={{ flex: 1 }} onClick={() => setEditCadence(c)}>{c}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => { updateHabit(habit.id, { name: editName.trim() || habit.name, icon: editEmoji, cadence: editCadence }); setEditingHabit(false); }}
+            >
+              Save
+            </button>
+            <button className="btn btn-ghost" onClick={() => setEditingHabit(false)}>Cancel</button>
+            <button
+              className="btn btn-ghost"
+              style={{ color: "var(--danger)", marginLeft: "auto", borderColor: "color-mix(in oklab, var(--danger) 30%, transparent)" }}
+              onClick={() => { deleteHabit(habit.id); navigate("/habits"); }}
+            >
+              <Trash2 size={14} /> Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="row" style={{ marginBottom: 20 }}>
+        <div className="card card-pad" style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+          <Flame size={20} style={{ color: "#F59E0B" }} />
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 650 }}>{habit.streak}</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Current streak</div>
+          </div>
+        </div>
+        <div className="card card-pad" style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+          <Flame size={20} style={{ color: "var(--ink-4)" }} />
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 650 }}>{longest}</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Longest streak</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="section-h">Last 52 weeks</div>
+      <div className="card card-pad">
+        <div className="contrib">
+          {history.map((col, w) => (
+            <div key={w} className="contrib-col">
+              {col.map((level, d) => (
+                <span key={d} className={"contrib-cell" + (level === 2 ? " l2" : level === 1 ? " l1" : "")} />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11.5, color: "var(--ink-3)", justifyContent: "flex-end" }}>
+          Less
+          <span className="contrib-cell" />
+          <span className="contrib-cell l1" />
+          <span className="contrib-cell l2" />
+          More
+        </div>
+      </div>
+    </div>
+  );
+}
