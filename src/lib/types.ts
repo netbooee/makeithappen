@@ -141,6 +141,7 @@ export interface Tweaks {
   collapsible: boolean;
   defaultState: "all" | "active" | "none";
   showCount: boolean;
+  darkMode: boolean;
 }
 
 export interface AppData {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Bell, Flag, Flame, Home, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
+  Bell, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar } from "./ui";
@@ -9,7 +9,6 @@ import { TweaksPanel } from "./TweaksPanel";
 import type { Workspace } from "../lib/types";
 
 const NAV = [
-  { id: "today", label: "Today", icon: Home, path: "/today" },
   { id: "projects", label: "Projects", icon: FolderKanban, path: "/projects" },
   { id: "tasks", label: "Tasks", icon: ListTodo, path: "/tasks" },
   { id: "contacts", label: "E6W", icon: Users, path: "/contacts" },
@@ -18,7 +17,7 @@ const NAV = [
 ];
 
 const CRUMB: Record<string, string> = {
-  today: "Today", projects: "Projects", tasks: "Tasks", contacts: "E6W Networking",
+  projects: "Projects", tasks: "Tasks", contacts: "E6W Networking",
   habits: "Habits", assistant: "AI Assistant",
 };
 
@@ -26,7 +25,7 @@ export function Shell() {
   const { workspace, setWorkspace, data, all } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const section = location.pathname.split("/")[1] || "today";
+  const section = location.pathname.split("/")[1] || "projects";
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 

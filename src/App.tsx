@@ -4,7 +4,6 @@ import type { Session } from "@supabase/supabase-js";
 import { StoreProvider } from "./store/store";
 import { supabase, supabaseConfigured } from "./lib/supabase";
 import { Shell } from "./components/Shell";
-import { Today } from "./pages/Today";
 import { ProjectDetail, ProjectList } from "./pages/Projects";
 import { Tasks } from "./pages/Tasks";
 import { ContactDetail, ContactList } from "./pages/Contacts";
@@ -38,8 +37,7 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route element={<Shell />}>
-            <Route path="/" element={<Navigate to="/today" replace />} />
-            <Route path="/today" element={<Today />} />
+            <Route path="/" element={<Navigate to="/projects" replace />} />
             <Route path="/projects" element={<ProjectList />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/tasks" element={<Tasks />} />
@@ -48,7 +46,7 @@ export default function App() {
             <Route path="/habits" element={<HabitList />} />
             <Route path="/habits/:id" element={<HabitDetail />} />
             <Route path="/assistant" element={<Assistant />} />
-            <Route path="*" element={<Navigate to="/today" replace />} />
+            <Route path="*" element={<Navigate to="/projects" replace />} />
           </Route>
         </Routes>
       </HashRouter>

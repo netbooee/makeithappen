@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { supabaseConfigured, saveAnthropicKey, clearAnthropicKey, hasAnthropicKey } from "../lib/supabase";
+import type { AppData } from "../lib/types";
 
 export function TweaksPanel({ close }: { close: () => void }) {
-  const { tweaks, setTweak, resetDemoData } = useStore();
+  const { tweaks, setTweak, resetDemoData, all, importData } = useStore();
+  const importRef = useRef<HTMLInputElement>(null);
 
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -30,12 +32,50 @@ export function TweaksPanel({ close }: { close: () => void }) {
     setKeyExists(false);
   };
 
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `makeithappen-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string) as AppData;
+        importData(parsed);
+      } catch {
+        alert("Invalid backup file.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   return (
     <div className="tweaks-panel">
       <h4>
         Settings
         <button className="icon-btn" style={{ marginLeft: "auto" }} onClick={close}><X /></button>
       </h4>
+
+      <div className="tweak-section">Appearance</div>
+
+      <div className="tweak-row">
+        Dark mode
+        <button
+          className={"switch" + (tweaks.darkMode ? " on" : "")}
+          onClick={() => setTweak("darkMode", !tweaks.darkMode)}
+          aria-checked={tweaks.darkMode}
+          role="switch"
+        />
+      </div>
 
       <div className="tweak-section">Milestone sections</div>
 
@@ -127,7 +167,20 @@ export function TweaksPanel({ close }: { close: () => void }) {
         </>
       )}
 
-      <div className="tweak-section">Demo data</div>
+      <div className="tweak-section">Data</div>
+      <div className="tweak-row">
+        Export backup
+        <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={exportData}>
+          Export
+        </button>
+      </div>
+      <div className="tweak-row">
+        Import backup
+        <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => importRef.current?.click()}>
+          Import
+        </button>
+        <input ref={importRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleImport} />
+      </div>
       <div className="tweak-row">
         Reset to seed data
         <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={resetDemoData}>

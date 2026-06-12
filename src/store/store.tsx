@@ -9,7 +9,7 @@ const DATA_KEY = "mih_data_v1";
 const WS_KEY = "mih_ws";
 const TWEAKS_KEY = "mih_tweaks_v1";
 
-const TWEAK_DEFAULTS: Tweaks = { collapsible: true, defaultState: "active", showCount: true };
+const TWEAK_DEFAULTS: Tweaks = { collapsible: true, defaultState: "active", showCount: true, darkMode: false };
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -55,6 +55,7 @@ export interface Store {
   updateContact: (id: string, patch: Partial<Contact>) => void;
   addContact: (contact: Contact) => void;
   resetDemoData: () => void;
+  importData: (data: AppData) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -101,6 +102,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     document.body.setAttribute("data-workspace", workspace);
     localStorage.setItem(WS_KEY, workspace);
   }, [workspace]);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", tweaks.darkMode);
+  }, [tweaks.darkMode]);
 
   useEffect(() => {
     localStorage.setItem(DATA_KEY, JSON.stringify(all));
@@ -331,6 +336,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetDemoData: () => {
         localStorage.removeItem(DATA_KEY);
         setAll(JSON.parse(JSON.stringify(SEED)));
+      },
+
+      importData: (data: AppData) => {
+        setAll(data);
+        saveUserData(data);
       },
     };
   }, [all, workspace, tweaks]);
