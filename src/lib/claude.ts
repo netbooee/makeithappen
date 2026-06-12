@@ -3,7 +3,7 @@ import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./ty
 
 const devApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 
 /** True when the AI will actually work (either a dev key or the proxy endpoint is available). */
 export const claudeConfigured = Boolean(devApiKey) || supabaseConfigured;
