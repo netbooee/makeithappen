@@ -759,6 +759,7 @@ export function ProjectDetail() {
   const project = data.projects.find((p) => p.id === id);
 
   const [draftFor, setDraftFor] = useState<StatusUpdate | null>(null);
+  const [showAllUpdates, setShowAllUpdates] = useState(false);
   const [adding, setAdding] = useState(false);
   const [updateText, setUpdateText] = useState("");
   const [editingProject, setEditingProject] = useState(false);
@@ -1047,7 +1048,7 @@ export function ProjectDetail() {
                 </div>
               </div>
             )}
-            {project.updates.map((u) => (
+            {(showAllUpdates ? project.updates : project.updates.slice(0, 3)).map((u) => (
               <div key={u.id} className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <UpdateTypeTag type={u.type ?? "update"} />
@@ -1100,6 +1101,15 @@ export function ProjectDetail() {
                 </button>
               </div>
             ))}
+            {project.updates.length > 3 && (
+              <button
+                className="btn btn-ghost"
+                style={{ alignSelf: "flex-start", fontSize: 12, padding: "5px 10px" }}
+                onClick={() => setShowAllUpdates((v) => !v)}
+              >
+                {showAllUpdates ? "Show less" : `Show ${project.updates.length - 3} older`}
+              </button>
+            )}
           </div>
 
           {/* Resources */}
@@ -1562,6 +1572,12 @@ function DraftEmailPanel({ project, update, close }: { project: Project; update:
   const [subject, setSubject] = useState(`${project.title} — status update`);
   const [copied, setCopied] = useState(false);
 
+  const allContacts = [...all.work.contacts, ...all.personal.contacts];
+  const toEmails = (project.members ?? [])
+    .map((m) => allContacts.find((c) => c.id === m.contactId))
+    .filter((c): c is NonNullable<typeof c> => !!c && !!c.email)
+    .map((c) => c.email);
+
   useEffect(() => {
     let cancelled = false;
     draftStatusEmail(project, update, all.user)
@@ -1577,8 +1593,15 @@ function DraftEmailPanel({ project, update, close }: { project: Project; update:
     setTimeout(() => setCopied(false), 1600);
   };
 
+  const toParam = toEmails.join(",");
+
   const sendViaGmail = () => {
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toParam)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank");
+  };
+
+  const sendViaOutlook = () => {
+    const url = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(toParam)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(url, "_blank");
   };
 
@@ -1601,8 +1624,10 @@ function DraftEmailPanel({ project, update, close }: { project: Project; update:
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">To</label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <span className="chip">priya@makeithappen.app</span>
-              <span className="chip">team@makeithappen.app</span>
+              {toEmails.length > 0
+                ? toEmails.map((email) => <span key={email} className="chip">{email}</span>)
+                : <span style={{ fontSize: 12.5, color: "var(--ink-4)", fontStyle: "italic" }}>No team member emails on file</span>
+              }
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1652,7 +1677,10 @@ function DraftEmailPanel({ project, update, close }: { project: Project; update:
 
         <div className="side-panel-foot">
           <button className="btn btn-primary" disabled={stage !== "ready"} onClick={sendViaGmail}>
-            <Mail /> Send via Gmail
+            <Mail /> Gmail
+          </button>
+          <button className="btn btn-primary" disabled={stage !== "ready"} onClick={sendViaOutlook}>
+            <Mail /> Outlook
           </button>
           <button className="btn btn-ghost" disabled={stage !== "ready"} onClick={doCopy}>
             {copied ? <><Check /> Copied</> : <><Copy /> Copy</>}
