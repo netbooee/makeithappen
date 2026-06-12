@@ -232,7 +232,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Budget</div>
       <div style="font-size:15px;font-weight:500;color:#1A1D23">${project.budget ? esc(project.budget) : "—"}</div>
       ${project.budget
-        ? `<div style="font-size:11.5px;color:${project.onBudget !== false ? "#10B981" : "#EF4444"};margin-top:2px">${project.onBudget !== false ? "✓ On budget" : "⚠ Over budget"}</div>`
+        ? `<div style="font-size:11.5px;color:${project.onBudget === true ? "#10B981" : project.onBudget === false ? "#EF4444" : "#9CA3AF"};margin-top:2px">${project.onBudget === true ? "✓ On budget" : project.onBudget === false ? "⚠ Over budget" : "TBD"}</div>`
         : `<div style="font-size:11.5px;color:#B4BAC4;margin-top:2px">Not set</div>`}
     </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">

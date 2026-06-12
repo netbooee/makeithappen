@@ -562,7 +562,12 @@ function KpiSection({ project }: { project: Project }) {
   const set = (patch: Partial<Project>) => updateProject(project.id, patch);
 
   const riskColor = project.risk ? RAG[project.risk] : "var(--ink-3)";
-  const budgetOk = project.onBudget !== false;
+  const budgetStatus = project.onBudget === true ? "on" : project.onBudget === false ? "over" : "tbd";
+  const BUDGET_META = {
+    on:  { label: "✓ On budget",    color: "#10B981", bg: "color-mix(in oklab, #10B981 12%, transparent)", border: "color-mix(in oklab, #10B981 35%, transparent)" },
+    over: { label: "⚠ Over budget", color: "#EF4444", bg: "color-mix(in oklab, #EF4444 12%, transparent)", border: "color-mix(in oklab, #EF4444 35%, transparent)" },
+    tbd:  { label: "TBD",           color: "var(--ink-3)", bg: "var(--surface-2)", border: "var(--border)" },
+  };
 
   const kpiCard: React.CSSProperties = {
     padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6,
@@ -611,16 +616,16 @@ function KpiSection({ project }: { project: Project }) {
           onChange={(e) => set({ budget: e.target.value || undefined })}
         />
         <button
-          onClick={() => set({ onBudget: !budgetOk })}
+          onClick={() => set({ onBudget: budgetStatus === "tbd" ? true : budgetStatus === "on" ? false : undefined })}
           style={{
             alignSelf: "flex-start", fontSize: 11.5, fontWeight: 600,
             padding: "2px 8px", borderRadius: 99, cursor: "pointer",
-            border: `1px solid ${budgetOk ? "color-mix(in oklab, #10B981 35%, transparent)" : "color-mix(in oklab, #EF4444 35%, transparent)"}`,
-            background: budgetOk ? "color-mix(in oklab, #10B981 12%, transparent)" : "color-mix(in oklab, #EF4444 12%, transparent)",
-            color: budgetOk ? "#10B981" : "#EF4444",
+            border: `1px solid ${BUDGET_META[budgetStatus].border}`,
+            background: BUDGET_META[budgetStatus].bg,
+            color: BUDGET_META[budgetStatus].color,
           }}
         >
-          {budgetOk ? "✓ On budget" : "⚠ Over budget"}
+          {BUDGET_META[budgetStatus].label}
         </button>
       </div>
 
