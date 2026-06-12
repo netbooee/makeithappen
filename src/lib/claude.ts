@@ -91,7 +91,7 @@ function emailContext(project: Project) {
   const doneSubtasks = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
   const milestoneLines = project.milestones
     .map((m) => {
-      const label = m.status === "hold" ? "On Hold" : m.status.charAt(0).toUpperCase() + m.status.slice(1);
+      const label = m.status === "hold" ? "On Hold" : m.status === "waiting" ? "Waiting" : m.status.charAt(0).toUpperCase() + m.status.slice(1);
       return `  ${label} · ${m.due}  —  ${m.title}`;
     })
     .join("\n");

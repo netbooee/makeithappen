@@ -418,7 +418,10 @@ function MilestoneCard({
   };
 
   const statusDotColor =
-    m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : "var(--ink-4)";
+    m.status === "complete" ? "var(--next)"
+    : m.status === "active" ? "var(--accent)"
+    : m.status === "waiting" ? "#8B5CF6"
+    : "var(--ink-4)";
 
   if (editing) {
     return (
@@ -438,7 +441,7 @@ function MilestoneCard({
             <span style={{ fontSize: 12, color: "var(--ink-4)" }}>→</span>
             <DateInput value={editDue} onChange={setEditDue} style={{ width: 140, fontSize: 12.5 }} />
             <div className="segmented" style={{ display: "flex", flex: 1, minWidth: 190 }}>
-              {(["active", "hold", "complete"] as Status[]).map((s) => (
+              {(["active", "waiting", "hold", "complete"] as Status[]).map((s) => (
                 <button
                   key={s}
                   className={editStatus === s ? "active" : ""}
@@ -658,12 +661,11 @@ function KpiSection({ project }: { project: Project }) {
             />
           ))}
         </div>
-        <input
-          style={{ ...kpiInput, fontSize: 13, fontWeight: 550, color: riskColor }}
+        <textarea
+          style={{ ...kpiInput, fontSize: 13, fontWeight: 550, color: riskColor, flex: 1, resize: "none", lineHeight: 1.5, minHeight: 40 }}
           placeholder="e.g. On track"
           value={project.riskNote ?? ""}
           onChange={(e) => set({ riskNote: e.target.value || undefined })}
-          maxLength={40}
         />
       </div>
     </div>

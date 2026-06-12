@@ -222,6 +222,7 @@ a { color: inherit; text-decoration: none; }
 .chip.work { background: var(--work-soft); color: var(--work-ink); border-color: transparent; }
 .chip.personal { background: var(--personal-soft); color: var(--personal-ink); border-color: transparent; }
 .chip.status-active { background: var(--next-soft); color: var(--next-ink); border-color: transparent; }
+.chip.status-waiting { background: #EDE9FE; color: #5B21B6; border-color: transparent; }
 .chip.status-hold { background: #FBF3E3; color: #97650B; border-color: transparent; }
 .chip.status-complete { background: var(--surface-2); color: var(--ink-3); }
 .chip.context { background: transparent; color: var(--ink-3); border-color: var(--border-strong); font-family: var(--mono); font-size: 11px; }

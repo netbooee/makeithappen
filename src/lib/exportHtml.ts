@@ -7,6 +7,7 @@ function esc(s: string): string {
 function statusBadge(status: string): string {
   const map: Record<string, [string, string, string]> = {
     active:   ["#E6F1FB", "#185FA5", "Active"],
+    waiting:  ["#EDE9FE", "#5B21B6", "Waiting"],
     hold:     ["#FAEEDA", "#854F0B", "On Hold"],
     complete: ["#EAF3DE", "#27500A", "Complete"],
   };

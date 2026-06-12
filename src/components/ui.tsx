@@ -57,7 +57,7 @@ export function Avatar({ who, size = 24, color = "var(--ink-2)" }: { who: string
   );
 }
 
-const STATUS_LABEL: Record<Status, string> = { active: "Active", hold: "On Hold", complete: "Complete" };
+const STATUS_LABEL: Record<Status, string> = { active: "Active", waiting: "Waiting", hold: "On Hold", complete: "Complete" };
 
 export function StatusChip({ status }: { status: Status }) {
   return <span className={`chip status-${status}`}>{STATUS_LABEL[status]}</span>;

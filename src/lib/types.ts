@@ -1,5 +1,5 @@
 export type Workspace = "work" | "personal";
-export type Status = "active" | "hold" | "complete";
+export type Status = "active" | "waiting" | "hold" | "complete";
 export type TaskFlow = "delegated" | "waiting";
 
 export interface User {
