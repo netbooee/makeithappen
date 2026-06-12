@@ -114,7 +114,12 @@ Latest status update from the project:
 "${update.text}"
 
 Draft a short status email to the team based on this.`;
-  return callClaude(system, [{ role: "user", content: prompt }]);
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    // Fall back to local template so the panel is still usable
+    return localEmailDraft(project, update, user);
+  }
 }
 
 /* ---------- assistant chat ---------- */

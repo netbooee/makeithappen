@@ -1137,7 +1137,7 @@ function DraftEmailPanel({ project, update, close }: { project: Project; update:
               </div>
             ) : stage === "error" ? (
               <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: 16, fontSize: 13, color: "var(--danger)" }}>
-                Couldn't reach the Claude API. Check VITE_ANTHROPIC_API_KEY in .env.local, or close and retry.
+                Couldn't reach the AI. Check your connection and retry, or add your Anthropic API key in Settings (⚙).
               </div>
             ) : (
               <textarea
