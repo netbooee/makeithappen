@@ -18,6 +18,8 @@ export interface Subtask {
   waitFor?: string;
   who: string;
   due?: string;
+  reminder?: string;
+  notes?: string;
 }
 
 export interface Milestone {

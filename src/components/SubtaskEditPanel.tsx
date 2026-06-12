@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
@@ -15,7 +16,10 @@ export function SubtaskEditPanel({
   close: () => void;
 }) {
   const { updateSubtask, deleteSubtask } = useStore();
+  const bodyRef = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<Subtask>) => updateSubtask(projectId, milestoneId, subtask.id, patch);
+
+  useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
 
   const flow = subtask.state ?? "normal";
 
@@ -40,7 +44,7 @@ export function SubtaskEditPanel({
           <button className="icon-btn" onClick={close}><X /></button>
         </div>
 
-        <div className="side-panel-body">
+        <div className="side-panel-body" ref={bodyRef}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">Task</label>
             <input
@@ -65,6 +69,28 @@ export function SubtaskEditPanel({
               <label className="field-label">Due</label>
               <DateInput value={subtask.due} onChange={(v) => set({ due: v || undefined })} />
             </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="field-label">Reminder</label>
+            <input
+              className="input"
+              placeholder="e.g. 9:00 AM"
+              value={subtask.reminder ?? ""}
+              onChange={(e) => set({ reminder: e.target.value || undefined })}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="field-label">Notes</label>
+            <textarea
+              className="input"
+              rows={3}
+              placeholder="Add notes…"
+              value={subtask.notes ?? ""}
+              onChange={(e) => set({ notes: e.target.value || undefined })}
+              style={{ resize: "vertical", lineHeight: 1.55 }}
+            />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

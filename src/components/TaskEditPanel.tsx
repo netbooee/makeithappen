@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
@@ -12,6 +12,7 @@ const GROUPS: { key: TaskGroup; label: string }[] = [
 
 export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => void }) {
   const { data, updateTask, moveTask, deleteTask } = useStore();
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   let task: Task | undefined;
   let group: TaskGroup = "today";
@@ -23,6 +24,7 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
   }
 
   useEffect(() => { if (!task) close(); }, [task, close]);
+  useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
   if (!task) return null;
 
   const set = (patch: Partial<Task>) => updateTask(task!.id, patch);
@@ -48,7 +50,7 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           <button className="icon-btn" onClick={close}><X /></button>
         </div>
 
-        <div className="side-panel-body">
+        <div className="side-panel-body" ref={bodyRef}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">Task</label>
             <input className="input" value={task.text} onChange={(e) => set({ text: e.target.value })} style={{ fontWeight: 500 }} />
