@@ -42,14 +42,14 @@ export interface Store {
   addSubtask: (projectId: string, milestoneId: string, title: string) => void;
   updateSubtask: (projectId: string, milestoneId: string, subtaskId: string, patch: Partial<Subtask>) => void;
   deleteSubtask: (projectId: string, milestoneId: string, subtaskId: string) => void;
-  updateStatusUpdate: (projectId: string, updateId: string, text: string) => void;
+  updateStatusUpdate: (projectId: string, updateId: string, text: string, type?: import("../lib/types").UpdateType) => void;
   deleteStatusUpdate: (projectId: string, updateId: string) => void;
   deleteContact: (id: string) => void;
   addTouchpoint: (contactId: string, touch: ContactTouch) => void;
   deleteTouchpoint: (contactId: string, touchId: string) => void;
   updateHabit: (id: string, patch: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
-  addUpdate: (projectId: string, text: string) => void;
+  addUpdate: (projectId: string, text: string, type?: import("../lib/types").UpdateType) => void;
   toggleHabit: (id: string) => void;
   addHabit: (habit: Habit) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
@@ -250,11 +250,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           recomputeProgress(p);
         }),
 
-      updateStatusUpdate: (projectId, updateId, text) =>
+      updateStatusUpdate: (projectId, updateId, text, type) =>
         mutate((d) => {
           const p = d.projects.find((x) => x.id === projectId);
           const u = p?.updates.find((x) => x.id === updateId);
-          if (u) u.text = text;
+          if (u) { u.text = text; if (type !== undefined) u.type = type; }
         }),
 
       deleteStatusUpdate: (projectId, updateId) =>
@@ -273,14 +273,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           recomputeProgress(p);
         }),
 
-      addUpdate: (projectId, text) =>
+      addUpdate: (projectId, text, type = "update") =>
         mutate((d) => {
           const p = d.projects.find((x) => x.id === projectId);
           if (!p) return;
           const when = new Date().toLocaleString("en-US", {
             month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
           });
-          const update: StatusUpdate = { id: "u" + Date.now(), when, who: all.user.initials, text };
+          const update: StatusUpdate = { id: "u" + Date.now(), when, who: all.user.initials, text, type };
           p.updates.unshift(update);
         }),
 

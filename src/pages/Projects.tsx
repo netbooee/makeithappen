@@ -10,7 +10,7 @@ import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { exportProjectHtml } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
-import type { Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
+import type { Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -684,6 +684,8 @@ export function ProjectDetail() {
   const [editingProject, setEditingProject] = useState(false);
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
   const [editUpdateText, setEditUpdateText] = useState("");
+  const [updateType, setUpdateType] = useState<UpdateType>("update");
+  const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [addingMember, setAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState("");
@@ -740,19 +742,21 @@ export function ProjectDetail() {
 
   const submitUpdate = () => {
     if (!updateText.trim()) return;
-    addUpdate(project.id, updateText.trim());
+    addUpdate(project.id, updateText.trim(), updateType);
     setUpdateText("");
+    setUpdateType("update");
     setAdding(false);
   };
 
   const startEditUpdate = (u: StatusUpdate) => {
     setEditingUpdateId(u.id);
     setEditUpdateText(u.text);
+    setEditUpdateType(u.type ?? "update");
   };
 
   const saveEditUpdate = () => {
     if (editingUpdateId && editUpdateText.trim()) {
-      updateStatusUpdate(project.id, editingUpdateId, editUpdateText.trim());
+      updateStatusUpdate(project.id, editingUpdateId, editUpdateText.trim(), editUpdateType);
     }
     setEditingUpdateId(null);
   };
@@ -941,11 +945,12 @@ export function ProjectDetail() {
                   value={updateText}
                   onChange={(e) => setUpdateText(e.target.value)}
                 />
+                <UpdateTypePicker value={updateType} onChange={setUpdateType} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={submitUpdate}>
                     Post update
                   </button>
-                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setAdding(false)}>
+                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setUpdateType("update"); }}>
                     Cancel
                   </button>
                 </div>
@@ -954,10 +959,7 @@ export function ProjectDetail() {
             {project.updates.map((u) => (
               <div key={u.id} className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <Avatar who={u.who} size={24} />
-                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-                    {u.who === all.user.initials ? all.user.name : u.who}
-                  </span>
+                  <UpdateTypeTag type={u.type ?? "update"} />
                   <span style={{ fontSize: 11.5, color: "var(--ink-4)", marginLeft: "auto" }}>{u.when}</span>
                   <button
                     className="icon-btn"
@@ -985,6 +987,7 @@ export function ProjectDetail() {
                       value={editUpdateText}
                       onChange={(e) => setEditUpdateText(e.target.value)}
                     />
+                    <UpdateTypePicker value={editUpdateType} onChange={setEditUpdateType} />
                     <div style={{ display: "flex", gap: 8 }}>
                       <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEditUpdate}>
                         Save
@@ -1386,6 +1389,53 @@ function RiskTracker({ project }: { project: Project }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ================= Update type label ================= */
+
+const UPDATE_TYPE_META: Record<UpdateType, { label: string; bg: string; color: string }> = {
+  "update":   { label: "Update",   bg: "var(--surface-2)",          color: "var(--ink-3)"  },
+  "heads-up": { label: "Heads up", bg: "rgba(245,158,11,.13)",       color: "#B45309"       },
+  "blocked":  { label: "Blocked",  bg: "rgba(239,68,68,.13)",        color: "#DC2626"       },
+  "win":      { label: "Win",      bg: "rgba(16,185,129,.13)",       color: "#059669"       },
+};
+
+function UpdateTypeTag({ type }: { type: UpdateType }) {
+  const m = UPDATE_TYPE_META[type];
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 99,
+      background: m.bg, color: m.color, flexShrink: 0,
+    }}>
+      {m.label}
+    </span>
+  );
+}
+
+function UpdateTypePicker({ value, onChange }: { value: UpdateType; onChange: (t: UpdateType) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+      {(Object.keys(UPDATE_TYPE_META) as UpdateType[]).map((t) => {
+        const m = UPDATE_TYPE_META[t];
+        const active = value === t;
+        return (
+          <button
+            key={t}
+            onClick={() => onChange(t)}
+            style={{
+              fontSize: 11, fontWeight: active ? 600 : 400, padding: "3px 10px", borderRadius: 99,
+              border: active ? "none" : "1px solid var(--border)",
+              background: active ? m.bg : "transparent",
+              color: active ? m.color : "var(--ink-4)",
+              cursor: "pointer",
+            }}
+          >
+            {m.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

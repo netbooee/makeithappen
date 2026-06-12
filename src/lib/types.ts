@@ -28,11 +28,14 @@ export interface Milestone {
   subtasks: Subtask[];
 }
 
+export type UpdateType = "update" | "heads-up" | "blocked" | "win";
+
 export interface StatusUpdate {
   id: string;
   when: string;
   who: string;
   text: string;
+  type?: UpdateType;
 }
 
 export interface ProjectMember {

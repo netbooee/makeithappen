@@ -129,13 +129,22 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       }).join("");
 
   // ── Status updates ──────────────────────────────────────────────────────────
+  const UPDATE_TYPE_STYLE: Record<string, [string, string, string]> = {
+    "update":   ["var(--surface-2,#F6F7F9)", "#6B7280", "Update"],
+    "heads-up": ["rgba(245,158,11,.13)",      "#B45309", "Heads up"],
+    "blocked":  ["rgba(239,68,68,.13)",        "#DC2626", "Blocked"],
+    "win":      ["rgba(16,185,129,.13)",       "#059669", "Win"],
+  };
+  const updateTypePill = (type?: string) => {
+    const [bg, color, label] = UPDATE_TYPE_STYLE[type ?? "update"] ?? UPDATE_TYPE_STYLE["update"];
+    return `<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px;background:${bg};color:${color};flex-shrink:0">${label}</span>`;
+  };
   const updatesHtml = project.updates.length === 0
     ? `<div style="font-size:12.5px;color:#9CA3AF">No updates yet.</div>`
-    : project.updates.map((u, i) => `
+    : project.updates.map((u) => `
         <div style="padding:10px 14px;border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-            ${avatar(u.who, i)}
-            <span style="font-size:12px;font-weight:500;color:#374151">${esc(u.who)}</span>
+            ${updateTypePill(u.type)}
             <span style="font-size:11px;color:#9CA3AF;margin-left:auto">${esc(u.when)}</span>
           </div>
           <div style="font-size:12.5px;color:#4B5563;line-height:1.55">${esc(u.text)}</div>
