@@ -9,7 +9,7 @@ import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { CONTEXTS } from "../lib/constants";
-import type { Milestone, Project, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
+import type { Milestone, Project, ProjectMember, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -685,6 +685,9 @@ export function ProjectDetail() {
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
   const [editUpdateText, setEditUpdateText] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [addingMember, setAddingMember] = useState(false);
+  const [newMemberId, setNewMemberId] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("");
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -790,6 +793,94 @@ export function ProjectDetail() {
       </div>
 
       <KpiSection project={project} />
+
+      {/* Team */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="section-h">Team</div>
+        <div className="card" style={{ padding: "6px 10px 8px" }}>
+          {(project.members ?? []).map((mem) => {
+            const contact = data.contacts.find((c) => c.id === mem.contactId);
+            if (!contact) return null;
+            const who = contact.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+            return (
+              <div key={mem.contactId} className="task-row">
+                <Avatar who={who} size={24} color={contact.color} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
+                {mem.role && <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{mem.role}</span>}
+                {contact.company && !mem.role && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{contact.company}</span>}
+                <button
+                  className="icon-btn"
+                  style={{ width: 24, height: 24, color: "var(--ink-4)" }}
+                  onClick={() => updateProject(project.id, {
+                    members: (project.members ?? []).filter((x) => x.contactId !== mem.contactId),
+                  })}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            );
+          })}
+          {addingMember ? (
+            <div className="task-row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <select
+                className="input"
+                style={{ flex: 1, minWidth: 160, fontSize: 13 }}
+                value={newMemberId}
+                onChange={(e) => setNewMemberId(e.target.value)}
+              >
+                <option value="">Pick a contact…</option>
+                {data.contacts
+                  .filter((c) => !(project.members ?? []).some((m) => m.contactId === c.id))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.company ? ` — ${c.company}` : ""}
+                    </option>
+                  ))}
+              </select>
+              <input
+                className="input"
+                style={{ flex: 1, minWidth: 120, fontSize: 13 }}
+                placeholder="Project role (optional)"
+                value={newMemberRole}
+                onChange={(e) => setNewMemberRole(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newMemberId) {
+                    updateProject(project.id, {
+                      members: [...(project.members ?? []), { contactId: newMemberId, role: newMemberRole.trim() } as ProjectMember],
+                    });
+                    setNewMemberId(""); setNewMemberRole(""); setAddingMember(false);
+                  }
+                }}
+              />
+              <button
+                className="btn btn-primary"
+                style={{ padding: "5px 11px", fontSize: 12 }}
+                onClick={() => {
+                  if (!newMemberId) return;
+                  updateProject(project.id, {
+                    members: [...(project.members ?? []), { contactId: newMemberId, role: newMemberRole.trim() } as ProjectMember],
+                  });
+                  setNewMemberId(""); setNewMemberRole(""); setAddingMember(false);
+                }}
+              >
+                Add
+              </button>
+              <button className="btn btn-ghost" style={{ padding: "5px 11px", fontSize: 12 }} onClick={() => setAddingMember(false)}>Cancel</button>
+            </div>
+          ) : (
+            <button
+              className="task-row"
+              style={{ width: "100%", color: "var(--ink-4)", fontSize: 13, gap: 11 }}
+              onClick={() => setAddingMember(true)}
+            >
+              <span style={{ width: 18, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                <Plus size={13} />
+              </span>
+              Add team member
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="project-cols" style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 20, alignItems: "start" }}>
         {/* LEFT: milestones */}

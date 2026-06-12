@@ -87,17 +87,20 @@ export function Shell() {
 
         <div className="next-widget">
           <div className="next-widget-head"><Flag /> Next Actions</div>
-          {data.nextActions.slice(0, 3).map((na) => (
-            <button key={na.id} className="next-mini" onClick={() => goNextAction(na.project)}>
-              <span className="next-mini-dot" />
-              <span>
-                <span className="next-mini-text">{na.text}</span>
-                <span className="next-mini-meta" style={{ display: "block", marginTop: 2 }}>
-                  {na.project || "Standalone"} · {na.due}
+          {data.nextActions
+            .filter((na) => !na.project || data.projects.some((p) => p.title === na.project))
+            .slice(0, 3)
+            .map((na) => (
+              <button key={na.id} className="next-mini" onClick={() => goNextAction(na.project)}>
+                <span className="next-mini-dot" />
+                <span>
+                  <span className="next-mini-text">{na.text}</span>
+                  <span className="next-mini-meta" style={{ display: "block", marginTop: 2 }}>
+                    {na.project || "Standalone"} · {na.due}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            ))}
         </div>
 
         <div className="sidebar-foot">

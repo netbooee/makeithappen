@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Mail, Phone, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Mail, Pencil, Phone, Plus, Search, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput } from "../components/ui";
 import type { Contact, ContactTouch, Relationship } from "../lib/types";
@@ -239,6 +239,26 @@ export function ContactDetail() {
   const [touchDate, setTouchDate] = useState(todayISO);
   const [touchNote, setTouchNote] = useState("");
 
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(contact?.name ?? "");
+  const [editRole, setEditRole] = useState(contact?.role ?? "");
+  const [editCompany, setEditCompany] = useState(contact?.company ?? "");
+  const [editEmail, setEditEmail] = useState(contact?.email ?? "");
+  const [editPhone, setEditPhone] = useState(contact?.phone ?? "");
+  const [editColor, setEditColor] = useState(contact?.color ?? COLORS[0]);
+
+  const saveEdit = () => {
+    set({
+      name: editName.trim() || contact!.name,
+      role: editRole.trim(),
+      company: editCompany.trim(),
+      email: editEmail.trim(),
+      phone: editPhone.trim(),
+      color: editColor,
+    });
+    setEditing(false);
+  };
+
   if (!contact) {
     return (
       <div className="page fade">
@@ -277,29 +297,65 @@ export function ContactDetail() {
       <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Avatar who={initials(contact.name)} size={52} color={contact.color} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 20, fontWeight: 650, letterSpacing: "-0.01em" }}>{contact.name}</div>
-            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
-              {[contact.role, contact.company].filter(Boolean).join(" · ")}
+        {editing ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 4 }}>
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setEditColor(c)}
+                    style={{
+                      width: 26, height: 26, borderRadius: "50%", background: c, flexShrink: 0,
+                      border: editColor === c ? "2.5px solid var(--ink)" : "2.5px solid transparent",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="row">
+              <input className="input" style={{ flex: 1 }} placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+              <input className="input" style={{ flex: 1 }} placeholder="Role" value={editRole} onChange={(e) => setEditRole(e.target.value)} />
+            </div>
+            <input className="input" placeholder="Company" value={editCompany} onChange={(e) => setEditCompany(e.target.value)} />
+            <div className="row">
+              <input className="input" style={{ flex: 1 }} placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+              <input className="input" style={{ flex: 1 }} placeholder="Phone" type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={saveEdit}>Save</button>
+              <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Avatar who={initials(contact.name)} size={52} color={contact.color} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 650, letterSpacing: "-0.01em" }}>{contact.name}</div>
+                <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+                  {[contact.role, contact.company].filter(Boolean).join(" · ")}
+                </div>
+              </div>
+              <button className="icon-btn" style={{ color: "var(--ink-4)" }} onClick={() => { setEditName(contact.name); setEditRole(contact.role); setEditCompany(contact.company); setEditEmail(contact.email); setEditPhone(contact.phone); setEditColor(contact.color); setEditing(true); }} title="Edit contact">
+                <Pencil size={15} />
+              </button>
+            </div>
 
-        {/* Contact info */}
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13, color: "var(--ink-2)" }}>
-          {contact.email && (
-            <a href={`mailto:${contact.email}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Mail size={13} /> {contact.email}
-            </a>
-          )}
-          {contact.phone && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Phone size={13} /> {contact.phone}
-            </span>
-          )}
-        </div>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13, color: "var(--ink-2)" }}>
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Mail size={13} /> {contact.email}
+                </a>
+              )}
+              {contact.phone && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Phone size={13} /> {contact.phone}
+                </span>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Relationship */}
         <div>

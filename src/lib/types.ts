@@ -35,6 +35,11 @@ export interface StatusUpdate {
   text: string;
 }
 
+export interface ProjectMember {
+  contactId: string;
+  role: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -49,6 +54,7 @@ export interface Project {
   onBudget?: boolean;
   risk?: "green" | "amber" | "red";
   riskNote?: string;
+  members?: ProjectMember[];
   milestones: Milestone[];
   updates: StatusUpdate[];
 }
