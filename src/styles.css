@@ -262,7 +262,7 @@ a { color: inherit; text-decoration: none; }
 /* empty/util text */
 .muted { color: var(--ink-3); }
 .mono { font-family: var(--mono); }
-.strike { text-decoration: line-through; color: var(--ink-4); }
+.strike { color: var(--ink-4); }
 
 /* ---------- inputs ---------- */
 .input {
