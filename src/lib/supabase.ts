@@ -50,6 +50,42 @@ export async function saveUserData<T>(appData: T): Promise<void> {
   if (error) console.error("saveUserData:", error.message);
 }
 
+/** Save the user's Anthropic API key to user_preferences. Key is never returned to the browser. */
+export async function saveAnthropicKey(key: string): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from("user_preferences").upsert(
+    { user_id: user.id, anthropic_key: key },
+    { onConflict: "user_id" },
+  );
+  if (error) console.error("saveAnthropicKey:", error.message);
+}
+
+/** Remove the stored Anthropic API key. */
+export async function clearAnthropicKey(): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from("user_preferences")
+    .update({ anthropic_key: null })
+    .eq("user_id", user.id);
+  if (error) console.error("clearAnthropicKey:", error.message);
+}
+
+/** Returns true if the current user has an Anthropic key stored. Key value is never exposed. */
+export async function hasAnthropicKey(): Promise<boolean> {
+  if (!supabase) return false;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase
+    .from("user_preferences")
+    .select("anthropic_key")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return Boolean((data as { anthropic_key?: string } | null)?.anthropic_key);
+}
+
 /** Persist milestone-section preferences to user_preferences (upsert keyed by user). */
 export async function saveTweaks(tweaks: Tweaks) {
   if (!supabase) return;

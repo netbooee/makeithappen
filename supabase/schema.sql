@@ -117,8 +117,12 @@ create table if not exists user_preferences (
   user_id uuid not null unique references auth.users (id) on delete cascade,
   milestone_collapsible boolean not null default true,
   milestone_default_state text not null default 'active' check (milestone_default_state in ('all', 'active', 'none')),
-  milestone_count_collapsed boolean not null default true
+  milestone_count_collapsed boolean not null default true,
+  anthropic_key text
 );
+
+-- Migration: add anthropic_key to existing databases
+alter table user_preferences add column if not exists anthropic_key text;
 
 -- ---- Row Level Security ----
 do $$

@@ -37,7 +37,7 @@ export function Assistant() {
       const answer = await askAssistant(q, history, workspace, data, all.user);
       setMessages((m) => [...m, { role: "assistant", content: answer }]);
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Sorry — I couldn't reach the Claude API. Check VITE_ANTHROPIC_API_KEY in .env.local and try again." }]);
+      setMessages((m) => [...m, { role: "assistant", content: "Sorry — something went wrong. Check your connection and try again." }]);
     } finally {
       setThinking(false);
     }
@@ -52,7 +52,7 @@ export function Assistant() {
         </span>
         <span style={{ fontSize: 12.5, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 5 }}>
           <Sparkles size={12} /> Connected to your data
-          {!claudeConfigured && <span style={{ color: "var(--ink-4)" }}>· demo mode (no API key)</span>}
+          {!claudeConfigured && <span style={{ color: "var(--ink-4)" }}>· demo mode · add key in Settings</span>}
         </span>
       </div>
 

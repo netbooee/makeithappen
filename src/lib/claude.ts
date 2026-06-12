@@ -1,30 +1,73 @@
+import { supabase, supabaseConfigured } from "./supabase";
 import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
 
-const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
+const devApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
 const MODEL = "claude-sonnet-4-20250514";
 
-export const claudeConfigured = Boolean(apiKey);
+/** True when the AI will actually work (either a dev key or the proxy endpoint is available). */
+export const claudeConfigured = Boolean(devApiKey) || supabaseConfigured;
 
-async function callClaude(system: string, userText: string): Promise<string> {
+// ---- direct browser call (local dev with VITE_ANTHROPIC_API_KEY) ----
+
+async function callClaudeDirect(
+  system: string,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": apiKey!,
+      "x-api-key": devApiKey!,
       "anthropic-version": "2023-06-01",
       // personal single-user app; key stays on the user's own machine via .env.local
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      system,
-      messages: [{ role: "user", content: userText }],
-    }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 1024, system, messages }),
   });
   if (!res.ok) throw new Error(`Claude API error ${res.status}`);
   const json = await res.json();
   return json.content?.[0]?.text ?? "";
+}
+
+// ---- Netlify proxy call (production — key never leaves the server) ----
+
+async function callClaudeProxy(
+  system: string,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<string> {
+  const { data: { session } } = await supabase!.auth.getSession();
+  if (!session) throw new Error("not_authenticated");
+
+  const res = await fetch("/.netlify/functions/ai", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "authorization": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ system, messages }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string; message?: string };
+    if (err.error === "no_key") {
+      return err.message ?? "No Anthropic API key saved. Open Settings (⚙) to add yours.";
+    }
+    throw new Error(`AI proxy error ${res.status}`);
+  }
+
+  const json = await res.json() as { text?: string };
+  return json.text ?? "";
+}
+
+// ---- pick the right call path ----
+
+async function callClaude(
+  system: string,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<string> {
+  if (devApiKey) return callClaudeDirect(system, messages);
+  if (supabaseConfigured) return callClaudeProxy(system, messages);
+  throw new Error("no_claude");
 }
 
 /* ---------- email drafting ---------- */
@@ -51,8 +94,7 @@ export async function draftStatusEmail(
   update: StatusUpdate,
   user: User,
 ): Promise<string> {
-  if (!apiKey) {
-    // demo mode: simulate latency then use the template draft
+  if (!devApiKey && !supabaseConfigured) {
     await new Promise((r) => setTimeout(r, 1100));
     return localEmailDraft(project, update, user);
   }
@@ -72,7 +114,7 @@ Latest status update from the project:
 "${update.text}"
 
 Draft a short status email to the team based on this.`;
-  return callClaude(system, prompt);
+  return callClaude(system, [{ role: "user", content: prompt }]);
 }
 
 /* ---------- assistant chat ---------- */
@@ -134,7 +176,7 @@ function localAssistant(question: string, data: WorkspaceData): string {
     return `Open the project, find the latest status update, and hit "Draft email" — I'll compose it from the project's milestone status and the update text. Or tell me which project and I'll summarize it here.`;
   }
   const active = data.projects.filter((p) => p.status === "active");
-  return `Here's a quick snapshot: ${active.length} active projects, ${[...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length} open tasks, and ${data.habits.filter((h) => !h.doneToday).length} habits left today. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Connect a Claude API key in .env.local for full conversational answers.)`;
+  return `Here's a quick snapshot: ${active.length} active projects, ${[...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length} open tasks, and ${data.habits.filter((h) => !h.doneToday).length} habits left today. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Add your Anthropic API key in Settings to unlock full conversational AI.)`;
 }
 
 export async function askAssistant(
@@ -144,27 +186,10 @@ export async function askAssistant(
   data: WorkspaceData,
   user: User,
 ): Promise<string> {
-  if (!apiKey) {
+  if (!devApiKey && !supabaseConfigured) {
     await new Promise((r) => setTimeout(r, 700));
     return localAssistant(question, data);
   }
   const system = `You are the MakeItHappen AI assistant — a sharp, concise personal chief-of-staff. Answer from the user's data snapshot below. Keep answers short and actionable.\n\n${serializeContext(ws, data, user)}`;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      system,
-      messages: [...history, { role: "user", content: question }],
-    }),
-  });
-  if (!res.ok) throw new Error(`Claude API error ${res.status}`);
-  const json = await res.json();
-  return json.content?.[0]?.text ?? "";
+  return callClaude(system, [...history, { role: "user", content: question }]);
 }
