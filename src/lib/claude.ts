@@ -196,5 +196,13 @@ export async function askAssistant(
     return localAssistant(question, data);
   }
   const system = `You are the MakeItHappen AI assistant — a sharp, concise personal chief-of-staff. Answer from the user's data snapshot below. Keep answers short and actionable.\n\n${serializeContext(ws, data, user)}`;
-  return callClaude(system, [...history, { role: "user", content: question }]);
+  try {
+    return await callClaude(system, [...history, { role: "user", content: question }]);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "not_authenticated") {
+      return "You need to be signed in to use the AI assistant.";
+    }
+    return "Couldn't reach the AI right now. Make sure your Anthropic API key is saved in Settings (⚙) and is valid, then try again.";
+  }
 }
