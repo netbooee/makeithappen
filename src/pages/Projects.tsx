@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Calendar, Check, CheckCircle2, ChevronRight, Copy, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  Calendar, Check, CheckCircle2, ChevronRight, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
+import { exportProjectHtml } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
 import type { Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
 
@@ -787,6 +788,14 @@ export function ProjectDetail() {
             <span className="chip"><UserRound /> {project.owner}</span>
             <span className="chip"><Calendar /> Due {project.due}</span>
             <span className="chip"><CheckCircle2 /> {done}/{total} done</span>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
+              onClick={() => exportProjectHtml(project, data.contacts)}
+              title="Download self-contained HTML report"
+            >
+              <Download size={12} /> Export HTML
+            </button>
           </div>
         </div>
       </div>
