@@ -74,20 +74,47 @@ async function callClaude(
 
 /* ---------- email drafting ---------- */
 
+function emailContext(project: Project) {
+  const ragLabel = project.risk
+    ? ({ green: "Green — on track", amber: "Amber — some risk", red: "Red — at risk" } as const)[project.risk]
+    : "Not set";
+  const timeline =
+    project.start && project.due !== "No date"
+      ? `${project.start} → ${project.due}`
+      : project.due !== "No date"
+      ? `Due ${project.due}`
+      : "No date set";
+  const budget = project.budget
+    ? `${project.budget}${project.onBudget !== false ? " (on budget)" : " (over budget)"}`
+    : "Not set";
+  const totalSubtasks = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
+  const doneSubtasks = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
+  const milestoneLines = project.milestones
+    .map((m) => {
+      const label = m.status === "hold" ? "On Hold" : m.status.charAt(0).toUpperCase() + m.status.slice(1);
+      return `  ${label} · ${m.due}  —  ${m.title}`;
+    })
+    .join("\n");
+  return { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines };
+}
+
 function localEmailDraft(project: Project, update: StatusUpdate, user: User): string {
-  const completeCount = project.milestones.filter((m) => m.status === "complete").length;
-  const activeMs = project.milestones.find((m) => m.status === "active") || project.milestones[0];
-  return `Hi team,
-
-Quick status update on ${project.title}.
-
-Where things stand: ${completeCount} of ${project.milestones.length} milestones are complete, and we're currently focused on "${activeMs.title}."
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines } = emailContext(project);
+  return `Hi [recipient],
 
 ${update.text}
 
-Next up, I'll keep things moving toward our ${project.due} target. I'll send another note once we hit the next milestone.
+Project details:
+  Timeline:  ${timeline}
+  Budget:    ${budget}
+  RAG:       ${ragLabel}
+  Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
 
-Best,
+Milestones:
+${milestoneLines}
+
+Let me know if you have any questions.
+
 ${user.name.split(" ")[0]}`;
 }
 
@@ -100,26 +127,29 @@ export async function draftStatusEmail(
     await new Promise((r) => setTimeout(r, 1100));
     return localEmailDraft(project, update, user);
   }
-  const milestoneSummary = project.milestones
-    .map((m) => {
-      const done = m.subtasks.filter((s) => s.done).length;
-      return `- ${m.title} (${m.status}, ${done}/${m.subtasks.length} subtasks done, due ${m.due})`;
-    })
-    .join("\n");
-  const system = `You draft concise, friendly status-update emails for ${user.name}. Plain text only, no subject line. Sign off with the sender's first name.`;
-  const prompt = `Project: ${project.title} (due ${project.due})
-Description: ${project.desc}
-Milestones:
-${milestoneSummary}
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines } = emailContext(project);
+  const system = `You draft concise, professional status-update emails for ${user.name}. Plain text only, no subject line. Sign off with the sender's first name. Follow the exact structure provided — do not rearrange, paraphrase the update text, or add extra commentary.`;
+  const prompt = `Write a status update email for "${project.title}" using this exact structure:
 
-Latest status update from the project:
-"${update.text}"
+1. Greeting: "Hi [recipient],"
+2. Blank line, then the status update text verbatim (copy it exactly):
+   "${update.text}"
+3. Blank line, then these project details exactly:
+   Project details:
+     Timeline:  ${timeline}
+     Budget:    ${budget}
+     RAG:       ${ragLabel}
+     Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
+4. Blank line, then this milestones section exactly:
+   Milestones:
+${milestoneLines}
+5. One short closing sentence (e.g. "Let me know if you have any questions.")
+6. Sign off: "${user.name.split(" ")[0]}"
 
-Draft a short status email to the team based on this.`;
+Output only the email body. No extra commentary.`;
   try {
     return await callClaude(system, [{ role: "user", content: prompt }]);
   } catch {
-    // Fall back to local template so the panel is still usable
     return localEmailDraft(project, update, user);
   }
 }
