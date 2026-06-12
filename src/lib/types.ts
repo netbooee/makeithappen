@@ -46,6 +46,22 @@ export interface ProjectResource {
   url: string;
 }
 
+export type RiskProbability = "low" | "medium" | "high";
+export type RiskImpact = "low" | "medium" | "high";
+export type RiskSeverity = "low" | "medium" | "high" | "critical";
+export type RiskStatus = "open" | "mitigated" | "closed";
+
+export interface ProjectRisk {
+  id: string;
+  description: string;
+  category: string;
+  probability: RiskProbability;
+  impact: RiskImpact;
+  status: RiskStatus;
+  owner?: string;
+  mitigation?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -62,6 +78,7 @@ export interface Project {
   riskNote?: string;
   members?: ProjectMember[];
   resources?: ProjectResource[];
+  risks?: ProjectRisk[];
   milestones: Milestone[];
   updates: StatusUpdate[];
 }

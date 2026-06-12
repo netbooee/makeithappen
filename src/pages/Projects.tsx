@@ -9,7 +9,7 @@ import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { CONTEXTS } from "../lib/constants";
-import type { Milestone, Project, ProjectMember, ProjectResource, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
+import type { Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -1003,6 +1003,8 @@ export function ProjectDetail() {
         </div>
       </div>
 
+      <RiskTracker project={project} />
+
       {/* Project tasks (from the task lists, tagged to this project) */}
       <div style={{ marginTop: 28 }}>
         <div className="section-h">
@@ -1143,6 +1145,236 @@ function ResourcesSection({ project }: { project: Project }) {
             </button>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================= Risk tracker ================= */
+
+const SEVERITY_MATRIX: Record<RiskProbability, Record<RiskImpact, RiskSeverity>> = {
+  low:    { low: "low",    medium: "low",    high: "medium"   },
+  medium: { low: "low",    medium: "medium", high: "high"     },
+  high:   { low: "medium", medium: "high",   high: "critical" },
+};
+
+const SEV_STYLE: Record<RiskSeverity, React.CSSProperties> = {
+  low:      { background: "color-mix(in oklab,#10B981 14%,transparent)", color: "#059669", border: "1px solid color-mix(in oklab,#10B981 28%,transparent)" },
+  medium:   { background: "color-mix(in oklab,#F59E0B 14%,transparent)", color: "#B45309", border: "1px solid color-mix(in oklab,#F59E0B 28%,transparent)" },
+  high:     { background: "color-mix(in oklab,#F97316 14%,transparent)", color: "#C2410C", border: "1px solid color-mix(in oklab,#F97316 28%,transparent)" },
+  critical: { background: "color-mix(in oklab,#EF4444 14%,transparent)", color: "#DC2626", border: "1px solid color-mix(in oklab,#EF4444 28%,transparent)" },
+};
+
+const RSTATUS_STYLE: Record<RiskStatus, React.CSSProperties> = {
+  open:      { background: "color-mix(in oklab,#EF4444 12%,transparent)", color: "#DC2626" },
+  mitigated: { background: "color-mix(in oklab,#F59E0B 12%,transparent)", color: "#B45309" },
+  closed:    { background: "color-mix(in oklab,#10B981 12%,transparent)", color: "#059669" },
+};
+
+const RISK_CATEGORIES = ["Technical", "Resource", "Schedule", "Budget", "External", "Other"];
+
+const riskPill: React.CSSProperties = {
+  display: "inline-block", fontSize: 11, fontWeight: 600,
+  padding: "2px 7px", borderRadius: 99, textTransform: "capitalize", whiteSpace: "nowrap",
+};
+
+function calcSeverity(prob: RiskProbability, imp: RiskImpact): RiskSeverity {
+  return SEVERITY_MATRIX[prob][imp];
+}
+
+function RiskForm({
+  initial, onSave, onCancel,
+}: {
+  initial?: ProjectRisk;
+  onSave: (r: Omit<ProjectRisk, "id">) => void;
+  onCancel: () => void;
+}) {
+  const [desc, setDesc] = useState(initial?.description ?? "");
+  const [cat, setCat] = useState(initial?.category ?? "Technical");
+  const [prob, setProb] = useState<RiskProbability>(initial?.probability ?? "medium");
+  const [impact, setImpact] = useState<RiskImpact>(initial?.impact ?? "medium");
+  const [status, setStatus] = useState<RiskStatus>(initial?.status ?? "open");
+  const [owner, setOwner] = useState(initial?.owner ?? "");
+  const [mitigation, setMitigation] = useState(initial?.mitigation ?? "");
+
+  const save = () => {
+    if (!desc.trim()) return;
+    onSave({
+      description: desc.trim(), category: cat, probability: prob, impact, status,
+      ...(owner.trim() ? { owner: owner.trim() } : {}),
+      ...(mitigation.trim() ? { mitigation: mitigation.trim() } : {}),
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px" }}>
+      <input
+        className="input"
+        autoFocus
+        placeholder="Risk description…"
+        value={desc}
+        onChange={(e) => setDesc(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && save()}
+      />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={cat} onChange={(e) => setCat(e.target.value)}>
+          {RISK_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={prob} onChange={(e) => setProb(e.target.value as RiskProbability)}>
+          <option value="low">Prob: Low</option>
+          <option value="medium">Prob: Medium</option>
+          <option value="high">Prob: High</option>
+        </select>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={impact} onChange={(e) => setImpact(e.target.value as RiskImpact)}>
+          <option value="low">Impact: Low</option>
+          <option value="medium">Impact: Medium</option>
+          <option value="high">Impact: High</option>
+        </select>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={status} onChange={(e) => setStatus(e.target.value as RiskStatus)}>
+          <option value="open">Open</option>
+          <option value="mitigated">Mitigated</option>
+          <option value="closed">Closed</option>
+        </select>
+        <input className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} placeholder="Owner (optional)" value={owner} onChange={(e) => setOwner(e.target.value)} />
+      </div>
+      <input
+        className="input"
+        style={{ fontSize: 12.5 }}
+        placeholder="Mitigation / response plan (optional)"
+        value={mitigation}
+        onChange={(e) => setMitigation(e.target.value)}
+      />
+      <div style={{ display: "flex", gap: 7 }}>
+        <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={save}>Save</button>
+        <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function RiskTracker({ project }: { project: Project }) {
+  const { updateProject } = useStore();
+  const risks = project.risks ?? [];
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const saveNew = (data: Omit<ProjectRisk, "id">) => {
+    updateProject(project.id, { risks: [...risks, { id: "risk" + Date.now(), ...data }] });
+    setAdding(false);
+  };
+
+  const saveEdit = (id: string, data: Omit<ProjectRisk, "id">) => {
+    updateProject(project.id, { risks: risks.map((r) => r.id === id ? { id, ...data } : r) });
+    setEditingId(null);
+  };
+
+  const remove = (id: string) =>
+    updateProject(project.id, { risks: risks.filter((r) => r.id !== id) });
+
+  const openCount = risks.filter((r) => r.status === "open").length;
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <div className="section-h">
+        Risk Register
+        {openCount > 0 && (
+          <span style={{ ...riskPill, ...SEV_STYLE.high, marginLeft: 8, fontSize: 10.5 }}>{openCount} open</span>
+        )}
+        <button
+          onClick={() => { setAdding((v) => !v); setEditingId(null); }}
+          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+        >
+          <Plus size={12} /> Add risk
+        </button>
+      </div>
+      <div className="card" style={{ padding: "6px 10px 8px" }}>
+        {adding && (
+          <div style={{ borderBottom: "1px solid var(--border)", marginBottom: 4, paddingBottom: 8 }}>
+            <RiskForm onSave={saveNew} onCancel={() => setAdding(false)} />
+          </div>
+        )}
+        {risks.length === 0 && !adding && (
+          <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No risks logged yet.</div>
+        )}
+        {risks.length > 0 && (
+          <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
+            {(["Severity", "Risk", "Category", "P", "I", "Status", "Owner", ""] as const).map((h, i) => (
+              <span
+                key={i}
+                style={{
+                  fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)",
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  width: h === "Risk" ? undefined : h === "" ? 48 : h === "P" || h === "I" ? 36 : h === "Severity" ? 68 : h === "Owner" ? 60 : 80,
+                  flex: h === "Risk" ? 1 : undefined,
+                  flexShrink: h === "Risk" ? undefined : 0,
+                  textAlign: h === "P" || h === "I" ? "center" : undefined,
+                }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+        )}
+        {risks.map((r) => {
+          const sev = calcSeverity(r.probability, r.impact);
+          if (editingId === r.id) {
+            return (
+              <div key={r.id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 4 }}>
+                <RiskForm initial={r} onSave={(d) => saveEdit(r.id, d)} onCancel={() => setEditingId(null)} />
+              </div>
+            );
+          }
+          return (
+            <div key={r.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start" }}>
+              <span style={{ width: 68, flexShrink: 0 }}>
+                <span style={{ ...riskPill, ...SEV_STYLE[sev] }}>{sev}</span>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{r.description}</div>
+                {r.mitigation && (
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.4 }}>↳ {r.mitigation}</div>
+                )}
+              </div>
+              <span style={{ width: 80, flexShrink: 0 }}>
+                <span className="chip" style={{ fontSize: 11 }}>{r.category}</span>
+              </span>
+              <span style={{ width: 36, flexShrink: 0, textAlign: "center" as const }}>
+                <span style={{ ...riskPill, fontSize: 10.5, padding: "2px 5px", background: "var(--surface-2)", color: "var(--ink-3)", border: "none" }}>
+                  {r.probability[0].toUpperCase()}
+                </span>
+              </span>
+              <span style={{ width: 36, flexShrink: 0, textAlign: "center" as const }}>
+                <span style={{ ...riskPill, fontSize: 10.5, padding: "2px 5px", background: "var(--surface-2)", color: "var(--ink-3)", border: "none" }}>
+                  {r.impact[0].toUpperCase()}
+                </span>
+              </span>
+              <span style={{ width: 80, flexShrink: 0 }}>
+                <span style={{ ...riskPill, ...RSTATUS_STYLE[r.status] }}>{r.status}</span>
+              </span>
+              <span style={{ width: 60, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {r.owner ?? "—"}
+              </span>
+              <div style={{ width: 48, flexShrink: 0, display: "flex", gap: 2 }}>
+                <button
+                  className="icon-btn"
+                  style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                  onClick={() => { setEditingId(r.id); setAdding(false); }}
+                  title="Edit risk"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  className="icon-btn"
+                  style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                  onClick={() => remove(r.id)}
+                  title="Delete risk"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
