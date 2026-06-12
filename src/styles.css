@@ -440,6 +440,7 @@ textarea.input { resize: vertical; line-height: 1.6; }
   .grid-2, .suggested { grid-template-columns: 1fr; }
   .project-cols { grid-template-columns: 1fr !important; }
   .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .kpi-grid > :nth-child(3) { grid-column: 1 / -1; }
   .bottom-nav {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
     background: var(--surface); border-top: 1px solid var(--border);

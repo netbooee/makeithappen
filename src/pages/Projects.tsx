@@ -580,22 +580,22 @@ function KpiSection({ project }: { project: Project }) {
   const latestExec = project.updates.find((u) => u.type === "executive") ?? null;
 
   return (
-    <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr", gap: 12, marginBottom: 24 }}>
+    <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "auto 1fr 2fr 1fr", gap: 12, marginBottom: 24 }}>
       {/* Timeline (start → end) */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Timeline</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <DateInput
             value={project.start}
             onChange={(v) => set({ start: v || undefined })}
-            style={{ ...kpiInput, padding: "2px 0", width: "auto", flex: 1 }}
+            style={{ ...kpiInput, padding: "2px 0", width: 130 }}
             className=""
           />
-          <span style={{ color: "var(--ink-4)", fontSize: 13, flexShrink: 0 }}>→</span>
+          <span style={{ color: "var(--ink-4)", fontSize: 11, lineHeight: 1, paddingLeft: 2 }}>↓</span>
           <DateInput
             value={project.due}
             onChange={(v) => set({ due: v || "No date" })}
-            style={{ ...kpiInput, padding: "2px 0", width: "auto", flex: 1 }}
+            style={{ ...kpiInput, padding: "2px 0", width: 130 }}
             className=""
           />
         </div>
