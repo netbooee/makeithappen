@@ -48,11 +48,12 @@ async function callClaudeProxy(
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { error?: string; message?: string };
+    const err = await res.json().catch(() => ({})) as { error?: string; message?: string; detail?: string };
     if (err.error === "no_key") {
       return err.message ?? "No Anthropic API key saved. Open Settings (⚙) to add yours.";
     }
-    throw new Error(`AI proxy error ${res.status}`);
+    console.error("proxy error", res.status, err);
+    throw new Error(`proxy_${res.status}`);
   }
 
   const json = await res.json() as { text?: string };
@@ -203,6 +204,7 @@ export async function askAssistant(
     if (msg === "not_authenticated") {
       return "You need to be signed in to use the AI assistant.";
     }
-    return "Couldn't reach the AI right now. Make sure your Anthropic API key is saved in Settings (⚙) and is valid, then try again.";
+    const status = msg.startsWith("proxy_") ? ` (${msg.replace("proxy_", "status ")})` : "";
+    return `Couldn't reach the AI right now${status}. Make sure your Anthropic API key is saved in Settings (⚙) and is valid, then try again.`;
   }
 }

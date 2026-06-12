@@ -18,23 +18,33 @@ export const handler: Handler = async (event) => {
   const jwt = event.headers.authorization?.replace(/^bearer\s+/i, "");
   if (!jwt) return { statusCode: 401, body: JSON.stringify({ error: "unauthorized" }) };
 
-  // Verify the JWT and get user identity (RLS enforced by using anonKey + JWT)
+  // Pass the JWT explicitly — required in serverless environments where there is no stored session
   const sb = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-    auth: { persistSession: false },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: { user }, error: authError } = await sb.auth.getUser();
+  const { data: { user }, error: authError } = await sb.auth.getUser(jwt);
   if (authError || !user) {
-    return { statusCode: 401, body: JSON.stringify({ error: "invalid_token" }) };
+    console.error("auth error:", authError?.message ?? "no user");
+    return { statusCode: 401, body: JSON.stringify({ error: "invalid_token", detail: authError?.message }) };
   }
 
-  // Fetch the user's stored Anthropic key (RLS ensures they can only read their own row)
-  const { data: prefs } = await sb
+  // Fetch the user's stored Anthropic key (RLS policy ensures only own row is visible)
+  const sbUser = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: prefs, error: prefsError } = await sbUser
     .from("user_preferences")
     .select("anthropic_key")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (prefsError) {
+    console.error("prefs error:", prefsError.message);
+    return { statusCode: 500, body: JSON.stringify({ error: "db_error", detail: prefsError.message }) };
+  }
 
   const apiKey = (prefs as { anthropic_key?: string } | null)?.anthropic_key;
   if (!apiKey) {
