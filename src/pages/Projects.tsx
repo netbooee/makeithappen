@@ -436,22 +436,22 @@ function MilestoneCard({
             onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditing(false); }}
             style={{ fontWeight: 600, fontSize: 14 }}
           />
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <DateInput value={editStart} onChange={setEditStart} style={{ width: 140, fontSize: 12.5 }} />
             <span style={{ fontSize: 12, color: "var(--ink-4)" }}>→</span>
             <DateInput value={editDue} onChange={setEditDue} style={{ width: 140, fontSize: 12.5 }} />
-            <div className="segmented" style={{ display: "flex", flex: 1, minWidth: 190 }}>
-              {(["active", "waiting", "hold", "complete"] as Status[]).map((s) => (
-                <button
-                  key={s}
-                  className={editStatus === s ? "active" : ""}
-                  style={{ flex: 1, fontSize: 12 }}
-                  onClick={() => setEditStatus(s)}
-                >
-                  {s === "hold" ? "Hold" : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
+          </div>
+          <div className="segmented" style={{ display: "flex" }}>
+            {(["active", "waiting", "hold", "complete"] as Status[]).map((s) => (
+              <button
+                key={s}
+                className={editStatus === s ? "active" : ""}
+                style={{ flex: 1, fontSize: 12 }}
+                onClick={() => setEditStatus(s)}
+              >
+                {s === "hold" ? "Hold" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={commitEdit}>Save</button>
