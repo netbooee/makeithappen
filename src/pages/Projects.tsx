@@ -279,14 +279,16 @@ function AddMilestone({ projectId, onAdded }: { projectId: string; onAdded: (id:
   const { addMilestone } = useStore();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
+  const [start, setStart] = useState("");
   const [due, setDue] = useState("");
 
   const submit = () => {
     if (!title.trim()) return;
     const id = "m" + Date.now();
-    addMilestone(projectId, { id, title: title.trim(), due: due.trim() || "No date", status: "active", subtasks: [] });
+    addMilestone(projectId, { id, title: title.trim(), start: start.trim() || undefined, due: due.trim() || "No date", status: "active", subtasks: [] });
     onAdded(id);
     setTitle("");
+    setStart("");
     setDue("");
     setEditing(false);
   };
@@ -319,8 +321,10 @@ function AddMilestone({ projectId, onAdded }: { projectId: string; onAdded: (id:
           if (e.key === "Escape") setEditing(false);
         }}
       />
-      <div style={{ display: "flex", gap: 8 }}>
-        <DateInput value={due} onChange={setDue} style={{ width: 150, fontSize: 12.5 }} />
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <DateInput value={start} onChange={setStart} style={{ width: 140, fontSize: 12.5 }} />
+        <span style={{ fontSize: 12, color: "var(--ink-4)" }}>→</span>
+        <DateInput value={due} onChange={setDue} style={{ width: 140, fontSize: 12.5 }} />
         <button className="btn btn-primary" style={{ fontSize: 12.5 }} onClick={submit}>Add</button>
         <button className="btn btn-ghost" style={{ fontSize: 12.5 }} onClick={() => setEditing(false)}>Cancel</button>
       </div>
@@ -392,18 +396,21 @@ function MilestoneCard({
 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(m.title);
+  const [editStart, setEditStart] = useState(m.start ?? "");
   const [editDue, setEditDue] = useState(m.due === "No date" ? "" : m.due);
   const [editStatus, setEditStatus] = useState<Status>(m.status);
 
   useEffect(() => {
     setEditTitle(m.title);
+    setEditStart(m.start ?? "");
     setEditDue(m.due === "No date" ? "" : m.due);
     setEditStatus(m.status);
-  }, [m.title, m.due, m.status]);
+  }, [m.title, m.start, m.due, m.status]);
 
   const commitEdit = () => {
     updateMilestone(project.id, m.id, {
       title: editTitle.trim() || m.title,
+      start: editStart.trim() || undefined,
       due: editDue.trim() || "No date",
       status: editStatus,
     });
@@ -427,7 +434,9 @@ function MilestoneCard({
             style={{ fontWeight: 600, fontSize: 14 }}
           />
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <DateInput value={editDue} onChange={setEditDue} style={{ width: 150, fontSize: 12.5 }} />
+            <DateInput value={editStart} onChange={setEditStart} style={{ width: 140, fontSize: 12.5 }} />
+            <span style={{ fontSize: 12, color: "var(--ink-4)" }}>→</span>
+            <DateInput value={editDue} onChange={setEditDue} style={{ width: 140, fontSize: 12.5 }} />
             <div className="segmented" style={{ display: "flex", flex: 1, minWidth: 190 }}>
               {(["active", "hold", "complete"] as Status[]).map((s) => (
                 <button
@@ -483,6 +492,7 @@ function MilestoneCard({
                 <CheckCircle2 /> {done}/{total}
               </span>
             )}
+            {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
             <DueChip due={m.due} />
             <StatusChip status={m.status} />
           </button>
@@ -490,6 +500,7 @@ function MilestoneCard({
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
             <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
+            {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
             <DueChip due={m.due} />
             <StatusChip status={m.status} />
           </div>
@@ -734,6 +745,7 @@ export function ProjectDetail() {
   const [updateType, setUpdateType] = useState<UpdateType>("update");
   const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [teamOpen, setTeamOpen] = useState(true);
   const [addingMember, setAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
@@ -868,7 +880,14 @@ export function ProjectDetail() {
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {project.milestones.map((m) => (
+            {[...project.milestones]
+              .sort((a, b) => {
+                if (a.due === "No date" && b.due === "No date") return 0;
+                if (a.due === "No date") return 1;
+                if (b.due === "No date") return -1;
+                return new Date(a.due).getTime() - new Date(b.due).getTime();
+              })
+              .map((m) => (
               <MilestoneCard
                 key={m.id}
                 project={project}
@@ -886,8 +905,11 @@ export function ProjectDetail() {
         <div>
           {/* Team */}
           <div style={{ marginBottom: 20 }}>
-            <div className="section-h">Team</div>
-            <div className="card" style={{ padding: "6px 10px 8px" }}>
+            <div className="section-h" style={{ cursor: "pointer", userSelect: "none" }} onClick={() => setTeamOpen((v) => !v)}>
+              Team
+              <ChevronRight size={13} style={{ marginLeft: "auto", color: "var(--ink-4)", transition: "transform .18s", transform: teamOpen ? "rotate(90deg)" : "none" }} />
+            </div>
+            {teamOpen && <div className="card" style={{ padding: "6px 10px 8px" }}>
               {(project.members ?? []).map((mem) => {
                 const contact = data.contacts.find((c) => c.id === mem.contactId);
                 if (!contact) return null;
@@ -969,7 +991,7 @@ export function ProjectDetail() {
                   Add team member
                 </button>
               )}
-            </div>
+            </div>}
           </div>
 
           <div className="section-h">
@@ -1123,6 +1145,9 @@ function ResourcesSection({ project }: { project: Project }) {
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editUrl, setEditUrl] = useState("");
 
   const resources = project.resources ?? [];
 
@@ -1143,6 +1168,23 @@ function ResourcesSection({ project }: { project: Project }) {
 
   const remove = (id: string) =>
     updateProject(project.id, { resources: resources.filter((r) => r.id !== id) });
+
+  const startEdit = (r: ProjectResource) => {
+    setEditingId(r.id); setEditLabel(r.label); setEditUrl(r.url);
+  };
+
+  const saveEdit = () => {
+    if (!editUrl.trim() || !editingId) return;
+    const normalized = normalizeUrl(editUrl.trim());
+    updateProject(project.id, {
+      resources: resources.map((r) =>
+        r.id === editingId
+          ? { ...r, label: editLabel.trim() || new URL(normalized).hostname.replace(/^www\./, ""), url: normalized }
+          : r
+      ),
+    });
+    setEditingId(null);
+  };
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -1184,27 +1226,28 @@ function ResourcesSection({ project }: { project: Project }) {
         {resources.length === 0 && !adding && (
           <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No resources yet.</div>
         )}
-        {resources.map((r) => (
-          <div key={r.id} className="task-row">
-            <Link2 size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-            <a
-              href={r.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ flex: 1, fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-            >
-              {r.label}
-            </a>
-            <ExternalLink size={11} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-            <button
-              className="icon-btn"
-              style={{ width: 24, height: 24, color: "var(--ink-4)" }}
-              onClick={() => remove(r.id)}
-            >
-              <X size={13} />
-            </button>
-          </div>
-        ))}
+        {resources.map((r) =>
+          editingId === r.id ? (
+            <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
+              <input className="input" autoFocus placeholder="URL" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+              <input className="input" placeholder="Label (optional)" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+              <div style={{ display: "flex", gap: 7 }}>
+                <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEdit}>Save</button>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div key={r.id} className="task-row">
+              <Link2 size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
+              <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {r.label}
+              </a>
+              <ExternalLink size={11} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
+              <button className="icon-btn" style={{ width: 24, height: 24, color: "var(--ink-4)" }} onClick={() => startEdit(r)} title="Edit link"><Pencil size={12} /></button>
+              <button className="icon-btn" style={{ width: 24, height: 24, color: "var(--ink-4)" }} onClick={() => remove(r.id)}><X size={13} /></button>
+            </div>
+          )
+        )}
       </div>
     </div>
   );

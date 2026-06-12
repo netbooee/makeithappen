@@ -63,9 +63,16 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   const ragLabel = project.risk ? { green: "Green", amber: "Amber", red: "Red" }[project.risk] : "Not set";
 
   // ── Milestones ─────────────────────────────────────────────────────────────
-  const milestonesHtml = project.milestones.length === 0
+  const sortedMilestones = [...project.milestones].sort((a, b) => {
+    if (a.due === "No date" && b.due === "No date") return 0;
+    if (a.due === "No date") return 1;
+    if (b.due === "No date") return -1;
+    return new Date(a.due).getTime() - new Date(b.due).getTime();
+  });
+
+  const milestonesHtml = sortedMilestones.length === 0
     ? `<div style="font-size:12.5px;color:#9CA3AF">No milestones yet.</div>`
-    : project.milestones.map((m) => {
+    : sortedMilestones.map((m) => {
         const dotColor = m.status === "complete" ? "#10B981" : m.status === "active" ? "#4F6BED" : "#B4BAC4";
         const sorted = [...m.subtasks].sort((a, b) => {
           if (a.done !== b.done) return a.done ? 1 : -1;
@@ -93,6 +100,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
               <span class="ms-chev">▶</span>
               <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
               <div style="font-size:13px;font-weight:500;flex:1;color:#1A1D23">${esc(m.title)}</div>
+              ${m.start ? `<span style="font-size:11px;color:#8A909B">${esc(m.start)} →</span>` : ""}
               ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:#8A909B">${esc(m.due)}</span>` : ""}
               ${statusBadge(m.status)}
             </summary>
@@ -235,8 +243,13 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
     </div>
     <div style="padding:24px 24px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:10px">Team</div>
-      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px;margin-bottom:20px">${teamHtml}</div>
+      <details open style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+        <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+          <span class="ms-chev">▶</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Team</span>
+        </summary>
+        <div style="padding:4px 12px 4px">${teamHtml}</div>
+      </details>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:10px">Status updates</div>
       <div style="margin-bottom:20px">${updatesHtml}</div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:10px">Resources</div>
