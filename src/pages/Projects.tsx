@@ -516,26 +516,24 @@ function KpiSection({ project }: { project: Project }) {
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 24 }}>
-      {/* Start */}
+      {/* Timeline (start → end) */}
       <div className="card" style={kpiCard}>
-        <div style={kpiLabel}>Start</div>
-        <DateInput
-          value={project.start}
-          onChange={(v) => set({ start: v || undefined })}
-          style={{ ...kpiInput, padding: "2px 0" }}
-          className=""
-        />
-      </div>
-
-      {/* End */}
-      <div className="card" style={kpiCard}>
-        <div style={kpiLabel}>End</div>
-        <DateInput
-          value={project.due}
-          onChange={(v) => set({ due: v || "No date" })}
-          style={{ ...kpiInput, padding: "2px 0" }}
-          className=""
-        />
+        <div style={kpiLabel}>Timeline</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <DateInput
+            value={project.start}
+            onChange={(v) => set({ start: v || undefined })}
+            style={{ ...kpiInput, padding: "2px 0", width: "auto", flex: 1 }}
+            className=""
+          />
+          <span style={{ color: "var(--ink-4)", fontSize: 13, flexShrink: 0 }}>→</span>
+          <DateInput
+            value={project.due}
+            onChange={(v) => set({ due: v || "No date" })}
+            style={{ ...kpiInput, padding: "2px 0", width: "auto", flex: 1 }}
+            className=""
+          />
+        </div>
       </div>
 
       {/* Budget */}

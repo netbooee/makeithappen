@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Bell, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
+  Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar } from "./ui";
 import { TweaksPanel } from "./TweaksPanel";
+import { SearchModal } from "./SearchModal";
 import type { Workspace } from "../lib/types";
 
 const NAV = [
@@ -27,7 +28,19 @@ export function Shell() {
   const location = useLocation();
   const section = location.pathname.split("/")[1] || "projects";
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
@@ -123,8 +136,7 @@ export function Shell() {
               <span className="sep">/</span> {CRUMB[section] ?? "Today"}
             </div>
             <div className="topbanner-actions">
-              <div className="search-pill"><Search /> Search <kbd>⌘K</kbd></div>
-              <button className="icon-btn" style={{ background: "rgba(255,255,255,0.6)" }}><Bell /></button>
+              <button className="search-pill" onClick={() => setSearchOpen(true)}><Search /> Search <kbd>⌘K</kbd></button>
             </div>
           </div>
         </div>
@@ -133,7 +145,7 @@ export function Shell() {
         <div className="mobile-top">
           <div className="brand-mark" style={{ width: 24, height: 24, fontSize: 13 }}>M</div>
           {WsSwitch}
-          <button className="icon-btn"><Bell /></button>
+          <button className="icon-btn" onClick={() => setSearchOpen(true)}><Search size={18} /></button>
         </div>
 
         <div className="scroll" ref={scrollRef}>
@@ -161,6 +173,7 @@ export function Shell() {
       </nav>
 
       {tweaksOpen && <TweaksPanel close={() => setTweaksOpen(false)} />}
+      {searchOpen && <SearchModal close={() => setSearchOpen(false)} />}
     </div>
   );
 }
