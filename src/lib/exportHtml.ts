@@ -165,6 +165,12 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
           <div style="font-size:12.5px;color:#4B5563;line-height:1.55">${esc(u.text)}</div>
         </div>`).join("");
 
+  // ── Executive update KPI ────────────────────────────────────────────────────
+  const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
+  const execUpdateHtml = execUpdate
+    ? `<div style="font-size:13px;color:#374151;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(execUpdate.text)}</div><div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`
+    : `<div style="font-size:12.5px;color:#B4BAC4;font-style:italic">No executive updates yet.</div>`;
+
   // ── Resources ───────────────────────────────────────────────────────────────
   const resources = project.resources ?? [];
   const resourcesHtml = resources.length === 0
@@ -215,7 +221,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:0.5px solid #E7E9ED">
+  <div style="display:grid;grid-template-columns:1fr 1fr 2fr 1fr;border-bottom:0.5px solid #E7E9ED">
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Timeline</div>
       <div style="font-size:15px;font-weight:500;color:#1A1D23">${timelineVal}</div>
@@ -227,6 +233,10 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       ${project.budget
         ? `<div style="font-size:11.5px;color:${project.onBudget !== false ? "#10B981" : "#EF4444"};margin-top:2px">${project.onBudget !== false ? "✓ On budget" : "⚠ Over budget"}</div>`
         : `<div style="font-size:11.5px;color:#B4BAC4;margin-top:2px">Not set</div>`}
+    </div>
+    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6366F1;margin-bottom:5px">Executive Update</div>
+      ${execUpdateHtml}
     </div>
     <div style="padding:16px 24px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">RAG status</div>

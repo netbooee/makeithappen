@@ -31,7 +31,7 @@ export interface Milestone {
   subtasks: Subtask[];
 }
 
-export type UpdateType = "update" | "heads-up" | "blocked" | "win";
+export type UpdateType = "update" | "heads-up" | "blocked" | "win" | "executive";
 
 export interface StatusUpdate {
   id: string;

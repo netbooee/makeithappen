@@ -438,6 +438,7 @@ textarea.input { resize: vertical; line-height: 1.6; }
   .page { padding: 20px 16px 110px; }
   .grid-2, .suggested { grid-template-columns: 1fr; }
   .project-cols { grid-template-columns: 1fr !important; }
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
   .bottom-nav {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
     background: var(--surface); border-top: 1px solid var(--border);

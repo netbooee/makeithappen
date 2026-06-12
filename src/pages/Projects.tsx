@@ -574,8 +574,10 @@ function KpiSection({ project }: { project: Project }) {
     fontFamily: "inherit",
   };
 
+  const latestExec = project.updates.find((u) => u.type === "executive") ?? null;
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 24 }}>
+    <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr", gap: 12, marginBottom: 24 }}>
       {/* Timeline (start → end) */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Timeline</div>
@@ -617,6 +619,24 @@ function KpiSection({ project }: { project: Project }) {
         >
           {budgetOk ? "✓ On budget" : "⚠ Over budget"}
         </button>
+      </div>
+
+      {/* Executive update */}
+      <div className="card" style={{ ...kpiCard, justifyContent: "space-between" }}>
+        <div style={kpiLabel}>Executive Update</div>
+        {latestExec ? (
+          <>
+            <div style={{
+              fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55, flex: 1,
+              display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+            }}>
+              {latestExec.text}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 4 }}>{latestExec.when}</div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12.5, color: "var(--ink-4)", fontStyle: "italic" }}>No executive updates yet.</div>
+        )}
       </div>
 
       {/* Risk */}
@@ -1486,10 +1506,11 @@ function RiskTracker({ project }: { project: Project }) {
 /* ================= Update type label ================= */
 
 const UPDATE_TYPE_META: Record<UpdateType, { label: string; bg: string; color: string }> = {
-  "update":   { label: "Update",   bg: "var(--surface-2)",          color: "var(--ink-3)"  },
-  "heads-up": { label: "Heads up", bg: "rgba(245,158,11,.13)",       color: "#B45309"       },
-  "blocked":  { label: "Blocked",  bg: "rgba(239,68,68,.13)",        color: "#DC2626"       },
-  "win":      { label: "Win",      bg: "rgba(16,185,129,.13)",       color: "#059669"       },
+  "update":    { label: "Update",    bg: "var(--surface-2)",        color: "var(--ink-3)"  },
+  "heads-up":  { label: "Heads up",  bg: "rgba(245,158,11,.13)",    color: "#B45309"       },
+  "blocked":   { label: "Blocked",   bg: "rgba(239,68,68,.13)",     color: "#DC2626"       },
+  "win":       { label: "Win",       bg: "rgba(16,185,129,.13)",    color: "#059669"       },
+  "executive": { label: "Executive", bg: "rgba(99,102,241,.13)",    color: "#4338CA"       },
 };
 
 function UpdateTypeTag({ type }: { type: UpdateType }) {
