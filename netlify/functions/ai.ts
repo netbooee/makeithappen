@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+// Zero external imports — uses native fetch (Node 18+) to call Supabase and Anthropic REST APIs directly.
+// This avoids bundling issues with @supabase/supabase-js in Netlify serverless functions.
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const anonKey = process.env.VITE_SUPABASE_ANON_KEY!;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 const MODEL = "claude-sonnet-4-20250514";
 
 type Handler = (event: {
@@ -18,35 +19,36 @@ export const handler: Handler = async (event) => {
   const jwt = event.headers.authorization?.replace(/^bearer\s+/i, "");
   if (!jwt) return { statusCode: 401, body: JSON.stringify({ error: "unauthorized" }) };
 
-  // Pass the JWT explicitly — required in serverless environments where there is no stored session
-  const sb = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  // Verify JWT via Supabase Auth REST API
+  const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${jwt}`, apikey: ANON_KEY },
   });
 
-  const { data: { user }, error: authError } = await sb.auth.getUser(jwt);
-  if (authError || !user) {
-    console.error("auth error:", authError?.message ?? "no user");
-    return { statusCode: 401, body: JSON.stringify({ error: "invalid_token", detail: authError?.message }) };
+  if (!authRes.ok) {
+    console.error("auth failed:", authRes.status);
+    return { statusCode: 401, body: JSON.stringify({ error: "invalid_token" }) };
   }
 
-  // Fetch the user's stored Anthropic key (RLS policy ensures only own row is visible)
-  const sbUser = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: prefs, error: prefsError } = await sbUser
-    .from("user_preferences")
-    .select("anthropic_key")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (prefsError) {
-    console.error("prefs error:", prefsError.message);
-    return { statusCode: 500, body: JSON.stringify({ error: "db_error", detail: prefsError.message }) };
+  const authData = await authRes.json() as { id?: string };
+  const userId = authData.id;
+  if (!userId) {
+    return { statusCode: 401, body: JSON.stringify({ error: "invalid_token" }) };
   }
 
-  const apiKey = (prefs as { anthropic_key?: string } | null)?.anthropic_key;
+  // Fetch user's Anthropic key via PostgREST (RLS enforces user_id = auth.uid())
+  const prefsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/user_preferences?select=anthropic_key&user_id=eq.${userId}&limit=1`,
+    { headers: { Authorization: `Bearer ${jwt}`, apikey: ANON_KEY } },
+  );
+
+  if (!prefsRes.ok) {
+    console.error("prefs fetch failed:", prefsRes.status);
+    return { statusCode: 500, body: JSON.stringify({ error: "db_error" }) };
+  }
+
+  const prefsData = await prefsRes.json() as { anthropic_key?: string }[];
+  const apiKey = prefsData?.[0]?.anthropic_key;
+
   if (!apiKey) {
     return {
       statusCode: 402,
