@@ -5,7 +5,7 @@ import type { Status, Subtask, Task } from "../lib/types";
 /* ---- Date helpers ---- */
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-function toDateInputValue(str: string | undefined): string {
+export function toDateInputValue(str: string | undefined): string {
   if (!str || str === "No date" || str === "Not set") return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   const m = str.match(/^(\w{3})\s+(\d{1,2})(?:[,\s]+(\d{4}))?$/);

@@ -1,5 +1,6 @@
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
+import { DateInput } from "./ui";
 import type { Subtask } from "../lib/types";
 
 export function SubtaskEditPanel({
@@ -50,14 +51,20 @@ export function SubtaskEditPanel({
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label className="field-label">Assigned to</label>
-            <input
-              className="input"
-              placeholder="Initials or name"
-              value={subtask.who}
-              onChange={(e) => set({ who: e.target.value })}
-            />
+          <div className="row">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="field-label">Assigned to</label>
+              <input
+                className="input"
+                placeholder="Initials or name"
+                value={subtask.who}
+                onChange={(e) => set({ who: e.target.value })}
+              />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="field-label">Due</label>
+              <DateInput value={subtask.due} onChange={(v) => set({ due: v || undefined })} />
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

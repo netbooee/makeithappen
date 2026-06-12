@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Plus } from "lucide-react";
 import { useStore } from "../store/store";
-import { DateInput, StateTag, TaskMarker } from "../components/ui";
+import { DateInput, StateTag, TaskMarker, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
+import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { CONTEXTS } from "../lib/constants";
-import type { Task, TaskGroup } from "../lib/types";
+import type { Subtask, Task, TaskGroup } from "../lib/types";
 
 export function Tasks() {
-  const { data, workspace, toggleTask, addTask } = useStore();
+  const { data, workspace, toggleTask, toggleSubtask, addTask } = useStore();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,6 +23,7 @@ export function Tasks() {
   const [filterProject, setFilterProject] = useState<string | null>(null);
   const [nextOnly, setNextOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtask: Subtask } | null>(null);
 
   useEffect(() => { setContext(contexts[0]); setProject(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,6 +76,26 @@ export function Tasks() {
     const details = encodeURIComponent(`MakeItHappen reminder${t.project ? ` — ${t.project}` : ""}`);
     window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`, "_blank");
   };
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  // Subtasks from projects that have a due date, bucketed into today vs upcoming
+  const projectSubtasks = useMemo(() => {
+    const today: { projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask }[] = [];
+    const upcoming: typeof today = [];
+    for (const p of data.projects) {
+      for (const m of p.milestones) {
+        for (const s of m.subtasks) {
+          if (!s.due || s.done) continue;
+          const iso = toDateInputValue(s.due);
+          if (!iso) continue;
+          const bucket = iso <= todayISO ? today : upcoming;
+          bucket.push({ projectId: p.id, milestoneId: m.id, projectTitle: p.title, subtask: s });
+        }
+      }
+    }
+    return { today, upcoming };
+  }, [data.projects, todayISO]);
 
   const sections: { key: TaskGroup; label: string; list: Task[] }[] = [
     { key: "today", label: "Today", list: data.todayTasks },
@@ -154,13 +176,15 @@ export function Tasks() {
 
       {sections.map(({ key, label, list }) => {
         const visible = list.filter(matches);
+        const pSubs = key === "today" ? projectSubtasks.today : key === "upcoming" ? projectSubtasks.upcoming : [];
+        const totalOpen = visible.filter((t) => !t.done).length + pSubs.length;
         return (
           <div key={key} style={{ marginBottom: 22 }}>
             <div className="section-h">
-              {label} <span style={{ fontWeight: 500 }}>{visible.filter((t) => !t.done).length}</span>
+              {label} <span style={{ fontWeight: 500 }}>{totalOpen}</span>
             </div>
             <div className="card" style={{ padding: "6px 10px 8px" }}>
-              {visible.length === 0 && (
+              {visible.length === 0 && pSubs.length === 0 && (
                 <div style={{ padding: "10px 8px", fontSize: 13, color: "var(--ink-4)" }}>Nothing here.</div>
               )}
               {visible.map((t) => (
@@ -192,12 +216,38 @@ export function Tasks() {
                   </button>
                 </div>
               ))}
+              {pSubs.map(({ projectId, milestoneId, projectTitle, subtask }) => (
+                <div key={subtask.id} className="task-row">
+                  <TaskMarker task={subtask} onClick={() => toggleSubtask(projectId, milestoneId, subtask.id)} />
+                  <button
+                    style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
+                    className={subtask.done ? "strike" : ""}
+                    title="Edit task"
+                    onClick={() => setEditingSubtask({ projectId, milestoneId, subtask })}
+                  >
+                    {subtask.t}
+                  </button>
+                  <StateTag task={subtask} />
+                  <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(projectTitle)}>
+                    {projectTitle}
+                  </button>
+                  {subtask.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{subtask.due}</span>}
+                </div>
+              ))}
             </div>
           </div>
         );
       })}
 
       {editingId && <TaskEditPanel taskId={editingId} close={() => setEditingId(null)} />}
+      {editingSubtask && (
+        <SubtaskEditPanel
+          projectId={editingSubtask.projectId}
+          milestoneId={editingSubtask.milestoneId}
+          subtask={editingSubtask.subtask}
+          close={() => setEditingSubtask(null)}
+        />
+      )}
     </div>
   );
 }

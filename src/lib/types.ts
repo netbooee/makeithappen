@@ -17,6 +17,7 @@ export interface Subtask {
   to?: string;
   waitFor?: string;
   who: string;
+  due?: string;
 }
 
 export interface Milestone {
