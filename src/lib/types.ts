@@ -40,6 +40,12 @@ export interface ProjectMember {
   role: string;
 }
 
+export interface ProjectResource {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -55,6 +61,7 @@ export interface Project {
   risk?: "green" | "amber" | "red";
   riskNote?: string;
   members?: ProjectMember[];
+  resources?: ProjectResource[];
   milestones: Milestone[];
   updates: StatusUpdate[];
 }
