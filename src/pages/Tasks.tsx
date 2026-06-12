@@ -79,28 +79,57 @@ export function Tasks() {
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
-  // Subtasks from projects that have a due date, bucketed into today vs upcoming
+  const todayTaskIds = useMemo(() => new Set(data.todayTasks.map((t) => t.id)), [data.todayTasks]);
+
+  // Subtasks from projects bucketed into overdue / today / upcoming (undone only)
   const projectSubtasks = useMemo(() => {
-    const today: { projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask }[] = [];
-    const upcoming: typeof today = [];
+    type PSub = { projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask };
+    const overdue: PSub[] = [];
+    const today: PSub[] = [];
+    const upcoming: PSub[] = [];
     for (const p of data.projects) {
       for (const m of p.milestones) {
         for (const s of m.subtasks) {
           if (!s.due || s.done) continue;
           const iso = toDateInputValue(s.due);
           if (!iso) continue;
-          const bucket = iso <= todayISO ? today : upcoming;
-          bucket.push({ projectId: p.id, milestoneId: m.id, projectTitle: p.title, subtask: s });
+          const entry = { projectId: p.id, milestoneId: m.id, projectTitle: p.title, subtask: s };
+          if (iso < todayISO) overdue.push(entry);
+          else if (iso === todayISO) today.push(entry);
+          else upcoming.push(entry);
         }
       }
     }
-    return { today, upcoming };
+    return { overdue, today, upcoming };
   }, [data.projects, todayISO]);
 
-  const sections: { key: TaskGroup; label: string; list: Task[] }[] = [
-    { key: "today", label: "Today", list: data.todayTasks },
-    { key: "upcoming", label: "Upcoming", list: data.upcoming },
-    { key: "someday", label: "Someday", list: data.someday },
+  // Derive display buckets from due dates rather than storage buckets
+  const { overdueList, todayList, upcomingList } = useMemo(() => {
+    const overdue: Task[] = [];
+    const today: Task[] = [];
+    const upcoming: Task[] = [];
+    for (const t of [...data.todayTasks, ...data.upcoming]) {
+      const iso = toDateInputValue(t.due);
+      if (iso && iso < todayISO) {
+        overdue.push(t);
+      } else if (iso && iso === todayISO) {
+        today.push(t);
+      } else if (iso && iso > todayISO) {
+        upcoming.push(t);
+      } else {
+        // Unparseable/relative date — fall back to original storage bucket
+        (todayTaskIds.has(t.id) ? today : upcoming).push(t);
+      }
+    }
+    return { overdueList: overdue, todayList: today, upcomingList: upcoming };
+  }, [data.todayTasks, data.upcoming, todayISO, todayTaskIds]);
+
+  type DisplaySection = { key: string; label: string; list: Task[]; pSubs: typeof projectSubtasks.today };
+  const sections: DisplaySection[] = [
+    { key: "overdue", label: "Overdue", list: overdueList, pSubs: projectSubtasks.overdue },
+    { key: "today", label: "Today", list: todayList, pSubs: projectSubtasks.today },
+    { key: "upcoming", label: "Upcoming", list: upcomingList, pSubs: projectSubtasks.upcoming },
+    { key: "someday", label: "Someday", list: data.someday, pSubs: [] },
   ];
 
   return (
@@ -174,9 +203,8 @@ export function Tasks() {
         ))}
       </div>
 
-      {sections.map(({ key, label, list }) => {
+      {sections.map(({ key, label, list, pSubs }) => {
         const visible = list.filter(matches);
-        const pSubs = key === "today" ? projectSubtasks.today : key === "upcoming" ? projectSubtasks.upcoming : [];
         const totalOpen = visible.filter((t) => !t.done).length + pSubs.length;
         return (
           <div key={key} style={{ marginBottom: 22 }}>
