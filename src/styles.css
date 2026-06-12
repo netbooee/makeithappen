@@ -4,6 +4,7 @@
   --bg: #FAFAFB;
   --surface: #FFFFFF;
   --surface-2: #F6F7F9;
+  --surface-3: #EEF0F3;
   --border: #E7E9ED;
   --border-strong: #D6D9DF;
   --ink: #1A1D23;
@@ -57,6 +58,7 @@ body.dark {
   --bg: #0F1117;
   --surface: #1A1D23;
   --surface-2: #21252D;
+  --surface-3: #262B36;
   --border: #2C3140;
   --border-strong: #3A4055;
   --ink: #F0F2F5;

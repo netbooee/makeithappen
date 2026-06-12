@@ -422,6 +422,7 @@ function MilestoneCard({
       <div
         style={{
           padding: "13px 16px", display: "flex", alignItems: "center", gap: 10,
+          background: "var(--surface-3)",
           borderBottom: shown ? "1px solid var(--border)" : "1px solid transparent",
           transition: "border-color .18s",
         }}
