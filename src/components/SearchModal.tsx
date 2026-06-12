@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Flame, FolderKanban, ListTodo, Users } from "lucide-react";
+import { Flame, FolderKanban, ListTodo, Users, type LucideIcon } from "lucide-react";
 import { useStore } from "../store/store";
 
 type ResultType = "project" | "task" | "contact" | "habit";
@@ -13,7 +13,7 @@ interface SearchResult {
   path: string;
 }
 
-const TYPE_ICON: Record<ResultType, React.FC<{ size?: number }>> = {
+const TYPE_ICON: Record<ResultType, LucideIcon> = {
   project: FolderKanban,
   task: ListTodo,
   contact: Users,
