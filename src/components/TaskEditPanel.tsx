@@ -117,6 +117,18 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="field-label">Notes</label>
+            <textarea
+              className="input"
+              rows={3}
+              placeholder="Add notes…"
+              value={task.notes ?? ""}
+              onChange={(e) => set({ notes: e.target.value || undefined })}
+              style={{ resize: "vertical", lineHeight: 1.55 }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">Status</label>
             <div className="segmented" style={{ display: "flex" }}>
               {(["normal", "delegated", "waiting"] as const).map((f) => (

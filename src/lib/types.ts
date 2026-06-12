@@ -79,6 +79,7 @@ export interface Project {
   onBudget?: boolean;
   risk?: "green" | "amber" | "red";
   riskNote?: string;
+  heroImage?: string;
   members?: ProjectMember[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
@@ -99,6 +100,7 @@ export interface Task {
   milestoneId?: string;
   due?: string;
   reminder?: string;
+  notes?: string;
 }
 
 export type TaskGroup = "today" | "upcoming" | "someday";

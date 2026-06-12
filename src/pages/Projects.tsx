@@ -33,6 +33,15 @@ function ProjectModal({
   const [due, setDue] = useState(initial.due && initial.due !== "No date" ? initial.due : "");
   const [status, setStatus] = useState<Status>(initial.status ?? "active");
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
+  const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
+
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setHeroImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const submit = () => {
     if (!title.trim()) return;
@@ -43,6 +52,7 @@ function ProjectModal({
       status,
       owner: owner.trim() || all.user.initials,
       active: status === "active",
+      heroImage: heroImage || undefined,
     });
     close();
   };
@@ -90,6 +100,25 @@ function ProjectModal({
                 {s === "hold" ? "On Hold" : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
+          </div>
+        </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Cover image</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {heroImage && (
+              <img src={heroImage} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+            )}
+            <label style={{ cursor: "pointer" }}>
+              <span className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", pointerEvents: "none" }}>
+                {heroImage ? "Replace image" : "Upload image"}
+              </span>
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageFile} />
+            </label>
+            {heroImage && (
+              <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", color: "var(--ink-4)" }} onClick={() => setHeroImage("")}>
+                Remove
+              </button>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -141,26 +170,35 @@ export function ProjectList() {
               key={p.id}
               className="card card-pad"
               onClick={() => navigate(`/projects/${p.id}`)}
-              style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s" }}
+              style={{ textAlign: "left", display: "flex", flexDirection: "row", gap: 14, cursor: "pointer", transition: "border-color .14s, box-shadow .14s", alignItems: "stretch" }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", flex: 1 }}>{p.title}</div>
-                <StatusChip status={p.status} />
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 38 }}>{p.desc}</div>
-              <Bar value={p.progress} />
-              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <CheckCircle2 size={13} /> {done}/{total} subtasks
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <Calendar size={13} /> {p.due}
-                </span>
-                <span style={{ marginLeft: "auto" }}>
-                  <Avatar who={p.owner} size={22} />
-                </span>
+              {p.heroImage && (
+                <img
+                  src={p.heroImage}
+                  alt=""
+                  style={{ width: 72, height: 72, borderRadius: 7, objectFit: "cover", flexShrink: 0, alignSelf: "center" }}
+                />
+              )}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", flex: 1 }}>{p.title}</div>
+                  <StatusChip status={p.status} />
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 38 }}>{p.desc}</div>
+                <Bar value={p.progress} />
+                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <CheckCircle2 size={13} /> {done}/{total} subtasks
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <Calendar size={13} /> {p.due}
+                  </span>
+                  <span style={{ marginLeft: "auto" }}>
+                    <Avatar who={p.owner} size={22} />
+                  </span>
+                </div>
               </div>
             </button>
           );
@@ -309,6 +347,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
           {s.t}
         </button>
         <StateTag task={s} />
+        {s.due && <DueChip due={s.due} />}
         <Avatar who={s.who} size={20} color="var(--ink-3)" />
         <button
           className="icon-btn"
@@ -466,9 +505,17 @@ function MilestoneCard({
       </div>
       {shown && (
         <div style={{ padding: "6px 10px 8px" }}>
-          {m.subtasks.map((s) => (
-            <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
-          ))}
+          {[...m.subtasks]
+            .sort((a, b) => {
+              if (a.done !== b.done) return a.done ? 1 : -1;
+              if (!a.due && !b.due) return 0;
+              if (!a.due) return 1;
+              if (!b.due) return -1;
+              return new Date(b.due).getTime() - new Date(a.due).getTime();
+            })
+            .map((s) => (
+              <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
+            ))}
           {linkedTasks.map(({ task: t, list }) => (
             <div key={t.id} className="task-row" style={{ gap: 8 }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
