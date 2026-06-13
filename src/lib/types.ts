@@ -116,6 +116,7 @@ export interface Habit {
   streak: number;
   doneToday: boolean;
   cadence: string;
+  checkins?: string[]; // YYYY-MM-DD dates
 }
 
 export type Relationship = "Colleague" | "Client" | "Vendor" | "Friend" | "Family" | "Other";

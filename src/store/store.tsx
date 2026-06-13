@@ -51,11 +51,25 @@ export interface Store {
   deleteHabit: (id: string) => void;
   addUpdate: (projectId: string, text: string, type?: import("../lib/types").UpdateType) => void;
   toggleHabit: (id: string) => void;
+  toggleCheckin: (id: string, date: string) => void;
   addHabit: (habit: Habit) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   addContact: (contact: Contact) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
+}
+
+function computeStreak(checkins: string[]): number {
+  if (!checkins.length) return 0;
+  const set = new Set(checkins);
+  let streak = 0;
+  const d = new Date();
+  while (true) {
+    const ds = d.toISOString().slice(0, 10);
+    if (set.has(ds)) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return streak;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -288,8 +302,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         mutate((d) => {
           const h = d.habits.find((x) => x.id === id);
           if (!h) return;
-          h.doneToday = !h.doneToday;
-          h.streak += h.doneToday ? 1 : -1;
+          const today = new Date().toISOString().slice(0, 10);
+          if (!h.checkins) h.checkins = [];
+          if (h.checkins.includes(today)) {
+            h.checkins = h.checkins.filter((c) => c !== today);
+          } else {
+            h.checkins.push(today);
+          }
+          h.doneToday = h.checkins.includes(today);
+          h.streak = computeStreak(h.checkins);
+        }),
+
+      toggleCheckin: (id, date) =>
+        mutate((d) => {
+          const h = d.habits.find((x) => x.id === id);
+          if (!h) return;
+          if (!h.checkins) h.checkins = [];
+          if (h.checkins.includes(date)) {
+            h.checkins = h.checkins.filter((c) => c !== date);
+          } else {
+            h.checkins.push(date);
+          }
+          const today = new Date().toISOString().slice(0, 10);
+          h.doneToday = h.checkins.includes(today);
+          h.streak = computeStreak(h.checkins);
         }),
 
       addHabit: (habit) => mutate((d) => d.habits.push(habit)),
