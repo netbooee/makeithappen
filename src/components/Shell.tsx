@@ -4,7 +4,7 @@ import {
   ChevronDown, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
-import { Avatar } from "./ui";
+import { Avatar, toDateInputValue } from "./ui";
 import { TweaksPanel } from "./TweaksPanel";
 import { SearchModal } from "./SearchModal";
 import type { Workspace } from "../lib/types";
@@ -134,7 +134,7 @@ export function Shell() {
                         </span>
                       </div>
                       <div style={{ display: "flex", gap: 2, marginTop: 4 }}>
-                        {p.milestones.map((m) => {
+                        {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
                           const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "#8B5CF6" : "#F59E0B";
                           return <div key={m.id} style={{ height: 4, width: 16, borderRadius: 2, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
                         })}
