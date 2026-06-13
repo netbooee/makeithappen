@@ -22,7 +22,7 @@ export function toDateInputValue(str: string | undefined): string {
 function fromDateInputValue(str: string): string {
   if (!str) return "";
   const [y, mo, d] = str.split("-").map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(y, mo - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function DateInput({
