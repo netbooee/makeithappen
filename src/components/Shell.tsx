@@ -129,7 +129,9 @@ export function Shell() {
                       <div className="proj-nav-title">{p.title}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{p.due}</span>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
+                          {p.start ? `${p.start} → ${p.due}` : p.due}
+                        </span>
                       </div>
                       <div style={{ marginTop: 5, height: 3, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${p.progress * 100}%`, background: dotColor, borderRadius: 99 }} />
