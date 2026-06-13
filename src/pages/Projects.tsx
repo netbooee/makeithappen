@@ -34,12 +34,21 @@ function ProjectModal({
   const [status, setStatus] = useState<Status>(initial.status ?? "active");
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
   const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
+  const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setHeroImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setClientLogo(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -53,6 +62,7 @@ function ProjectModal({
       owner: owner.trim() || all.user.initials,
       active: status === "active",
       heroImage: heroImage || undefined,
+      clientLogo: clientLogo || undefined,
     });
     close();
   };
@@ -100,6 +110,25 @@ function ProjectModal({
                 {s === "hold" ? "On Hold" : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
+          </div>
+        </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Client logo</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {clientLogo && (
+              <img src={clientLogo} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }} />
+            )}
+            <label style={{ cursor: "pointer" }}>
+              <span className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", pointerEvents: "none" }}>
+                {clientLogo ? "Replace logo" : "Upload logo"}
+              </span>
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoFile} />
+            </label>
+            {clientLogo && (
+              <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", color: "var(--ink-4)" }} onClick={() => setClientLogo("")}>
+                Remove
+              </button>
+            )}
           </div>
         </div>
         <div>
@@ -863,6 +892,13 @@ export function ProjectDetail() {
             className="page-title"
             style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
           >
+            {project.clientLogo && (
+              <img
+                src={project.clientLogo}
+                alt=""
+                style={{ width: 36, height: 36, borderRadius: 6, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }}
+              />
+            )}
             {project.title}
             <StatusChip status={project.status} />
             <button

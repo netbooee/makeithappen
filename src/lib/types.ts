@@ -83,6 +83,7 @@ export interface Project {
   risk?: "green" | "amber" | "red";
   riskNote?: string;
   heroImage?: string;
+  clientLogo?: string;
   members?: ProjectMember[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];

@@ -210,6 +210,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 
   <div style="padding:28px 32px 24px;border-bottom:0.5px solid #E7E9ED">
     <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
+      ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
       <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;flex:1;color:#1A1D23">${esc(project.title)}</div>
       ${statusBadge(project.status)}
     </div>
