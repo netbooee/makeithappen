@@ -8,7 +8,7 @@ import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDa
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
-import { exportProjectHtml } from "../lib/exportHtml";
+import { exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
 import type { Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
@@ -939,6 +939,14 @@ export function ProjectDetail() {
               title="Download self-contained HTML report"
             >
               <Download size={12} /> Export HTML
+            </button>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
+              onClick={() => exportProjectPdf(project, data.contacts)}
+              title="Print / save as PDF (landscape)"
+            >
+              <Download size={12} /> Export PDF
             </button>
           </div>
         </div>

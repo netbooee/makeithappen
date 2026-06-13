@@ -288,3 +288,151 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export function exportProjectPdf(project: Project, contacts: Contact[]): void {
+  const totalSubs = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
+  const doneSubs  = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
+  const exportDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const ragLabel = project.risk ? { green: "Green", amber: "Amber", red: "Red" }[project.risk] : "Not set";
+  const timelineVal = project.start && project.due !== "No date"
+    ? `${esc(project.start)} → ${esc(project.due)}`
+    : project.due !== "No date" ? esc(project.due) : "—";
+
+  const sortedMilestones = [...project.milestones].sort((a, b) => {
+    if (a.due === "No date" && b.due === "No date") return 0;
+    if (a.due === "No date") return 1;
+    if (b.due === "No date") return -1;
+    return new Date(a.due).getTime() - new Date(b.due).getTime();
+  });
+
+  const msHtml = sortedMilestones.length === 0
+    ? `<div style="font-size:10px;color:#9CA3AF">No milestones.</div>`
+    : sortedMilestones.map((m) => {
+        const dot = m.status === "complete" ? "#10B981" : m.status === "active" ? "#4F6BED" : m.status === "waiting" ? "#8B5CF6" : "#F59E0B";
+        return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;background:#F9FAFB;border:0.5px solid #F0F1F3;margin-bottom:4px">
+          <div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></div>
+          <div style="font-size:10.5px;font-weight:500;color:#1A1D23;flex:1">${esc(m.title)}</div>
+          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:#9CA3AF">${esc(m.due)}</span>` : ""}
+          ${statusBadge(m.status)}
+        </div>`;
+      }).join("");
+
+  const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
+  const execHtml = execUpdate
+    ? `<div style="padding:9px 11px;background:#F9FAFB;border:0.5px solid #F0F1F3;border-radius:6px">
+        <div style="font-size:10.5px;color:#374151;line-height:1.5">${esc(execUpdate.text)}</div>
+        <div style="font-size:9.5px;color:#9CA3AF;margin-top:5px">${esc(execUpdate.when)}</div>
+       </div>`
+    : `<div style="font-size:10px;color:#9CA3AF;font-style:italic">No executive update yet.</div>`;
+
+  const members = project.members ?? [];
+  const teamHtml = members.length === 0
+    ? `<div style="font-size:10px;color:#9CA3AF">No members added.</div>`
+    : members.map((mem, i) => {
+        const c = contacts.find((x) => x.id === mem.contactId);
+        if (!c) return "";
+        const ini = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+        const [bg, color] = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
+        return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:0.5px solid #F3F4F6">
+          <div style="width:20px;height:20px;border-radius:50%;background:${bg};color:${color};font-size:8px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini}</div>
+          <div style="font-size:10.5px;font-weight:500;color:#374151;flex:1">${esc(c.name)}</div>
+          ${mem.role ? `<div style="font-size:9.5px;color:#9CA3AF">${esc(mem.role)}</div>` : ""}
+        </div>`;
+      }).join("");
+
+  const resources = project.resources ?? [];
+  const resHtml = resources.length === 0 ? "" : resources.map((r) =>
+    `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+      <span style="font-size:10px;color:#9CA3AF">↗</span>
+      <span style="font-size:10.5px;color:#185FA5">${esc(r.label)}</span>
+    </div>`
+  ).join("");
+
+  const budgetVal = project.budget ? esc(project.budget) : "—";
+  const budgetStatus = project.onBudget === true ? `<span style="color:#10B981">On budget</span>` : project.onBudget === false ? `<span style="color:#EF4444">Over budget</span>` : `<span style="color:#9CA3AF">TBD</span>`;
+  const progPct = Math.round((doneSubs / Math.max(totalSubs, 1)) * 100);
+
+  const pdf = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${esc(project.title)} — Project Report</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  @page{size:A4 landscape;margin:11mm 14mm}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:10px;color:#1A1D23;line-height:1.4;background:#fff}
+  .page{display:flex;flex-direction:column;min-height:calc(297mm - 22mm)}
+  .header{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:0.5px solid #E7E9ED}
+  .kpi-strip{display:flex;border-bottom:0.5px solid #E7E9ED;background:#F9FAFB}
+  .kpi{flex:1;padding:7px 12px;border-right:0.5px solid #E7E9ED}
+  .kpi:last-child{border-right:none}
+  .kpi-label{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#9CA3AF;margin-bottom:2px}
+  .kpi-val{font-size:11px;font-weight:500;color:#1A1D23}
+  .body{display:grid;grid-template-columns:55% 45%;flex:1;border-bottom:0.5px solid #E7E9ED}
+  .col{padding:11px 13px}
+  .col-left{border-right:0.5px solid #E7E9ED}
+  .sec{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9CA3AF;margin-bottom:6px;margin-top:12px}
+  .sec:first-child{margin-top:0}
+  .footer{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+  .prog-track{height:4px;background:#E5E7EB;border-radius:99px;overflow:hidden;display:inline-block;width:48px;vertical-align:middle;margin:0 4px}
+  .prog-fill{height:100%;background:#4F6BED;border-radius:99px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:34px;height:34px;border-radius:5px;object-fit:contain;background:#F3F4F6;padding:3px;flex-shrink:0" alt="">` : ""}
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:16px;font-weight:500;color:#1A1D23;letter-spacing:-0.02em">${esc(project.title)}</div>
+        ${statusBadge(project.status)}
+      </div>
+      <div style="font-size:10px;color:#6B7280;margin-top:2px">${esc(project.desc)}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:8.5px;color:#9CA3AF">Exported ${exportDate}</div>
+      <div style="font-size:8.5px;color:#9CA3AF;margin-top:1px">MakeItHappen</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-label">Owner</div><div class="kpi-val">${esc(project.owner)}</div></div>
+    <div class="kpi"><div class="kpi-label">Timeline</div><div class="kpi-val">${timelineVal}</div></div>
+    <div class="kpi">
+      <div class="kpi-label">Progress</div>
+      <div class="kpi-val">${progPct}%<span class="prog-track"><span class="prog-fill" style="width:${progPct}%"></span></span>${doneSubs}/${totalSubs} tasks</div>
+    </div>
+    <div class="kpi"><div class="kpi-label">Budget</div><div class="kpi-val">${budgetVal} &nbsp;${budgetStatus}</div></div>
+    <div class="kpi"><div class="kpi-label">RAG status</div><div class="kpi-val">${ragDot(project.risk)}${ragLabel}</div></div>
+  </div>
+
+  <div class="body">
+    <div class="col col-left">
+      <div class="sec">Milestones</div>
+      ${msHtml}
+      ${project.riskNote ? `<div class="sec">Risk note</div><div style="font-size:10.5px;color:#374151;line-height:1.5;padding:7px 10px;background:#FEF3F2;border-radius:5px;border:0.5px solid #FEE2E2">${esc(project.riskNote)}</div>` : ""}
+    </div>
+    <div class="col">
+      <div class="sec">Executive update</div>
+      ${execHtml}
+      ${members.length > 0 ? `<div class="sec">Team</div><div>${teamHtml}</div>` : ""}
+      ${resources.length > 0 ? `<div class="sec">Resources</div>${resHtml}` : ""}
+    </div>
+  </div>
+
+  <div class="footer">
+    <div style="font-size:8.5px;color:#9CA3AF">${esc(project.title)} · ${exportDate}</div>
+    <div style="font-size:8.5px;font-weight:600;color:#D1D5DB;letter-spacing:.03em">Confidential</div>
+  </div>
+
+</div>
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print()},300)});</script>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) { alert("Allow pop-ups to export PDF."); return; }
+  win.document.write(pdf);
+  win.document.close();
+}
