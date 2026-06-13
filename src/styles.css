@@ -68,6 +68,16 @@ body.dark {
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.2);
   --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
   --shadow-lg: 0 4px 16px rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.4);
+  --work-soft: rgba(79,107,237,0.18);
+  --work-ink: #818CF8;
+  --personal-soft: rgba(245,158,11,0.15);
+  --personal-ink: #FCD34D;
+  --next-soft: rgba(16,185,129,0.15);
+  --next-ink: #34D399;
+  --delegate-soft: rgba(124,92,252,0.15);
+  --delegate-ink: #A78BFA;
+  --wait-soft: rgba(100,116,139,0.15);
+  --wait-ink: #94A3B8;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -171,7 +181,7 @@ a { color: inherit; text-decoration: none; }
   padding: 0 40px; height: 56px;
   display: flex; align-items: center; gap: 16px;
 }
-.ws-switch { display: inline-flex; background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); border-radius: 9px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.ws-switch { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; gap: 2px; flex-shrink: 0; }
 .ws-opt {
   display: flex; align-items: center; gap: 7px; padding: 5px 13px; border-radius: 6px;
   font-size: 13px; font-weight: 550; color: var(--ink-3); transition: all .18s;
