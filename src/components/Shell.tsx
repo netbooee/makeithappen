@@ -133,7 +133,13 @@ export function Shell() {
                           {p.start ? `${p.start} → ${p.due}` : p.due}
                         </span>
                       </div>
-                      <div style={{ marginTop: 5, height: 3, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden" }}>
+                      <div style={{ display: "flex", gap: 2, marginTop: 4 }}>
+                        {p.milestones.map((m) => {
+                          const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "#8B5CF6" : "#F59E0B";
+                          return <div key={m.id} style={{ height: 4, width: 16, borderRadius: 2, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
+                        })}
+                      </div>
+                      <div style={{ marginTop: 4, height: 3, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${p.progress * 100}%`, background: dotColor, borderRadius: 99 }} />
                       </div>
                       <div style={{ fontSize: 10.5, color: "var(--ink-4)", textAlign: "right", marginTop: 2 }}>{Math.round(p.progress * 100)}%</div>
