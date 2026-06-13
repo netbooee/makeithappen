@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
+  ChevronDown, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar } from "./ui";
@@ -29,6 +29,7 @@ export function Shell() {
   const section = location.pathname.split("/")[1] || "projects";
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [projsOpen, setProjsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,22 +83,66 @@ export function Shell() {
           <div className="brand-name">Make<b style={{ color: "var(--accent)" }}>It</b>Happen</div>
         </div>
 
-        <div className="nav-group">
-          {NAV.map((n) => (
-            <button
-              key={n.id}
-              className={"nav-item" + (section === n.id ? " active" : "")}
-              onClick={() => navigate(n.path)}
-            >
-              <n.icon />
-              {n.label}
-              {n.id === "tasks" && openTasks > 0 && <span className="badge">{openTasks}</span>}
-              {n.id === "contacts" && followUps > 0 && <span className="badge">{followUps}</span>}
-            </button>
-          ))}
-        </div>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className="nav-group">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                className={"nav-item" + (section === n.id ? " active" : "")}
+                onClick={() => navigate(n.path)}
+              >
+                <n.icon />
+                {n.label}
+                {n.id === "tasks" && openTasks > 0 && <span className="badge">{openTasks}</span>}
+                {n.id === "contacts" && followUps > 0 && <span className="badge">{followUps}</span>}
+              </button>
+            ))}
+          </div>
 
-        <div className="next-widget">
+          {/* Collapsible project list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <button
+              className="nav-item"
+              style={{ justifyContent: "space-between" }}
+              onClick={() => setProjsOpen((v) => !v)}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <FolderKanban size={18} />
+                Projects
+              </span>
+              <ChevronDown size={13} style={{ transition: "transform 0.18s", transform: projsOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)" }} />
+            </button>
+            {projsOpen && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "2px 4px 4px" }}>
+                {data.projects.map((p) => {
+                  const dotColor =
+                    p.status === "complete" ? "var(--next)"
+                    : p.status === "active" ? "var(--accent)"
+                    : p.status === "hold" ? "#F59E0B"
+                    : "var(--ink-4)";
+                  return (
+                    <button
+                      key={p.id}
+                      className={"proj-nav-card" + (location.pathname === `/projects/${p.id}` ? " active" : "")}
+                      onClick={() => navigate(`/projects/${p.id}`)}
+                    >
+                      <div className="proj-nav-title">{p.title}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{p.due}</span>
+                      </div>
+                      <div style={{ marginTop: 5, height: 3, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${p.progress * 100}%`, background: dotColor, borderRadius: 99 }} />
+                      </div>
+                      <div style={{ fontSize: 10.5, color: "var(--ink-4)", textAlign: "right", marginTop: 2 }}>{Math.round(p.progress * 100)}%</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="next-widget">
           <div className="next-widget-head"><Flag /> Next Actions</div>
           {data.nextActions
             .filter((na) => !na.project || data.projects.some((p) => p.title === na.project))
@@ -113,7 +158,8 @@ export function Shell() {
                 </span>
               </button>
             ))}
-        </div>
+          </div>
+        </div>{/* end scrollable wrapper */}
 
         <div className="sidebar-foot">
           <Avatar who={all.user.initials} color="var(--ink)" size={30} />
