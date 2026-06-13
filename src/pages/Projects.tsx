@@ -173,10 +173,21 @@ function ProjectModal({
 /* ================= Project list ================= */
 
 export function ProjectList() {
-  const { data, addProject } = useStore();
+  const { data, addProject, all } = useStore();
   const navigate = useNavigate();
   const projects = data.projects;
   const [adding, setAdding] = useState(false);
+
+  const resolveOwner = (owner: string) => {
+    if (owner.includes(" ")) return owner;
+    if (all.user.initials === owner) return all.user.name;
+    const contacts = [...all.work.contacts, ...all.personal.contacts];
+    const match = contacts.find((c) => {
+      const ci = c.name.split(" ").map((w) => w[0].toUpperCase()).join("");
+      return ci === owner.toUpperCase();
+    });
+    return match?.name ?? owner;
+  };
 
   return (
     <div className="page fade">
@@ -224,8 +235,8 @@ export function ProjectList() {
                   <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <Calendar size={13} /> {p.due}
                   </span>
-                  <span style={{ marginLeft: "auto" }}>
-                    <Avatar who={p.owner} size={22} />
+                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+                    <UserRound size={13} /> {resolveOwner(p.owner)}
                   </span>
                 </div>
               </div>
