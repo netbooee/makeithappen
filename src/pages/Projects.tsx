@@ -4,7 +4,7 @@ import {
   Calendar, Check, CheckCircle2, ChevronRight, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
-import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker } from "../components/ui";
+import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
@@ -910,10 +910,12 @@ export function ProjectDetail() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[...project.milestones]
               .sort((a, b) => {
-                if (a.due === "No date" && b.due === "No date") return 0;
-                if (a.due === "No date") return 1;
-                if (b.due === "No date") return -1;
-                return new Date(a.due).getTime() - new Date(b.due).getTime();
+                const da = toDateInputValue(a.due);
+                const db = toDateInputValue(b.due);
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+                return da.localeCompare(db);
               })
               .map((m) => (
               <MilestoneCard
