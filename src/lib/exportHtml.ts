@@ -223,7 +223,12 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr 2fr 1fr;border-bottom:0.5px solid #E7E9ED">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr;border-bottom:0.5px solid #E7E9ED">
+    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">RAG status</div>
+      <div style="font-size:15px;font-weight:500;color:#1A1D23">${ragDot(project.risk)}${ragLabel}</div>
+      ${project.riskNote ? `<div style="font-size:11.5px;color:#8A909B;margin-top:2px">${esc(project.riskNote)}</div>` : ""}
+    </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Timeline</div>
       <div style="font-size:15px;font-weight:500;color:#1A1D23">${timelineVal}</div>
@@ -236,14 +241,9 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         ? `<div style="font-size:11.5px;color:${project.onBudget === true ? "#10B981" : project.onBudget === false ? "#EF4444" : "#9CA3AF"};margin-top:2px">${project.onBudget === true ? "✓ On budget" : project.onBudget === false ? "⚠ Over budget" : "TBD"}</div>`
         : `<div style="font-size:11.5px;color:#B4BAC4;margin-top:2px">Not set</div>`}
     </div>
-    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+    <div style="padding:16px 24px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6366F1;margin-bottom:5px">Executive Update</div>
       ${execUpdateHtml}
-    </div>
-    <div style="padding:16px 24px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">RAG status</div>
-      <div style="font-size:15px;font-weight:500;color:#1A1D23">${ragDot(project.risk)}${ragLabel}</div>
-      ${project.riskNote ? `<div style="font-size:11.5px;color:#8A909B;margin-top:2px">${esc(project.riskNote)}</div>` : ""}
     </div>
   </div>
 
