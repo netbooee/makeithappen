@@ -55,6 +55,7 @@ export interface Store {
   addHabit: (habit: Habit) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   addContact: (contact: Contact) => void;
+  addContacts: (contacts: Contact[]) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
 }
@@ -337,6 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
 
       addContact: (contact) => mutate((d) => d.contacts.unshift(contact)),
+      addContacts: (contacts) => mutate((d) => { contacts.forEach((c) => d.contacts.unshift(c)); }),
 
       deleteContact: (id) =>
         mutate((d) => {

@@ -73,7 +73,7 @@ function ImportCard({
 }
 
 export function Assistant() {
-  const { workspace, data, all, addContact } = useStore();
+  const { workspace, data, all, addContacts } = useStore();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -104,23 +104,24 @@ export function Assistant() {
 
   const handleImport = (msgIndex: number, contacts: ImportContact[]) => {
     const today = new Date().toISOString().slice(0, 10);
-    contacts.forEach((c, i) => {
-      const contact: Contact = {
-        id: `c_import_${Date.now()}_${i}`,
-        name: c.name,
-        company: c.company,
-        role: c.role,
-        rel: "Colleague",
-        email: c.email,
-        phone: "",
-        color: CONTACT_COLORS[i % CONTACT_COLORS.length],
-        lastNote: "Imported via AI assistant",
-        lastDate: today,
-        followUp: false,
-        remember: "",
-      };
-      addContact(contact);
-    });
+    const base = Date.now();
+    const newContacts: Contact[] = contacts.map((c, i) => ({
+      id: `c_import_${base}_${i}`,
+      name: c.name,
+      company: c.company,
+      role: c.role,
+      rel: "Colleague",
+      email: c.email,
+      phone: "",
+      color: CONTACT_COLORS[i % CONTACT_COLORS.length],
+      lastNote: "Imported via AI assistant",
+      lastDate: today,
+      followUp: false,
+      remember: "",
+      e6w: false,
+      touchpoints: [],
+    }));
+    addContacts(newContacts);
     setImported((prev) => new Set(prev).add(msgIndex));
   };
 
