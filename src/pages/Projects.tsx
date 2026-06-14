@@ -631,7 +631,34 @@ function KpiSection({ project }: { project: Project }) {
   const latestExec = project.updates.find((u) => u.type === "executive") ?? null;
 
   return (
-    <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "auto 1fr 2fr 1fr", gap: 12, marginBottom: 24 }}>
+    <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr 2fr", gap: 12, marginBottom: 24 }}>
+      {/* Risk */}
+      <div className="card" style={kpiCard}>
+        <div style={kpiLabel}>Risk</div>
+        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+          {(["green", "amber", "red"] as const).map((r) => (
+            <button
+              key={r}
+              title={r.charAt(0).toUpperCase() + r.slice(1)}
+              onClick={() => set({ risk: project.risk === r ? undefined : r })}
+              style={{
+                width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                background: RAG[r],
+                opacity: project.risk && project.risk !== r ? 0.3 : 1,
+                border: project.risk === r ? "2px solid var(--ink)" : "2px solid transparent",
+                transition: "opacity .15s, border .15s",
+              }}
+            />
+          ))}
+        </div>
+        <textarea
+          style={{ ...kpiInput, fontSize: 13, fontWeight: 550, color: riskColor, flex: 1, resize: "none", lineHeight: 1.5, minHeight: 40 }}
+          placeholder="e.g. On track"
+          value={project.riskNote ?? ""}
+          onChange={(e) => set({ riskNote: e.target.value || undefined })}
+        />
+      </div>
+
       {/* Timeline (start → end) */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Timeline</div>
@@ -691,33 +718,6 @@ function KpiSection({ project }: { project: Project }) {
         ) : (
           <div style={{ fontSize: 12.5, color: "var(--ink-4)", fontStyle: "italic" }}>No executive updates yet.</div>
         )}
-      </div>
-
-      {/* Risk */}
-      <div className="card" style={kpiCard}>
-        <div style={kpiLabel}>Risk</div>
-        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-          {(["green", "amber", "red"] as const).map((r) => (
-            <button
-              key={r}
-              title={r.charAt(0).toUpperCase() + r.slice(1)}
-              onClick={() => set({ risk: project.risk === r ? undefined : r })}
-              style={{
-                width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-                background: RAG[r],
-                opacity: project.risk && project.risk !== r ? 0.3 : 1,
-                border: project.risk === r ? "2px solid var(--ink)" : "2px solid transparent",
-                transition: "opacity .15s, border .15s",
-              }}
-            />
-          ))}
-        </div>
-        <textarea
-          style={{ ...kpiInput, fontSize: 13, fontWeight: 550, color: riskColor, flex: 1, resize: "none", lineHeight: 1.5, minHeight: 40 }}
-          placeholder="e.g. On track"
-          value={project.riskNote ?? ""}
-          onChange={(e) => set({ riskNote: e.target.value || undefined })}
-        />
       </div>
     </div>
   );
