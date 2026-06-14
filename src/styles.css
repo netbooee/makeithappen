@@ -467,6 +467,8 @@ textarea.input { resize: vertical; line-height: 1.6; }
   .sidebar-foot .who { display: none; }
   .sidebar-foot .icon-btn { display: none; }
   .project-cols { grid-template-columns: 1fr !important; }
+  .topbanner-inner { padding: 0 20px; }
+  .page { padding: 24px 20px 80px; }
 }
 
 @media (max-width: 767px) {
