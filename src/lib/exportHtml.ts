@@ -4,6 +4,21 @@ function esc(s: string): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function formatBudget(val: string | undefined): string {
+  if (!val) return "—";
+  const clean = val.replace(/[$,\s]/g, "");
+  const kMatch = clean.match(/^([\d.]+)[kK]$/);
+  const mMatch = clean.match(/^([\d.]+)[mM]$/);
+  let n: number;
+  if (kMatch) n = parseFloat(kMatch[1]) * 1000;
+  else if (mMatch) n = parseFloat(mMatch[1]) * 1000000;
+  else n = parseFloat(clean);
+  if (isNaN(n)) return esc(val);
+  if (n >= 1_000_000) return `$${+(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${+(n / 1_000).toFixed(1)}K`;
+  return `$${Math.round(n)}`;
+}
+
 function statusBadge(status: string): string {
   const map: Record<string, [string, string, string]> = {
     active:   ["#E6F1FB", "#185FA5", "Active"],
@@ -236,7 +251,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Budget</div>
-      <div style="font-size:15px;font-weight:500;color:#1A1D23">${project.budget ? esc(project.budget) : "—"}</div>
+      <div style="font-size:15px;font-weight:500;color:#1A1D23">${formatBudget(project.budget)}</div>
       ${project.budget
         ? `<div style="font-size:11.5px;color:${project.onBudget === true ? "#10B981" : project.onBudget === false ? "#EF4444" : "#9CA3AF"};margin-top:2px">${project.onBudget === true ? "✓ On budget" : project.onBudget === false ? "⚠ Over budget" : "TBD"}</div>`
         : `<div style="font-size:11.5px;color:#B4BAC4;margin-top:2px">Not set</div>`}
@@ -348,7 +363,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     </div>`
   ).join("");
 
-  const budgetVal = project.budget ? esc(project.budget) : "—";
+  const budgetVal = formatBudget(project.budget);
   const budgetStatus = project.onBudget === true ? `<span style="color:#10B981">On budget</span>` : project.onBudget === false ? `<span style="color:#EF4444">Over budget</span>` : `<span style="color:#9CA3AF">TBD</span>`;
   const progPct = Math.round((doneSubs / Math.max(totalSubs, 1)) * 100);
 
