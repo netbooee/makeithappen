@@ -294,6 +294,7 @@ body.dark .topbanner { background: var(--surface-2); }
 /* grid helpers */
 .row { display: flex; gap: 16px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (min-width: 1024px) { .grid-2 { grid-template-columns: 1fr 1fr 1fr; } }
 
 /* progress bar */
 .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
