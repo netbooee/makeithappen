@@ -468,6 +468,8 @@ textarea.input { resize: vertical; line-height: 1.6; }
   .sidebar-foot .who { display: none; }
   .sidebar-foot .icon-btn { display: none; }
   .project-cols { grid-template-columns: 1fr !important; }
+  .kpi-grid { gap: 8px !important; }
+  .kpi-grid .card { padding: 8px 10px !important; }
   .topbanner-inner { padding: 0 20px; }
   .page { padding: 24px 20px 80px; }
 }
