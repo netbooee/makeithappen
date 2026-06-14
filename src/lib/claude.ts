@@ -190,9 +190,30 @@ HABITS:
 ${habits}`;
 }
 
+export interface ImportContact { name: string; company: string; email: string; role: string; }
+
+export function parseContactRows(text: string): ImportContact[] | null {
+  const lines = text.trim().split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const contacts: ImportContact[] = [];
+  for (const line of lines) {
+    const parts = line.split(sep).map((p) => p.trim().replace(/^["']|["']$/g, ""));
+    if (parts.length < 3) continue;
+    const [company, name, email, role = ""] = parts;
+    if (!email.includes("@")) continue; // skip header rows or non-email columns
+    if (!name || !company) continue;
+    contacts.push({ company, name, email, role });
+  }
+  return contacts.length > 0 ? contacts : null;
+}
+
 /** Offline assistant: answers the suggested prompts directly from the data snapshot. */
 function localAssistant(question: string, data: WorkspaceData): string {
   const q = question.toLowerCase();
+  if (q.includes("import") && q.includes("contact")) {
+    return "Paste your contact rows directly into this chat — one contact per line with columns: Company, Name, Email, Role (tab or comma separated). I'll detect them and show you an import button.";
+  }
   if (q.includes("next action")) {
     const lines = data.nextActions.map((n) => `• ${n.text}\n   ${n.project || "Standalone"} · ${n.due}`);
     return `Here are your next actions across all projects:\n\n${lines.join("\n")}\n\nThe top one is "${data.nextActions[0].text}" — it's due ${data.nextActions[0].due.toLowerCase()}.`;
@@ -223,6 +244,13 @@ export async function askAssistant(
   data: WorkspaceData,
   user: User,
 ): Promise<string> {
+  // Always handle contact paste locally — no API key needed
+  const contacts = parseContactRows(question);
+  if (contacts) {
+    await new Promise((r) => setTimeout(r, 400));
+    return `<import-contacts>${JSON.stringify(contacts)}</import-contacts>Found ${contacts.length} contact${contacts.length !== 1 ? "s" : ""} — review and import below.`;
+  }
+
   if (!devApiKey && !supabaseConfigured) {
     await new Promise((r) => setTimeout(r, 700));
     return localAssistant(question, data);
