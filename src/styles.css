@@ -455,6 +455,10 @@ textarea.input { resize: vertical; line-height: 1.6; }
 .bottom-nav { display: none; }
 .mobile-top { display: none; }
 
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root { --sidebar-w: 200px; }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   :root { --sidebar-w: 64px; }
   .sidebar { overflow: hidden; }
