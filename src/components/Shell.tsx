@@ -90,9 +90,10 @@ export function Shell() {
                 key={n.id}
                 className={"nav-item" + (section === n.id ? " active" : "")}
                 onClick={() => navigate(n.path)}
+                title={n.label}
               >
                 <n.icon />
-                {n.label}
+                <span className="nav-label">{n.label}</span>
                 {n.id === "tasks" && openTasks > 0 && <span className="badge">{openTasks}</span>}
                 {n.id === "contacts" && followUps > 0 && <span className="badge">{followUps}</span>}
               </button>
@@ -100,7 +101,7 @@ export function Shell() {
           </div>
 
           {/* Collapsible project list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div className="proj-nav-toggle" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <button
               className="nav-item"
               style={{ justifyContent: "space-between" }}

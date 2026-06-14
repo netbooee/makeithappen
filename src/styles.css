@@ -454,6 +454,21 @@ textarea.input { resize: vertical; line-height: 1.6; }
 .bottom-nav { display: none; }
 .mobile-top { display: none; }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --sidebar-w: 64px; }
+  .sidebar { overflow: hidden; }
+  .brand-name { display: none; }
+  .nav-label { display: none; }
+  .badge { display: none; }
+  .nav-item { justify-content: center; padding: 9px 0; }
+  .proj-nav-toggle { display: none !important; }
+  .next-widget { display: none; }
+  .sidebar-foot { justify-content: center; gap: 0; flex-wrap: wrap; }
+  .sidebar-foot .who { display: none; }
+  .sidebar-foot .icon-btn { display: none; }
+  .project-cols { grid-template-columns: 1fr !important; }
+}
+
 @media (max-width: 767px) {
   .sidebar { display: none; }
   .topbanner { display: none; }
