@@ -565,12 +565,16 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
 // ── Agenda HTML export ───────────────────────────────────────────────────────
 
 export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[]): void {
-  const dateStr = agenda.date || new Date().toISOString().slice(0, 10);
+  // Dates are stored in display format ("Jun 20, 2026") by DateInput — normalize to ISO first
+  const dateIso = toDateInputValue(agenda.date) || new Date().toISOString().slice(0, 10);
 
   const fmtDate = (iso: string) => {
     if (!iso) return "";
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const normalized = toDateInputValue(iso) || iso;
+    const [y, m, d] = normalized.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (isNaN(dt.getTime())) return iso;
+    return dt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   };
 
   const resolvedAttendees = agenda.attendees.flatMap((att, i) => {
@@ -599,7 +603,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
         </div>`).join("");
 
   const mailSubject = encodeURIComponent(`Additional Topic – ${agenda.title}`);
-  const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateStr)}\nProject: ${project.title}\n\nProposed topic:\n`);
+  const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateIso)}\nProject: ${project.title}\n\nProposed topic:\n`);
   const mailto = `mailto:tmartinez@lowenstein.com?subject=${mailSubject}&body=${mailBody}`;
 
   const html = `<!DOCTYPE html>
@@ -622,7 +626,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#B4BAC4;margin-bottom:12px">${esc(project.title)}</div>
     <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
     <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
-      ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#9CA3AF;margin-left:10px">${fmtDate(dateStr)}</span>` : ""}
+      ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#9CA3AF;margin-left:10px">${fmtDate(dateIso)}</span>` : ""}
     </div>
     ${attendeesHtml}
   </div>
@@ -646,7 +650,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 </html>`;
 
   const sanitize = (s: string) => s.replace(/[/\\:*?"<>|]/g, "").trim();
-  const filename = `${dateStr}_${sanitize(project.title)}_${sanitize(agenda.title)}.html`;
+  const filename = `${dateIso}_${sanitize(project.title)}_${sanitize(agenda.title)}.html`;
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
