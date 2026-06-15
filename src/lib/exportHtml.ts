@@ -597,8 +597,9 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 
   const itemsHtml = agenda.items.length === 0
     ? `<p style="color:#9CA3AF;font-style:italic;padding:24px 0">No agenda items added.</p>`
-    : agenda.items.map((item) => `
-        <div style="padding:22px 0;border-bottom:0.5px solid #E7E9ED">
+    : agenda.items.map((item, idx) => `
+        <div style="display:flex;align-items:baseline;gap:16px;padding:22px 0;border-bottom:0.5px solid #E7E9ED">
+          <span style="font-size:18px;font-weight:400;color:#D1D5DB;min-width:28px;text-align:right;flex-shrink:0">${idx + 1}.</span>
           <h2 style="font-size:20px;font-weight:500;color:#1A1D23;letter-spacing:-0.01em;line-height:1.3">${esc(item.text)}</h2>
         </div>`).join("");
 
@@ -622,8 +623,10 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 <div class="doc" style="background:#fff;max-width:760px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
 
   <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
-    ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:36px;height:36px;border-radius:6px;object-fit:contain;background:#F3F4F6;padding:3px;margin-bottom:14px;display:block" alt="">` : ""}
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#B4BAC4;margin-bottom:12px">${esc(project.title)}</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
+      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${esc(project.title)}</div>
+    </div>
     <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
     <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
       ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#9CA3AF;margin-left:10px">${fmtDate(dateIso)}</span>` : ""}

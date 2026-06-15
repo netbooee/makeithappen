@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDateInputValue } from "../components/ui";
@@ -1336,6 +1336,19 @@ function MeetingAgendasSection({ project }: { project: Project }) {
       ),
     });
 
+  const moveItem = (agendaId: string, itemId: string, dir: -1 | 1) =>
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) => {
+        if (a.id !== agendaId) return a;
+        const items = [...a.items];
+        const idx = items.findIndex((i) => i.id === itemId);
+        const next = idx + dir;
+        if (idx === -1 || next < 0 || next >= items.length) return a;
+        [items[idx], items[next]] = [items[next], items[idx]];
+        return { ...a, items };
+      }),
+    });
+
   const startEdit = (a: MeetingAgenda) => {
     setEditingId(a.id); setETitle(a.title); setEDate(a.date); setEAttendees([...a.attendees]);
   };
@@ -1464,10 +1477,11 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                 <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => deleteMeeting(agenda.id)}><Trash2 size={12} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {agenda.items.map((item) => {
+                {agenda.items.map((item, idx) => {
                   const isChecked = checked.has(`${agenda.id}:${item.id}`);
                   return (
                     <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-4)", minWidth: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}.</span>
                       <button
                         onClick={() => toggleCheck(agenda.id, item.id)}
                         style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
@@ -1475,6 +1489,10 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                         {isChecked && <Check size={9} style={{ color: "white" }} />}
                       </button>
                       <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s" }}>{item.text}</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                        <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
+                        <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
+                      </div>
                       <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
                     </div>
                   );
