@@ -1,4 +1,5 @@
 import type { Contact, Project } from "./types";
+import { toDateInputValue } from "../components/ui";
 
 function esc(s: string): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -80,10 +81,12 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 
   // ── Milestones ─────────────────────────────────────────────────────────────
   const sortedMilestones = [...project.milestones].sort((a, b) => {
-    if (a.due === "No date" && b.due === "No date") return 0;
-    if (a.due === "No date") return 1;
-    if (b.due === "No date") return -1;
-    return new Date(a.due).getTime() - new Date(b.due).getTime();
+    const da = toDateInputValue(a.due);
+    const db = toDateInputValue(b.due);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.localeCompare(db);
   });
 
   const milestonesHtml = sortedMilestones.length === 0
@@ -314,10 +317,12 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     : project.due !== "No date" ? esc(project.due) : "—";
 
   const sortedMilestones = [...project.milestones].sort((a, b) => {
-    if (a.due === "No date" && b.due === "No date") return 0;
-    if (a.due === "No date") return 1;
-    if (b.due === "No date") return -1;
-    return new Date(a.due).getTime() - new Date(b.due).getTime();
+    const da = toDateInputValue(a.due);
+    const db = toDateInputValue(b.due);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.localeCompare(db);
   });
 
   const msHtml = sortedMilestones.length === 0
