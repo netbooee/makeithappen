@@ -316,6 +316,8 @@ body.dark .topbanner { background: var(--surface-2); }
 .data-table td { padding: 9px 12px; color: var(--ink-2); vertical-align: middle; }
 .data-table td.td-primary { color: var(--ink); font-weight: 550; }
 .data-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; background: var(--surface); }
+.data-table thead tr.filter-row td { padding: 4px 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.table-filter { font-size: 11px; padding: 2px 5px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-3); width: 100%; cursor: pointer; min-width: 0; }
 .view-toggle { display: flex; gap: 2px; background: var(--surface-2); border-radius: 7px; padding: 2px; }
 .view-toggle button { display: flex; align-items: center; justify-content: center; width: 30px; height: 28px; border-radius: 5px; color: var(--ink-4); transition: background 0.12s, color 0.12s; }
 .view-toggle button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }

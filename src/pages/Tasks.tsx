@@ -7,9 +7,9 @@ import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
 
-type TaskSortCol = "text" | "group" | "project" | "due" | "done";
+type TaskSortCol = "text" | "group" | "project" | "milestone" | "due" | "done";
 type SortDir = "asc" | "desc";
-const GROUP_ORDER: Record<string, number> = { overdue: 0, today: 1, upcoming: 2, someday: 3 };
+const GROUP_ORDER: Record<string, number> = { overdue: 0, today: 1, upcoming: 2, someday: 3, done: 4 };
 
 export function Tasks() {
   const { data, workspace, toggleTask, toggleSubtask, addTask } = useStore();
@@ -29,6 +29,11 @@ export function Tasks() {
   );
   const [sortCol, setSortCol] = useState<TaskSortCol>("group");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const [tFilterDone, setTFilterDone] = useState<"all" | "open" | "done">("all");
+  const [tFilterGroup, setTFilterGroup] = useState("all");
+  const [tFilterProject, setTFilterProject] = useState("all");
+  const [tFilterMilestone, setTFilterMilestone] = useState("all");
 
   const changeView = (v: "list" | "table") => { setView(v); localStorage.setItem("mih_tasks_view", v); };
   const toggleSort = (col: TaskSortCol) => {
@@ -91,6 +96,14 @@ export function Tasks() {
 
   const todayTaskIds = useMemo(() => new Set(data.todayTasks.map((t) => t.id)), [data.todayTasks]);
 
+  const milestoneMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of data.projects) for (const ms of p.milestones) m.set(ms.id, ms.title);
+    return m;
+  }, [data.projects]);
+
+  const allMilestoneNames = useMemo(() => Array.from(new Set(data.projects.flatMap((p) => p.milestones.map((m) => m.title)))).sort(), [data.projects]);
+
   // Subtasks from projects bucketed into overdue / today / upcoming (undone only)
   const projectSubtasks = useMemo(() => {
     type PSub = { projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask };
@@ -143,39 +156,70 @@ export function Tasks() {
   ];
 
   type FlatRow =
-    | { kind: "task"; task: Task; group: string }
-    | { kind: "subtask"; projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask; group: string };
+    | { kind: "task"; task: Task; group: string; milestoneName: string | null }
+    | { kind: "subtask"; projectId: string; milestoneId: string; milestoneTitle: string; projectTitle: string; subtask: Subtask; group: string };
 
   const flatRows = useMemo<FlatRow[]>(() => {
     const rows: FlatRow[] = [];
-    const addTasks = (list: Task[], grp: string) => {
-      list.filter(matches).forEach((t) => rows.push({ kind: "task", task: t, group: grp }));
-    };
+
+    // Regular tasks (all, including done)
+    const addTasks = (list: Task[], grp: string) =>
+      list.forEach((t) => rows.push({ kind: "task", task: t, group: grp, milestoneName: t.milestoneId ? (milestoneMap.get(t.milestoneId) ?? null) : null }));
     addTasks(overdueList, "overdue");
     addTasks(todayList, "today");
     addTasks(upcomingList, "upcoming");
     addTasks(data.someday, "someday");
-    projectSubtasks.overdue.forEach((s) => rows.push({ kind: "subtask", ...s, group: "overdue" }));
-    projectSubtasks.today.forEach((s) => rows.push({ kind: "subtask", ...s, group: "today" }));
-    projectSubtasks.upcoming.forEach((s) => rows.push({ kind: "subtask", ...s, group: "upcoming" }));
-    return [...rows].sort((a, b) => {
+
+    // All project subtasks including done
+    for (const p of data.projects) {
+      for (const m of p.milestones) {
+        for (const s of m.subtasks) {
+          const iso = s.due ? toDateInputValue(s.due) : "";
+          let grp = "someday";
+          if (s.done) grp = "done";
+          else if (iso) {
+            if (iso < todayISO) grp = "overdue";
+            else if (iso === todayISO) grp = "today";
+            else grp = "upcoming";
+          }
+          rows.push({ kind: "subtask", projectId: p.id, milestoneId: m.id, milestoneTitle: m.title, projectTitle: p.title, subtask: s, group: grp });
+        }
+      }
+    }
+
+    const filtered = rows.filter((r) => {
+      const isDone = r.kind === "task" ? r.task.done : r.subtask.done;
+      const proj = r.kind === "task" ? (r.task.project ?? "") : r.projectTitle;
+      const mile = r.kind === "task" ? (r.milestoneName ?? "") : r.milestoneTitle;
+      if (tFilterDone !== "all" && (tFilterDone === "done") !== isDone) return false;
+      if (tFilterGroup !== "all" && r.group !== tFilterGroup) return false;
+      if (tFilterProject !== "all" && proj !== tFilterProject) return false;
+      if (tFilterMilestone !== "all" && mile !== tFilterMilestone) return false;
+      if (nextOnly && r.kind === "task" && (!r.task.next || r.task.done)) return false;
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
       const aText = a.kind === "task" ? a.task.text : a.subtask.t;
       const bText = b.kind === "task" ? b.task.text : b.subtask.t;
       const aDue = a.kind === "task" ? (a.task.due ?? "") : (a.subtask.due ?? "");
       const bDue = b.kind === "task" ? (b.task.due ?? "") : (b.subtask.due ?? "");
       const aProj = a.kind === "task" ? (a.task.project ?? "") : a.projectTitle;
       const bProj = b.kind === "task" ? (b.task.project ?? "") : b.projectTitle;
-      const aDone = a.kind === "task" ? (a.task.done ? 1 : 0) : 0;
-      const bDone = b.kind === "task" ? (b.task.done ? 1 : 0) : 0;
+      const aMile = a.kind === "task" ? (a.milestoneName ?? "") : a.milestoneTitle;
+      const bMile = b.kind === "task" ? (b.milestoneName ?? "") : b.milestoneTitle;
+      const aDone = a.kind === "task" ? (a.task.done ? 1 : 0) : (a.subtask.done ? 1 : 0);
+      const bDone = b.kind === "task" ? (b.task.done ? 1 : 0) : (b.subtask.done ? 1 : 0);
       let cmp = 0;
       if (sortCol === "text") cmp = aText.localeCompare(bText);
       else if (sortCol === "group") cmp = (GROUP_ORDER[a.group] ?? 9) - (GROUP_ORDER[b.group] ?? 9);
       else if (sortCol === "project") cmp = aProj.localeCompare(bProj);
+      else if (sortCol === "milestone") cmp = aMile.localeCompare(bMile);
       else if (sortCol === "due") cmp = (toDateInputValue(aDue) ?? "").localeCompare(toDateInputValue(bDue) ?? "");
       else if (sortCol === "done") cmp = aDone - bDone;
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [overdueList, todayList, upcomingList, data.someday, projectSubtasks, matches, sortCol, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [overdueList, todayList, upcomingList, data.someday, data.projects, milestoneMap, todayISO, tFilterDone, tFilterGroup, tFilterProject, tFilterMilestone, nextOnly, sortCol, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { moveTask } = useStore();
 
@@ -193,8 +237,8 @@ export function Tasks() {
     </th>
   );
 
-  const GROUP_LABELS: Record<string, string> = { overdue: "Overdue", today: "Today", upcoming: "Upcoming", someday: "Someday" };
-  const GROUP_COLORS: Record<string, string> = { overdue: "#DC2626", today: "var(--accent)", upcoming: "var(--ink-3)", someday: "var(--ink-4)" };
+  const GROUP_LABELS: Record<string, string> = { overdue: "Overdue", today: "Today", upcoming: "Upcoming", someday: "Someday", done: "Done" };
+  const GROUP_COLORS: Record<string, string> = { overdue: "#DC2626", today: "var(--accent)", upcoming: "var(--ink-3)", someday: "var(--ink-4)", done: "var(--next)" };
 
   return (
     <div className="page fade">
@@ -269,7 +313,41 @@ export function Tasks() {
                 <SortTh col="text">Task</SortTh>
                 <SortTh col="group">Group</SortTh>
                 <SortTh col="project">Project</SortTh>
+                <SortTh col="milestone">Milestone</SortTh>
                 <SortTh col="due">Due</SortTh>
+              </tr>
+              <tr className="filter-row">
+                <td>
+                  <select className="table-filter" value={tFilterDone} onChange={(e) => setTFilterDone(e.target.value as "all" | "open" | "done")}>
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="done">Done</option>
+                  </select>
+                </td>
+                <td />
+                <td>
+                  <select className="table-filter" value={tFilterGroup} onChange={(e) => setTFilterGroup(e.target.value)}>
+                    <option value="all">All groups</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="today">Today</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="someday">Someday</option>
+                    <option value="done">Done</option>
+                  </select>
+                </td>
+                <td>
+                  <select className="table-filter" value={tFilterProject} onChange={(e) => setTFilterProject(e.target.value)}>
+                    <option value="all">All projects</option>
+                    {data.projects.map((p) => <option key={p.id} value={p.title}>{p.title}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select className="table-filter" value={tFilterMilestone} onChange={(e) => setTFilterMilestone(e.target.value)}>
+                    <option value="all">All milestones</option>
+                    {allMilestoneNames.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </td>
+                <td />
               </tr>
             </thead>
             <tbody>
@@ -316,11 +394,12 @@ export function Tasks() {
                           </button>
                         ) : "—"}
                       </td>
+                      <td style={{ fontSize: 11, color: "var(--ink-3)" }}>{row.milestoneName ?? "—"}</td>
                       <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{t.due || "—"}</td>
                     </tr>
                   );
                 } else {
-                  const { projectId, milestoneId, projectTitle, subtask, group } = row;
+                  const { projectId, milestoneId, milestoneTitle, projectTitle, subtask, group } = row;
                   return (
                     <tr key={`${subtask.id}-${i}`} style={{ opacity: subtask.done ? 0.5 : 1 }}>
                       <td style={{ width: 36, textAlign: "center" }}>
@@ -348,13 +427,14 @@ export function Tasks() {
                           {projectTitle}
                         </button>
                       </td>
+                      <td style={{ fontSize: 11, color: "var(--ink-3)" }}>{milestoneTitle}</td>
                       <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{subtask.due || "—"}</td>
                     </tr>
                   );
                 }
               })}
               {flatRows.length === 0 && (
-                <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--ink-4)" }}>No tasks match the current filters.</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--ink-4)" }}>No tasks match the current filters.</td></tr>
               )}
             </tbody>
           </table>
