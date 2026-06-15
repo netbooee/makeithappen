@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
+  ChevronDown, FileText, Flag, Flame, FolderKanban, ListTodo, Menu, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, toDateInputValue } from "./ui";
@@ -13,13 +13,14 @@ const NAV = [
   { id: "projects", label: "Projects", icon: FolderKanban, path: "/projects" },
   { id: "tasks", label: "Tasks", icon: ListTodo, path: "/tasks" },
   { id: "contacts", label: "E6W", icon: Users, path: "/contacts" },
+  { id: "updates", label: "Updates", icon: FileText, path: "/updates" },
   { id: "habits", label: "Habits", icon: Flame, path: "/habits" },
   { id: "assistant", label: "AI Assistant", icon: Sparkles, path: "/assistant" },
 ];
 
 const CRUMB: Record<string, string> = {
   projects: "Projects", tasks: "Tasks", contacts: "E6W Networking",
-  habits: "Habits", assistant: "AI Assistant",
+  updates: "Status Updates", habits: "Habits", assistant: "AI Assistant",
 };
 
 export function Shell() {
