@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Plus } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, LayoutList, Plus, Table2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput, StateTag, TaskMarker, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
+
+type TaskSortCol = "text" | "group" | "project" | "due" | "done";
+type SortDir = "asc" | "desc";
+const GROUP_ORDER: Record<string, number> = { overdue: 0, today: 1, upcoming: 2, someday: 3 };
 
 export function Tasks() {
   const { data, workspace, toggleTask, toggleSubtask, addTask } = useStore();
@@ -20,6 +24,17 @@ export function Tasks() {
   const [nextOnly, setNextOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtask: Subtask } | null>(null);
+  const [view, setView] = useState<"list" | "table">(() =>
+    (localStorage.getItem("mih_tasks_view") as "list" | "table") ?? "list"
+  );
+  const [sortCol, setSortCol] = useState<TaskSortCol>("group");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const changeView = (v: "list" | "table") => { setView(v); localStorage.setItem("mih_tasks_view", v); };
+  const toggleSort = (col: TaskSortCol) => {
+    if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir("asc"); }
+  };
 
   useEffect(() => { setProject(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -127,12 +142,72 @@ export function Tasks() {
     { key: "someday", label: "Someday", list: data.someday, pSubs: [] },
   ];
 
+  type FlatRow =
+    | { kind: "task"; task: Task; group: string }
+    | { kind: "subtask"; projectId: string; milestoneId: string; projectTitle: string; subtask: Subtask; group: string };
+
+  const flatRows = useMemo<FlatRow[]>(() => {
+    const rows: FlatRow[] = [];
+    const addTasks = (list: Task[], grp: string) => {
+      list.filter(matches).forEach((t) => rows.push({ kind: "task", task: t, group: grp }));
+    };
+    addTasks(overdueList, "overdue");
+    addTasks(todayList, "today");
+    addTasks(upcomingList, "upcoming");
+    addTasks(data.someday, "someday");
+    projectSubtasks.overdue.forEach((s) => rows.push({ kind: "subtask", ...s, group: "overdue" }));
+    projectSubtasks.today.forEach((s) => rows.push({ kind: "subtask", ...s, group: "today" }));
+    projectSubtasks.upcoming.forEach((s) => rows.push({ kind: "subtask", ...s, group: "upcoming" }));
+    return [...rows].sort((a, b) => {
+      const aText = a.kind === "task" ? a.task.text : a.subtask.t;
+      const bText = b.kind === "task" ? b.task.text : b.subtask.t;
+      const aDue = a.kind === "task" ? (a.task.due ?? "") : (a.subtask.due ?? "");
+      const bDue = b.kind === "task" ? (b.task.due ?? "") : (b.subtask.due ?? "");
+      const aProj = a.kind === "task" ? (a.task.project ?? "") : a.projectTitle;
+      const bProj = b.kind === "task" ? (b.task.project ?? "") : b.projectTitle;
+      const aDone = a.kind === "task" ? (a.task.done ? 1 : 0) : 0;
+      const bDone = b.kind === "task" ? (b.task.done ? 1 : 0) : 0;
+      let cmp = 0;
+      if (sortCol === "text") cmp = aText.localeCompare(bText);
+      else if (sortCol === "group") cmp = (GROUP_ORDER[a.group] ?? 9) - (GROUP_ORDER[b.group] ?? 9);
+      else if (sortCol === "project") cmp = aProj.localeCompare(bProj);
+      else if (sortCol === "due") cmp = (toDateInputValue(aDue) ?? "").localeCompare(toDateInputValue(bDue) ?? "");
+      else if (sortCol === "done") cmp = aDone - bDone;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [overdueList, todayList, upcomingList, data.someday, projectSubtasks, matches, sortCol, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { moveTask } = useStore();
+
+  const SortTh = ({ col, children }: { col: TaskSortCol; children: React.ReactNode }) => (
+    <th
+      className={`sortable${sortCol === col ? ` sort-${sortDir}` : ""}`}
+      onClick={() => toggleSort(col)}
+    >
+      {children}
+      <span className="sort-icon">
+        {sortCol === col
+          ? sortDir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />
+          : <ChevronDown size={11} />}
+      </span>
+    </th>
+  );
+
+  const GROUP_LABELS: Record<string, string> = { overdue: "Overdue", today: "Today", upcoming: "Upcoming", someday: "Someday" };
+  const GROUP_COLORS: Record<string, string> = { overdue: "#DC2626", today: "var(--accent)", upcoming: "var(--ink-3)", someday: "var(--ink-4)" };
+
   return (
     <div className="page fade">
-      <div className="page-head">
-        <div className="page-title">Tasks</div>
-        <div className="page-sub">
-          {[...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length} open · press <kbd className="mono" style={{ fontSize: 12, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 4, padding: "0 5px" }}>T</kbd> to capture
+      <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
+        <div style={{ flex: 1 }}>
+          <div className="page-title">Tasks</div>
+          <div className="page-sub">
+            {[...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length} open · press <kbd className="mono" style={{ fontSize: 12, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 4, padding: "0 5px" }}>T</kbd> to capture
+          </div>
+        </div>
+        <div className="view-toggle">
+          <button className={view === "list" ? "active" : ""} title="List view" onClick={() => changeView("list")}><LayoutList size={15} /></button>
+          <button className={view === "table" ? "active" : ""} title="Table view" onClick={() => changeView("table")}><Table2 size={15} /></button>
         </div>
       </div>
 
@@ -185,6 +260,107 @@ export function Tasks() {
         ))}
       </div>
 
+      {view === "table" ? (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <SortTh col="done">Done</SortTh>
+                <SortTh col="text">Task</SortTh>
+                <SortTh col="group">Group</SortTh>
+                <SortTh col="project">Project</SortTh>
+                <SortTh col="due">Due</SortTh>
+              </tr>
+            </thead>
+            <tbody>
+              {flatRows.map((row, i) => {
+                if (row.kind === "task") {
+                  const t = row.task;
+                  return (
+                    <tr key={t.id}>
+                      <td style={{ width: 36, textAlign: "center" }}>
+                        <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
+                      </td>
+                      <td className="td-primary">
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button
+                            style={{ textAlign: "left", cursor: "pointer", fontSize: 13, color: "var(--ink)" }}
+                            className={t.done ? "strike" : ""}
+                            onClick={() => setEditingId(t.id)}
+                          >
+                            {t.text}
+                          </button>
+                          <StateTag task={t} />
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          className="input"
+                          style={{ fontSize: 11.5, padding: "3px 7px", width: "auto", color: GROUP_COLORS[row.group] }}
+                          value={row.group === "overdue" ? "today" : row.group}
+                          onChange={(e) => moveTask(t.id, e.target.value as TaskGroup)}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value="today">Today</option>
+                          <option value="upcoming">Upcoming</option>
+                          <option value="someday">Someday</option>
+                        </select>
+                        {row.group === "overdue" && (
+                          <span style={{ fontSize: 10.5, color: "#DC2626", fontWeight: 600, marginLeft: 5 }}>Overdue</span>
+                        )}
+                      </td>
+                      <td>
+                        {t.project ? (
+                          <button className="chip" style={{ cursor: "pointer", fontSize: 11 }} onClick={() => goToProject(t.project)}>
+                            {t.project}
+                          </button>
+                        ) : "—"}
+                      </td>
+                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{t.due || "—"}</td>
+                    </tr>
+                  );
+                } else {
+                  const { projectId, milestoneId, projectTitle, subtask, group } = row;
+                  return (
+                    <tr key={`${subtask.id}-${i}`} style={{ opacity: subtask.done ? 0.5 : 1 }}>
+                      <td style={{ width: 36, textAlign: "center" }}>
+                        <TaskMarker task={subtask} onClick={() => toggleSubtask(projectId, milestoneId, subtask.id)} />
+                      </td>
+                      <td className="td-primary">
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button
+                            style={{ textAlign: "left", cursor: "pointer", fontSize: 13, color: "var(--ink)" }}
+                            className={subtask.done ? "strike" : ""}
+                            onClick={() => setEditingSubtask({ projectId, milestoneId, subtask })}
+                          >
+                            {subtask.t}
+                          </button>
+                          <StateTag task={subtask} />
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 11.5, color: GROUP_COLORS[group], fontWeight: 600 }}>
+                          {GROUP_LABELS[group]}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="chip" style={{ cursor: "pointer", fontSize: 11 }} onClick={() => goToProject(projectTitle)}>
+                          {projectTitle}
+                        </button>
+                      </td>
+                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{subtask.due || "—"}</td>
+                    </tr>
+                  );
+                }
+              })}
+              {flatRows.length === 0 && (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--ink-4)" }}>No tasks match the current filters.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+      <>
       {sections.map(({ key, label, list, pSubs }) => {
         const visible = list.filter(matches);
         const totalOpen = visible.filter((t) => !t.done).length + pSubs.length;
@@ -247,6 +423,8 @@ export function Tasks() {
           </div>
         );
       })}
+      </>
+      )}
 
       {editingId && <TaskEditPanel taskId={editingId} close={() => setEditingId(null)} />}
       {editingSubtask && (
