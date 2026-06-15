@@ -997,7 +997,7 @@ export function ProjectDetail() {
           {/* Team */}
           <div style={{ marginBottom: 20 }}>
             <div className="section-h" style={{ cursor: "pointer", userSelect: "none" }} onClick={() => setTeamOpen((v) => !v)}>
-              Team
+              Internal Project Team
               <ChevronRight size={13} style={{ marginLeft: "auto", color: "var(--ink-4)", transition: "transform .18s", transform: teamOpen ? "rotate(90deg)" : "none" }} />
             </div>
             {teamOpen && <div className="card" style={{ padding: "6px 10px 8px" }}>
@@ -1085,7 +1085,9 @@ export function ProjectDetail() {
             </div>}
           </div>
 
-          <div className="section-h">
+          <ExternalTeamSection project={project} />
+
+          <div className="section-h" style={{ marginTop: 20 }}>
             Status Updates
             <button
               onClick={() => setAdding((v) => !v)}
@@ -1179,9 +1181,6 @@ export function ProjectDetail() {
               </button>
             )}
           </div>
-
-          {/* External Team */}
-          <ExternalTeamSection project={project} />
 
           {/* Resources */}
           <ResourcesSection project={project} />
