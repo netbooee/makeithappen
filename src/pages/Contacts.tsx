@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Mail, Pencil, Phone, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronUp, ChevronDown, LayoutGrid, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput } from "../components/ui";
 import type { Contact, ContactTouch, Relationship } from "../lib/types";
@@ -66,6 +66,9 @@ function getE6WBadge(contact: Contact): E6WBadge | null {
 
 /* ====================== ContactList ====================== */
 
+type SortCol = "name" | "company" | "role" | "rel" | "lastDate" | "e6w";
+type SortDir = "asc" | "desc";
+
 export function ContactList() {
   const { data, addContact } = useStore();
   const navigate = useNavigate();
@@ -76,17 +79,45 @@ export function ContactList() {
   const [newName, setNewName] = useState("");
   const [newCompany, setNewCompany] = useState("");
   const [newRel, setNewRel] = useState<Relationship>("Colleague");
-
-  const visible = useMemo(
-    () =>
-      data.contacts.filter(
-        (c) =>
-          (!filterRel || c.rel === filterRel) &&
-          (!filterE6W || c.e6w) &&
-          (!query || `${c.name} ${c.company} ${c.role}`.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [data.contacts, filterRel, filterE6W, query],
+  const [view, setView] = useState<"cards" | "table">(() =>
+    (localStorage.getItem("mih_contacts_view") as "cards" | "table") ?? "cards"
   );
+  const [sortCol, setSortCol] = useState<SortCol>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const changeView = (v: "cards" | "table") => {
+    setView(v);
+    localStorage.setItem("mih_contacts_view", v);
+  };
+
+  const toggleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir("asc"); }
+  };
+
+  const visible = useMemo(() => {
+    const filtered = data.contacts.filter(
+      (c) =>
+        (!filterRel || c.rel === filterRel) &&
+        (!filterE6W || c.e6w) &&
+        (!query || `${c.name} ${c.company} ${c.role} ${c.email}`.toLowerCase().includes(query.toLowerCase())),
+    );
+    return [...filtered].sort((a, b) => {
+      let av = "", bv = "";
+      if (sortCol === "name") { av = a.name; bv = b.name; }
+      else if (sortCol === "company") { av = a.company; bv = b.company; }
+      else if (sortCol === "role") { av = a.role; bv = b.role; }
+      else if (sortCol === "rel") { av = a.rel; bv = b.rel; }
+      else if (sortCol === "lastDate") { av = latestTouchDate(a); bv = latestTouchDate(b); }
+      else if (sortCol === "e6w") {
+        const an = nextE6WDate(a)?.getTime() ?? Infinity;
+        const bn = nextE6WDate(b)?.getTime() ?? Infinity;
+        return sortDir === "asc" ? an - bn : bn - an;
+      }
+      const cmp = av.localeCompare(bv);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [data.contacts, filterRel, filterE6W, query, sortCol, sortDir]);
 
   const e6wCount = data.contacts.filter((c) => c.e6w).length;
   const overdueCount = data.contacts.filter((c) => getE6WBadge(c)?.overdue).length;
@@ -114,6 +145,17 @@ export function ContactList() {
     setNewCompany("");
   };
 
+  const SortIcon = ({ col }: { col: SortCol }) => (
+    <span className="sort-icon">
+      {sortCol === col
+        ? sortDir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />
+        : <ChevronDown size={11} />}
+    </span>
+  );
+
+  const thClass = (col: SortCol) =>
+    `sortable${sortCol === col ? ` sort-${sortDir}` : ""}`;
+
   return (
     <div className="page fade">
       <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
@@ -126,7 +168,13 @@ export function ContactList() {
             )}
           </div>
         </div>
-        <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus /> New contact</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="view-toggle">
+            <button className={view === "cards" ? "active" : ""} title="Card view" onClick={() => changeView("cards")}><LayoutGrid size={15} /></button>
+            <button className={view === "table" ? "active" : ""} title="Table view" onClick={() => changeView("table")}><Table2 size={15} /></button>
+          </div>
+          <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus /> New contact</button>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
@@ -158,6 +206,58 @@ export function ContactList() {
         ))}
       </div>
 
+      {view === "table" ? (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th className={thClass("name")} onClick={() => toggleSort("name")}>Name <SortIcon col="name" /></th>
+                <th className={thClass("company")} onClick={() => toggleSort("company")}>Company <SortIcon col="company" /></th>
+                <th className={thClass("role")} onClick={() => toggleSort("role")}>Role <SortIcon col="role" /></th>
+                <th>Email</th>
+                <th className={thClass("rel")} onClick={() => toggleSort("rel")}>Relationship <SortIcon col="rel" /></th>
+                <th className={thClass("lastDate")} onClick={() => toggleSort("lastDate")}>Last Contact <SortIcon col="lastDate" /></th>
+                <th className={thClass("e6w")} onClick={() => toggleSort("e6w")}>E6W <SortIcon col="e6w" /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((c) => {
+                const badge = getE6WBadge(c);
+                const touches = (c.touchpoints ?? []).sort((a, b) => b.date.localeCompare(a.date));
+                const latest = touches[0];
+                const displayDate = latest
+                  ? (() => { const d = parseLocalDate(latest.date); return d ? formatShort(d) : latest.date; })()
+                  : c.lastDate;
+                return (
+                  <tr key={c.id} className="clickable" onClick={() => navigate(`/contacts/${c.id}`)}>
+                    <td className="td-primary">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Avatar who={initials(c.name)} size={26} color={c.color} />
+                        {c.name}
+                        {c.followUp && <span className="chip next" style={{ fontSize: 10, padding: "1px 6px" }}>Follow up</span>}
+                      </div>
+                    </td>
+                    <td>{c.company || "—"}</td>
+                    <td>{c.role || "—"}</td>
+                    <td style={{ color: "var(--ink-3)", fontSize: 12 }}>{c.email || "—"}</td>
+                    <td><span className="chip" style={{ fontSize: 11 }}>{c.rel}</span></td>
+                    <td style={{ whiteSpace: "nowrap" }}>{displayDate || "—"}</td>
+                    <td>
+                      {badge ? (
+                        <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 99, background: badge.bg, color: badge.color, fontWeight: 600, whiteSpace: "nowrap" }}>
+                          {badge.label}
+                        </span>
+                      ) : c.e6w ? (
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>In rotation</span>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="grid-2">
         {visible.map((c) => {
           const badge = getE6WBadge(c);
@@ -197,6 +297,7 @@ export function ContactList() {
           );
         })}
       </div>
+      )}
 
       {adding && (
         <div className="modal-center">
