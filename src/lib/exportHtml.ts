@@ -300,10 +300,10 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
     </div>
     <div style="padding:24px 24px">
-      <details open style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+      <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
         <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
           <span class="ms-chev">▶</span>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Internal Project Team</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Internal Team</span>
         </summary>
         <div style="padding:4px 12px 4px">${teamHtml}</div>
       </details>
@@ -486,7 +486,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     <div class="col">
       <div class="sec">Executive update</div>
       ${execHtml}
-      ${members.length > 0 ? `<div class="sec">Internal Project Team</div><div>${teamHtml}</div>` : ""}
+      ${members.length > 0 ? `<div class="sec">Internal Team</div><div>${teamHtml}</div>` : ""}
       ${externalTeam.length > 0 ? `<div class="sec">External Team</div>${extTeamPdf}` : ""}
       ${resources.length > 0 ? `<div class="sec">Resources</div>${resHtml}` : ""}
     </div>

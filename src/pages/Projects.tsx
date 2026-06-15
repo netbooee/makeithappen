@@ -819,7 +819,7 @@ export function ProjectDetail() {
   const [updateType, setUpdateType] = useState<UpdateType>("update");
   const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [teamOpen, setTeamOpen] = useState(true);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
@@ -997,7 +997,7 @@ export function ProjectDetail() {
           {/* Team */}
           <div style={{ marginBottom: 20 }}>
             <div className="section-h" style={{ cursor: "pointer", userSelect: "none" }} onClick={() => setTeamOpen((v) => !v)}>
-              Internal Project Team
+              Internal Team
               <ChevronRight size={13} style={{ marginLeft: "auto", color: "var(--ink-4)", transition: "transform .18s", transform: teamOpen ? "rotate(90deg)" : "none" }} />
             </div>
             {teamOpen && <div className="card" style={{ padding: "6px 10px 8px" }}>
