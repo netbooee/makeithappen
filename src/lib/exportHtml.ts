@@ -1,4 +1,4 @@
-import type { Contact, Project } from "./types";
+import type { Contact, MeetingAgenda, Project } from "./types";
 import { toDateInputValue } from "../components/ui";
 
 function esc(s: string): string {
@@ -560,4 +560,101 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
   if (!win) { alert("Allow pop-ups to export PDF."); return; }
   win.document.write(pdf);
   win.document.close();
+}
+
+// ── Agenda HTML export ───────────────────────────────────────────────────────
+
+export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[]): void {
+  const dateStr = agenda.date || new Date().toISOString().slice(0, 10);
+
+  const fmtDate = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  };
+
+  const resolvedAttendees = agenda.attendees.flatMap((att, i) => {
+    const name = att.kind === "internal"
+      ? (contacts.find((c) => c.id === att.id)?.name ?? "")
+      : ((project.externalTeam ?? []).find((e) => e.id === att.id)?.name ?? "");
+    if (!name) return [];
+    const ini = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+    return [{ name, ini, i }];
+  });
+
+  const attendeesHtml = resolvedAttendees.length === 0 ? "" : `
+    <div style="display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap">
+      ${resolvedAttendees.map((a) => `
+        <div style="display:flex;align-items:center;gap:6px">
+          ${avatar(a.ini, a.i)}
+          <span style="font-size:13px;color:#4B5563">${esc(a.name)}</span>
+        </div>`).join(`<span style="color:#D1D5DB;font-size:12px">·</span>`)}
+    </div>`;
+
+  const itemsHtml = agenda.items.length === 0
+    ? `<p style="color:#9CA3AF;font-style:italic;padding:24px 0">No agenda items added.</p>`
+    : agenda.items.map((item) => `
+        <div style="padding:22px 0;border-bottom:0.5px solid #E7E9ED">
+          <h2 style="font-size:20px;font-weight:500;color:#1A1D23;letter-spacing:-0.01em;line-height:1.3">${esc(item.text)}</h2>
+        </div>`).join("");
+
+  const mailSubject = encodeURIComponent(`Additional Topic – ${agenda.title}`);
+  const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateStr)}\nProject: ${project.title}\n\nProposed topic:\n`);
+  const mailto = `mailto:tmartinez@lowenstein.com?subject=${mailSubject}&body=${mailBody}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${esc(agenda.title)} — Agenda</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#F8F9FB;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;color:#1A1D23;line-height:1.6;padding:32px 20px}
+    @media print{body{background:#fff;padding:0}.doc{border:none;border-radius:0}.cta{display:none}}
+  </style>
+</head>
+<body>
+<div class="doc" style="background:#fff;max-width:760px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
+
+  <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
+    ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:36px;height:36px;border-radius:6px;object-fit:contain;background:#F3F4F6;padding:3px;margin-bottom:14px;display:block" alt="">` : ""}
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#B4BAC4;margin-bottom:12px">${esc(project.title)}</div>
+    <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
+    <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
+      ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#9CA3AF;margin-left:10px">${fmtDate(dateStr)}</span>` : ""}
+    </div>
+    ${attendeesHtml}
+  </div>
+
+  <div style="padding:0 44px">
+    ${itemsHtml}
+  </div>
+
+  <div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
+    <div style="font-size:14px;color:#6B7280;margin-bottom:16px">Have a topic you'd like to add to this agenda?</div>
+    <a href="${mailto}" style="display:inline-block;padding:11px 28px;background:#4F6BED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.01em">Suggest a Topic →</a>
+  </div>
+
+  <div style="border-top:0.5px solid #E7E9ED;padding:10px 44px;display:flex;align-items:center;justify-content:space-between;background:#FAFBFC">
+    <div style="font-size:11px;color:#B4BAC4">${esc(project.title)} · ${esc(agenda.title)}</div>
+    <div style="font-size:11px;font-weight:600;color:#D1D5DB;letter-spacing:.02em">MakeItHappen</div>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+  const sanitize = (s: string) => s.replace(/[/\\:*?"<>|]/g, "").trim();
+  const filename = `${dateStr}_${sanitize(project.title)}_${sanitize(agenda.title)}.html`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

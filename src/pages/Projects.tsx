@@ -8,7 +8,7 @@ import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDa
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
-import { exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
+import { exportAgendaHtml, exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
 import type { AgendaAttendee, AgendaItem, ExternalTeamMember, MeetingAgenda, Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
@@ -1459,6 +1459,7 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                     })}
                   </div>
                 )}
+                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={() => exportAgendaHtml(project, agenda, data.contacts)}><Download size={12} /></button>
                 <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(agenda)}><Pencil size={12} /></button>
                 <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => deleteMeeting(agenda.id)}><Trash2 size={12} /></button>
               </div>
