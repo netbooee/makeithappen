@@ -10,7 +10,7 @@ import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
-import type { ExternalTeamMember, Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
+import type { AgendaAttendee, AgendaItem, ExternalTeamMember, MeetingAgenda, Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -1224,6 +1224,8 @@ export function ProjectDetail() {
         </div>
       </div>
 
+      <MeetingAgendasSection project={project} />
+
       {draftFor && <DraftEmailPanel project={project} update={draftFor} close={() => setDraftFor(null)} />}
       {editingTaskId && <TaskEditPanel taskId={editingTaskId} close={() => setEditingTaskId(null)} />}
 
@@ -1236,6 +1238,262 @@ export function ProjectDetail() {
           close={() => setEditingProject(false)}
         />
       )}
+    </div>
+  );
+}
+
+/* ================= Meeting Agendas section ================= */
+
+function fmtAgendaDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function MeetingAgendasSection({ project }: { project: Project }) {
+  const { data, updateProject } = useStore();
+
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const [nTitle, setNTitle] = useState("");
+  const [nDate, setNDate] = useState("");
+  const [nAttendees, setNAttendees] = useState<AgendaAttendee[]>([]);
+  const [nItems, setNItems] = useState<AgendaItem[]>([]);
+  const [nItemText, setNItemText] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [eTitle, setETitle] = useState("");
+  const [eDate, setEDate] = useState("");
+  const [eAttendees, setEAttendees] = useState<AgendaAttendee[]>([]);
+  const [itemInputs, setItemInputs] = useState<Record<string, string>>({});
+
+  const agendas = useMemo(
+    () => [...(project.agendas ?? [])].sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    }),
+    [project.agendas],
+  );
+
+  type AttInfo = { att: AgendaAttendee; name: string; ini: string; color?: string };
+  const pool = useMemo<AttInfo[]>(() => {
+    const out: AttInfo[] = [];
+    for (const mem of project.members ?? []) {
+      const c = data.contacts.find((x) => x.id === mem.contactId);
+      if (!c) continue;
+      const ini = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+      out.push({ att: { kind: "internal", id: mem.contactId }, name: c.name, ini, color: c.color });
+    }
+    for (const ext of project.externalTeam ?? []) {
+      const ini = ext.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+      out.push({ att: { kind: "external", id: ext.id }, name: ext.name, ini });
+    }
+    return out;
+  }, [project.members, project.externalTeam, data.contacts]);
+
+  const resolve = (att: AgendaAttendee) =>
+    pool.find((p) => p.att.kind === att.kind && p.att.id === att.id);
+
+  const toggleCheck = (aId: string, iId: string) => {
+    const key = `${aId}:${iId}`;
+    setChecked((prev) => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; });
+  };
+
+  const addNItem = () => {
+    if (!nItemText.trim()) return;
+    setNItems((p) => [...p, { id: "i" + Date.now(), text: nItemText.trim() }]);
+    setNItemText("");
+  };
+
+  const createMeeting = () => {
+    if (!nTitle.trim()) return;
+    updateProject(project.id, {
+      agendas: [...(project.agendas ?? []), { id: "ag" + Date.now(), title: nTitle.trim(), date: nDate, attendees: nAttendees, items: nItems }],
+    });
+    setAdding(false);
+    setNTitle(""); setNDate(""); setNAttendees([]); setNItems([]); setNItemText("");
+  };
+
+  const deleteMeeting = (id: string) =>
+    updateProject(project.id, { agendas: (project.agendas ?? []).filter((a) => a.id !== id) });
+
+  const addItem = (agendaId: string) => {
+    const text = (itemInputs[agendaId] ?? "").trim();
+    if (!text) return;
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === agendaId ? { ...a, items: [...a.items, { id: "i" + Date.now(), text }] } : a
+      ),
+    });
+    setItemInputs((p) => ({ ...p, [agendaId]: "" }));
+  };
+
+  const removeItem = (agendaId: string, itemId: string) =>
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === agendaId ? { ...a, items: a.items.filter((i) => i.id !== itemId) } : a
+      ),
+    });
+
+  const startEdit = (a: MeetingAgenda) => {
+    setEditingId(a.id); setETitle(a.title); setEDate(a.date); setEAttendees([...a.attendees]);
+  };
+
+  const saveEdit = () => {
+    if (!eTitle.trim() || !editingId) return;
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === editingId ? { ...a, title: eTitle.trim(), date: eDate, attendees: eAttendees } : a
+      ),
+    });
+    setEditingId(null);
+  };
+
+  const attendeeRow = (attendees: AgendaAttendee[], setAtts: (v: AgendaAttendee[]) => void) => {
+    const available = pool.filter((p) => !attendees.some((a) => a.kind === p.att.kind && a.id === p.att.id));
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
+        {attendees.map((att) => {
+          const info = resolve(att);
+          if (!info) return null;
+          return (
+            <div key={`${att.kind}:${att.id}`} style={{ display: "flex", alignItems: "center", gap: 3, background: "var(--surface-2)", borderRadius: 99, padding: "2px 6px 2px 3px" }}>
+              <Avatar who={info.ini} size={16} color={info.color ?? "var(--ink-3)"} />
+              <span style={{ fontSize: 11, color: "var(--ink-2)" }}>{info.name}</span>
+              <button onClick={() => setAtts(attendees.filter((a) => !(a.kind === att.kind && a.id === att.id)))} style={{ color: "var(--ink-4)", display: "flex", alignItems: "center" }}><X size={10} /></button>
+            </div>
+          );
+        })}
+        {available.length > 0 && (
+          <select
+            className="input"
+            style={{ fontSize: 11.5, padding: "2px 6px", width: "auto" }}
+            value=""
+            onChange={(e) => {
+              const [kind, id] = e.target.value.split(":");
+              if (kind && id) setAtts([...attendees, { kind: kind as "internal" | "external", id }]);
+            }}
+          >
+            <option value="">+ Add attendee</option>
+            {available.map((p) => (
+              <option key={`${p.att.kind}:${p.att.id}`} value={`${p.att.kind}:${p.att.id}`}>
+                {p.name}{p.att.kind === "external" ? " (ext)" : ""}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <div className="section-h">
+        Meeting Agendas
+        <button
+          onClick={() => setAdding(true)}
+          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+        >
+          <Plus size={12} /> New meeting
+        </button>
+      </div>
+
+      {adding && (
+        <div className="card card-pad" style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input className="input" autoFocus placeholder="Meeting title" value={nTitle} onChange={(e) => setNTitle(e.target.value)} style={{ flex: 1, minWidth: 180, fontSize: 13 }} />
+            <DateInput value={nDate} onChange={setNDate} style={{ width: 140, fontSize: 12.5 }} />
+          </div>
+          {pool.length > 0 && attendeeRow(nAttendees, setNAttendees)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {nItems.map((item) => (
+              <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "var(--ink-4)", width: 16, textAlign: "center" }}>☐</span>
+                <span style={{ flex: 1, fontSize: 13, color: "var(--ink-2)" }}>{item.text}</span>
+                <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => setNItems((p) => p.filter((i) => i.id !== item.id))}><X size={11} /></button>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 7 }}>
+              <input className="input" placeholder="Add agenda item…" value={nItemText} onChange={(e) => setNItemText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNItem()} style={{ flex: 1, fontSize: 12.5 }} />
+              <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={addNItem}>Add</button>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={createMeeting}>Save meeting</button>
+            <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setNTitle(""); setNDate(""); setNAttendees([]); setNItems([]); setNItemText(""); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {agendas.length === 0 && !adding && (
+          <div className="card" style={{ padding: "14px 16px", fontSize: 13, color: "var(--ink-4)" }}>No meeting agendas yet.</div>
+        )}
+        {agendas.map((agenda) =>
+          editingId === agenda.id ? (
+            <div key={agenda.id} className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input className="input" autoFocus placeholder="Meeting title" value={eTitle} onChange={(e) => setETitle(e.target.value)} style={{ flex: 1, minWidth: 180, fontSize: 13 }} />
+                <DateInput value={eDate} onChange={setEDate} style={{ width: 140, fontSize: 12.5 }} />
+              </div>
+              {pool.length > 0 && attendeeRow(eAttendees, setEAttendees)}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEdit}>Save</button>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div key={agenda.id} className="card" style={{ padding: "10px 14px 12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)" }}>{agenda.title}</span>
+                  {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)", marginLeft: 10 }}>{fmtAgendaDate(agenda.date)}</span>}
+                </div>
+                {agenda.attendees.length > 0 && (
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {agenda.attendees.map((att) => {
+                      const info = resolve(att);
+                      if (!info) return null;
+                      return <Avatar key={`${att.kind}:${att.id}`} who={info.ini} size={22} color={info.color ?? "var(--ink-3)"} />;
+                    })}
+                  </div>
+                )}
+                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(agenda)}><Pencil size={12} /></button>
+                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => deleteMeeting(agenda.id)}><Trash2 size={12} /></button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {agenda.items.map((item) => {
+                  const isChecked = checked.has(`${agenda.id}:${item.id}`);
+                  return (
+                    <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        onClick={() => toggleCheck(agenda.id, item.id)}
+                        style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
+                      >
+                        {isChecked && <Check size={9} style={{ color: "white" }} />}
+                      </button>
+                      <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s" }}>{item.text}</span>
+                      <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
+                    </div>
+                  );
+                })}
+                <div style={{ display: "flex", gap: 7, marginTop: 4 }}>
+                  <input
+                    className="input"
+                    placeholder="Add agenda item…"
+                    value={itemInputs[agenda.id] ?? ""}
+                    onChange={(e) => setItemInputs((p) => ({ ...p, [agenda.id]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter") addItem(agenda.id); }}
+                    style={{ flex: 1, fontSize: 12.5 }}
+                  />
+                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => addItem(agenda.id)}>Add</button>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

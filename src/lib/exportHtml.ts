@@ -227,6 +227,57 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
           </div>`).join("")}
       </div>`;
 
+  // ── Meeting Agendas ─────────────────────────────────────────────────────────
+  const sortedAgendas = [...(project.agendas ?? [])].sort((a, b) => {
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
+  const fmtADate = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+  const agendasHtml = sortedAgendas.length === 0 ? "" : `
+    <details style="border-top:0.5px solid #E7E9ED">
+      <summary style="display:flex;align-items:center;gap:8px;padding:14px 32px;cursor:pointer;list-style:none;user-select:none;background:#FAFBFC">
+        <span class="ag-chev" style="display:inline-block;font-size:9px;color:#B4BAC4">▶</span>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">Meeting Agendas</span>
+        <span style="font-size:11px;color:#9CA3AF;margin-left:2px">(${sortedAgendas.length})</span>
+      </summary>
+      <div style="padding:16px 32px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+        ${sortedAgendas.map((ag) => {
+          const attsHtml = ag.attendees.map((att, idx) => {
+            const name = att.kind === "internal"
+              ? (contacts.find((c) => c.id === att.id)?.name ?? "")
+              : ((project.externalTeam ?? []).find((e) => e.id === att.id)?.name ?? "");
+            if (!name) return "";
+            const ini = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+            return `<span title="${esc(name)}">${avatar(ini, idx)}</span>`;
+          }).join("");
+          const itemsHtml = ag.items.length === 0
+            ? `<div style="font-size:12px;color:#B4BAC4;font-style:italic;padding:4px 0">No items.</div>`
+            : ag.items.map((it) => `
+                <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+                  <div style="width:13px;height:13px;border:1.5px solid #D1D5DB;border-radius:3px;flex-shrink:0"></div>
+                  <span style="font-size:12.5px;color:#374151">${esc(it.text)}</span>
+                </div>`).join("");
+          return `
+            <div style="padding:12px 14px;border:0.5px solid #E7E9ED;border-radius:8px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <div style="flex:1">
+                  <span style="font-size:13px;font-weight:500;color:#1A1D23">${esc(ag.title)}</span>
+                  ${ag.date ? `<span style="font-size:11.5px;color:#9CA3AF;margin-left:8px">${fmtADate(ag.date)}</span>` : ""}
+                </div>
+                ${attsHtml ? `<div style="display:flex;gap:3px">${attsHtml}</div>` : ""}
+              </div>
+              ${itemsHtml}
+            </div>`;
+        }).join("")}
+      </div>
+    </details>`;
+
   // ── Full document ───────────────────────────────────────────────────────────
   const timelineVal = project.start && project.due !== "No date"
     ? `${esc(project.start)} → ${esc(project.due)}`
@@ -248,6 +299,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     details:not([open])>.ms-summary .ms-chev{transform:rotate(0deg)}
     .ext-chev{transform:rotate(0deg)}
     details[open]>summary .ext-chev{transform:rotate(90deg)}
+    .ag-chev{transform:rotate(0deg)}
+    details[open]>summary .ag-chev{transform:rotate(90deg)}
   </style>
 </head>
 <body>
@@ -315,6 +368,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     </div>
   </div>
 
+  ${agendasHtml}
   <div style="border-top:0.5px solid #E7E9ED;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;background:#FAFBFC">
     <div style="font-size:11px;color:#B4BAC4">Generated ${exportDate} · ${esc(project.title)}</div>
     <div style="font-size:11px;font-weight:600;color:#D1D5DB;letter-spacing:.02em">MakeItHappen</div>

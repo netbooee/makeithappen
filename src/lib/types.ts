@@ -53,6 +53,24 @@ export interface ExternalTeamMember {
   company: string;
 }
 
+export interface AgendaAttendee {
+  kind: "internal" | "external";
+  id: string;
+}
+
+export interface AgendaItem {
+  id: string;
+  text: string;
+}
+
+export interface MeetingAgenda {
+  id: string;
+  title: string;
+  date: string;
+  attendees: AgendaAttendee[];
+  items: AgendaItem[];
+}
+
 export interface ProjectResource {
   id: string;
   label: string;
@@ -93,6 +111,7 @@ export interface Project {
   clientLogo?: string;
   members?: ProjectMember[];
   externalTeam?: ExternalTeamMember[];
+  agendas?: MeetingAgenda[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
   milestones: Milestone[];
