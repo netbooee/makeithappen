@@ -190,6 +190,31 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     ? `<div style="font-size:13px;color:#374151;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(execUpdate.text)}</div><div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`
     : `<div style="font-size:12.5px;color:#B4BAC4;font-style:italic">No executive updates yet.</div>`;
 
+  // ── External Team ────────────────────────────────────────────────────────────
+  const externalTeam = project.externalTeam ?? [];
+  const extTeamBody = externalTeam.length === 0
+    ? `<div style="font-size:12.5px;color:#9CA3AF;padding:6px 0">No external team members added.</div>`
+    : externalTeam.map((m, i) => {
+        const ini = m.name.split(" ").map((w: string) => w[0] ?? "").join("").slice(0, 2).toUpperCase();
+        return `
+          <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:0.5px solid #F3F4F6">
+            ${avatar(ini, i)}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:500;color:#374151">${esc(m.name)}</div>
+              <div style="font-size:11px;color:#9CA3AF;margin-top:1px">${[m.role, m.company].filter(Boolean).map(esc).join(" · ")}</div>
+            </div>
+          </div>`;
+      }).join("");
+  const extTeamHtml = `
+    <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+      <summary style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+        <span style="display:inline-block;font-size:9px;color:#B4BAC4;flex-shrink:0;transition:transform .18s" class="ext-chev">▶</span>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">External Team</span>
+        ${externalTeam.length > 0 ? `<span style="font-size:10px;color:#9CA3AF;margin-left:auto">${externalTeam.length}</span>` : ""}
+      </summary>
+      <div style="padding:4px 12px 4px">${extTeamBody}</div>
+    </details>`;
+
   // ── Resources ───────────────────────────────────────────────────────────────
   const resources = project.resources ?? [];
   const resourcesHtml = resources.length === 0
@@ -221,6 +246,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     details>summary::-webkit-details-marker{display:none}
     .ms-chev{display:inline-block;font-size:9px;color:#B4BAC4;flex-shrink:0;transition:transform .18s;transform:rotate(90deg)}
     details:not([open])>.ms-summary .ms-chev{transform:rotate(0deg)}
+    .ext-chev{transform:rotate(0deg)}
+    details[open]>summary .ext-chev{transform:rotate(90deg)}
   </style>
 </head>
 <body>
@@ -282,6 +309,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       </details>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:10px">Status updates</div>
       <div style="margin-bottom:20px">${updatesHtml}</div>
+      ${extTeamHtml}
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:10px">Resources</div>
       ${resourcesHtml}
     </div>
@@ -368,6 +396,28 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     </div>`
   ).join("");
 
+  const externalTeam = project.externalTeam ?? [];
+  const extTeamPdf = externalTeam.length === 0 ? "" : `
+    <details style="margin-top:6px;border:0.5px solid #E7E9ED;border-radius:6px;overflow:hidden">
+      <summary style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:#F3F4F6;cursor:pointer;list-style:none;user-select:none">
+        <span style="font-size:8px;color:#B4BAC4">▶</span>
+        <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">External Team (${externalTeam.length})</span>
+      </summary>
+      <div style="padding:2px 9px 4px">
+        ${externalTeam.map((m, i) => {
+          const ini = m.name.split(" ").map((w: string) => w[0] ?? "").join("").slice(0, 2).toUpperCase();
+          const [bg, color] = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
+          return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:0.5px solid #F3F4F6">
+            <div style="width:18px;height:18px;border-radius:50%;background:${bg};color:${color};font-size:7px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;font-weight:500;color:#374151">${esc(m.name)}</div>
+              <div style="font-size:8.5px;color:#9CA3AF">${[m.role, m.company].filter(Boolean).map(esc).join(" · ")}</div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+    </details>`;
+
   const budgetVal = formatBudget(project.budget);
   const budgetStatus = project.onBudget === true ? `<span style="color:#10B981">On budget</span>` : project.onBudget === false ? `<span style="color:#EF4444">Over budget</span>` : `<span style="color:#9CA3AF">TBD</span>`;
   const progPct = Math.round((doneSubs / Math.max(totalSubs, 1)) * 100);
@@ -437,6 +487,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
       <div class="sec">Executive update</div>
       ${execHtml}
       ${members.length > 0 ? `<div class="sec">Team</div><div>${teamHtml}</div>` : ""}
+      ${externalTeam.length > 0 ? `<div class="sec">External Team</div>${extTeamPdf}` : ""}
       ${resources.length > 0 ? `<div class="sec">Resources</div>${resHtml}` : ""}
     </div>
   </div>

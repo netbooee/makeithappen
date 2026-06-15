@@ -46,6 +46,13 @@ export interface ProjectMember {
   role: string;
 }
 
+export interface ExternalTeamMember {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+}
+
 export interface ProjectResource {
   id: string;
   label: string;
@@ -85,6 +92,7 @@ export interface Project {
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];
+  externalTeam?: ExternalTeamMember[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
   milestones: Milestone[];
