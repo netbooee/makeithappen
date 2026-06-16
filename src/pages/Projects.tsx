@@ -820,6 +820,7 @@ export function ProjectDetail() {
   const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [teamOpen, setTeamOpen] = useState(false);
+  const [updatesOpen, setUpdatesOpen] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
@@ -1087,16 +1088,19 @@ export function ProjectDetail() {
 
           <ExternalTeamSection project={project} />
 
-          <div className="section-h" style={{ marginTop: 20 }}>
+          <div className="section-h" style={{ marginTop: 20, cursor: "pointer" }} onClick={() => setUpdatesOpen((v) => !v)}>
+            <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: updatesOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
             Status Updates
-            <button
-              onClick={() => setAdding((v) => !v)}
-              style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-            >
-              <Plus size={12} /> Add update
-            </button>
+            {updatesOpen && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
+                style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+              >
+                <Plus size={12} /> Add update
+              </button>
+            )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {updatesOpen && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {adding && (
               <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <textarea
@@ -1180,7 +1184,7 @@ export function ProjectDetail() {
                 {showAllUpdates ? "Show less" : `Show ${project.updates.length - 3} older`}
               </button>
             )}
-          </div>
+          </div>}
 
           {/* Resources */}
           <ResourcesSection project={project} />
