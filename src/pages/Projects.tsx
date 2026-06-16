@@ -1265,6 +1265,8 @@ function MeetingAgendasSection({ project }: { project: Project }) {
   const [eDate, setEDate] = useState("");
   const [eAttendees, setEAttendees] = useState<AgendaAttendee[]>([]);
   const [itemInputs, setItemInputs] = useState<Record<string, string>>({});
+  const [editingItemKey, setEditingItemKey] = useState<{ agendaId: string; itemId: string } | null>(null);
+  const [editingItemText, setEditingItemText] = useState("");
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
@@ -1335,6 +1337,18 @@ function MeetingAgendasSection({ project }: { project: Project }) {
         a.id === agendaId ? { ...a, items: a.items.filter((i) => i.id !== itemId) } : a
       ),
     });
+
+  const saveItemEdit = () => {
+    if (!editingItemKey || !editingItemText.trim()) { setEditingItemKey(null); return; }
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === editingItemKey.agendaId
+          ? { ...a, items: a.items.map((i) => i.id === editingItemKey.itemId ? { ...i, text: editingItemText.trim() } : i) }
+          : a
+      ),
+    });
+    setEditingItemKey(null);
+  };
 
   const moveItem = (agendaId: string, itemId: string, dir: -1 | 1) =>
     updateProject(project.id, {
@@ -1488,7 +1502,24 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                       >
                         {isChecked && <Check size={9} style={{ color: "white" }} />}
                       </button>
-                      <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s" }}>{item.text}</span>
+                      {editingItemKey?.agendaId === agenda.id && editingItemKey?.itemId === item.id ? (
+                        <input
+                          className="input"
+                          autoFocus
+                          value={editingItemText}
+                          onChange={(e) => setEditingItemText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveItemEdit(); if (e.key === "Escape") setEditingItemKey(null); }}
+                          onBlur={saveItemEdit}
+                          style={{ flex: 1, fontSize: 13, padding: "2px 6px" }}
+                        />
+                      ) : (
+                        <span
+                          style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s", cursor: "text" }}
+                          onClick={() => { setEditingItemKey({ agendaId: agenda.id, itemId: item.id }); setEditingItemText(item.text); }}
+                        >
+                          {item.text}
+                        </span>
+                      )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
                         <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
                         <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
