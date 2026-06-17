@@ -1523,13 +1523,14 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                 {isOpen && (
                   <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
                     {/* Attendees */}
-                    {agenda.attendees.length > 0 && (
-                      <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
-                        {agenda.attendees.map((att) => {
-                          const info = resolve(att);
-                          if (!info) return null;
-                          return <Avatar key={`${att.kind}:${att.id}`} who={info.ini} size={22} color={info.color ?? "var(--ink-3)"} />;
-                        })}
+                    {pool.length > 0 && (
+                      <div style={{ marginBottom: 4 }}>
+                        {attendeeRow(
+                          agenda.attendees,
+                          (next) => updateProject(project.id, {
+                            agendas: (project.agendas ?? []).map((a) => a.id === agenda.id ? { ...a, attendees: next } : a),
+                          }),
+                        )}
                       </div>
                     )}
                     {/* Items */}
