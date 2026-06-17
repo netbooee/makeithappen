@@ -1248,10 +1248,14 @@ export function ProjectDetail() {
 
 /* ================= Meeting Agendas section ================= */
 
-function fmtAgendaDate(iso: string): string {
-  if (!iso) return "";
+function fmtAgendaDate(str: string): string {
+  if (!str) return "";
+  const iso = toDateInputValue(str);
+  if (!iso) return str;
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const dt = new Date(y, m - 1, d);
+  if (isNaN(dt.getTime())) return str;
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function MeetingAgendasSection({ project }: { project: Project }) {
@@ -1477,9 +1481,10 @@ function MeetingAgendasSection({ project }: { project: Project }) {
           ) : (
             <div key={agenda.id} className="card" style={{ padding: "10px 14px 12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7 }}>
+                  <Calendar size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)" }}>{agenda.title}</span>
-                  {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)", marginLeft: 10 }}>{fmtAgendaDate(agenda.date)}</span>}
+                  {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
                 </div>
                 {agenda.attendees.length > 0 && (
                   <div style={{ display: "flex", gap: 3 }}>
