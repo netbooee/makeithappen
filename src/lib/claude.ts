@@ -23,7 +23,7 @@ async function callClaudeDirect(
       // personal single-user app; key stays on the user's own machine via .env.local
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 1024, system, messages }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 2048, system, messages }),
   });
   if (!res.ok) throw new Error(`Claude API error ${res.status}`);
   const json = await res.json();
@@ -159,12 +159,44 @@ Output only the email body. No extra commentary.`;
 export function serializeContext(ws: Workspace, data: WorkspaceData, user: User): string {
   const projects = data.projects
     .map((p) => {
+      const ragLabel = p.risk ? { green: "Green — on track", amber: "Amber — some risk", red: "Red — at risk" }[p.risk] : "Not set";
+      const budgetParts = [p.budget ? `Total: ${p.budget}` : null, p.budgetSpent ? `Spent: ${p.budgetSpent}` : null].filter(Boolean).join(", ");
+      const budget = budgetParts || "Not set";
+
       const ms = p.milestones
-        .map((m) => `    - ${m.title} [${m.status}] due ${m.due}: ${m.subtasks.map((s) => `${s.done ? "✓" : "○"} ${s.t}${s.next ? " (NEXT)" : ""}`).join("; ")}`)
+        .map((m) => {
+          const tasks = m.subtasks.map((s) => `${s.done ? "✓" : "○"} ${s.t}${s.next ? " (NEXT)" : ""}${s.state === "waiting" ? ` (waiting: ${s.waitFor ?? "?"})` : ""}${s.state === "delegated" ? ` (delegated to ${s.to ?? "?"})` : ""}`).join("; ");
+          return `    Milestone [${m.status}] "${m.title}" due ${m.due}${tasks ? `\n      Tasks: ${tasks}` : ""}`;
+        })
         .join("\n");
-      return `  ${p.title} [${p.status}] due ${p.due} — ${Math.round(p.progress * 100)}% done\n${ms}`;
+
+      const updates = (p.updates ?? []).slice(0, 5)
+        .map((u) => `    [${u.type ?? "update"}] ${u.when}: ${u.text}`)
+        .join("\n");
+
+      const sortedAgendas = [...(p.agendas ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+      const agendas = sortedAgendas.slice(-3)
+        .map((a) => {
+          const items = a.items.map((i) => i.text).join("; ");
+          return `    "${a.title}"${a.date ? ` on ${a.date}` : ""}${items ? ` — Items: ${items}` : ""}`;
+        })
+        .join("\n");
+
+      const openRisks = (p.risks ?? []).filter((r) => r.status === "open")
+        .map((r) => `    ${r.description} (prob: ${r.probability}, impact: ${r.impact}${r.mitigation ? `, mitigation: ${r.mitigation}` : ""})`)
+        .join("\n");
+
+      let out = `PROJECT: ${p.title}\n  Status: ${p.status} | Due: ${p.due} | Progress: ${Math.round(p.progress * 100)}% | RAG: ${ragLabel} | Budget: ${budget}`;
+      if (p.riskNote) out += `\n  Risk note: ${p.riskNote}`;
+      if (p.desc) out += `\n  Description: ${p.desc}`;
+      if (ms) out += `\n  Milestones:\n${ms}`;
+      if (updates) out += `\n  Status updates (most recent first):\n${updates}`;
+      if (agendas) out += `\n  Recent meeting agendas:\n${agendas}`;
+      if (openRisks) out += `\n  Open risks:\n${openRisks}`;
+      return out;
     })
-    .join("\n");
+    .join("\n\n");
+
   const tasks = [...data.todayTasks, ...data.upcoming]
     .filter((t) => !t.done)
     .map((t) => `  - ${t.text}${t.next ? " (NEXT ACTION)" : ""}${t.due ? ` due ${t.due}` : ""} ${t.context}${t.project ? ` [${t.project}]` : ""}`)
@@ -180,7 +212,7 @@ export function serializeContext(ws: Workspace, data: WorkspaceData, user: User)
 PROJECTS:
 ${projects}
 
-OPEN TASKS:
+OPEN TASKS (standalone and cross-project):
 ${tasks}
 
 CONTACTS:
