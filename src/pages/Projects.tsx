@@ -608,12 +608,22 @@ function KpiSection({ project }: { project: Project }) {
   const set = (patch: Partial<Project>) => updateProject(project.id, patch);
 
   const riskColor = project.risk ? RAG[project.risk] : "var(--ink-3)";
-  const budgetStatus = project.onBudget === true ? "on" : project.onBudget === false ? "over" : "tbd";
-  const BUDGET_META = {
-    on:  { label: "✓ On budget",    color: "#10B981", bg: "color-mix(in oklab, #10B981 12%, transparent)", border: "color-mix(in oklab, #10B981 35%, transparent)" },
-    over: { label: "⚠ Over budget", color: "#EF4444", bg: "color-mix(in oklab, #EF4444 12%, transparent)", border: "color-mix(in oklab, #EF4444 35%, transparent)" },
-    tbd:  { label: "TBD",           color: "var(--ink-3)", bg: "var(--surface-2)", border: "var(--border)" },
+  const parseBudget = (s: string | undefined): number | null => {
+    if (!s) return null;
+    const c = s.replace(/[$,\s]/g, "");
+    const k = c.match(/^([\d.]+)[kK]$/), m = c.match(/^([\d.]+)[mM]$/);
+    if (k) return parseFloat(k[1]) * 1000;
+    if (m) return parseFloat(m[1]) * 1_000_000;
+    const n = parseFloat(c); return isNaN(n) ? null : n;
   };
+  const fmtBudget = (n: number): string => {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
+    return `$${Math.round(n).toLocaleString()}`;
+  };
+  const totalVal = parseBudget(project.budget);
+  const spentVal = parseBudget(project.budgetSpent);
+  const remainingVal = totalVal !== null && spentVal !== null ? totalVal - spentVal : null;
 
   const kpiCard: React.CSSProperties = {
     padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6,
@@ -682,24 +692,23 @@ function KpiSection({ project }: { project: Project }) {
       {/* Budget */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Budget</div>
-        <input
-          style={kpiInput}
-          placeholder="e.g. $50,000"
-          value={project.budget ?? ""}
-          onChange={(e) => set({ budget: e.target.value || undefined })}
-        />
-        <button
-          onClick={() => set({ onBudget: budgetStatus === "tbd" ? true : budgetStatus === "on" ? false : undefined })}
-          style={{
-            alignSelf: "flex-start", fontSize: 11.5, fontWeight: 600,
-            padding: "2px 8px", borderRadius: 99, cursor: "pointer",
-            border: `1px solid ${BUDGET_META[budgetStatus].border}`,
-            background: BUDGET_META[budgetStatus].bg,
-            color: BUDGET_META[budgetStatus].color,
-          }}
-        >
-          {BUDGET_META[budgetStatus].label}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {([
+            { sub: "Total Budget", val: project.budget, onChange: (v: string) => set({ budget: v || undefined }), placeholder: "e.g. $50,000" },
+            { sub: "Actual Cost",  val: project.budgetSpent, onChange: (v: string) => set({ budgetSpent: v || undefined }), placeholder: "e.g. $12,000" },
+          ] as const).map(({ sub, val, onChange, placeholder }) => (
+            <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{sub}</span>
+              <input style={{ ...kpiInput, fontSize: 13 }} placeholder={placeholder} value={val ?? ""} onChange={(e) => onChange(e.target.value)} />
+            </div>
+          ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remaining</span>
+            <span style={{ fontSize: 13, fontWeight: 650, color: remainingVal === null ? "var(--ink-4)" : remainingVal < 0 ? "#EF4444" : "#10B981" }}>
+              {remainingVal !== null ? fmtBudget(remainingVal) : "—"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Executive update */}

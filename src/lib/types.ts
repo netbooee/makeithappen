@@ -105,6 +105,7 @@ export interface Project {
   progress: number;
   active: boolean;
   budget?: string;
+  budgetSpent?: string;
   onBudget?: boolean;
   risk?: "green" | "amber" | "red";
   riskNote?: string;
