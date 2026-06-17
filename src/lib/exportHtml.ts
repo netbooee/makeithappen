@@ -5,19 +5,27 @@ function esc(s: string): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function parseBudgetNum(val: string | undefined): number | null {
+  if (!val) return null;
+  const c = val.replace(/[$,\s]/g, "");
+  const k = c.match(/^([\d.]+)[kK]$/), m = c.match(/^([\d.]+)[mM]$/);
+  if (k) return parseFloat(k[1]) * 1_000;
+  if (m) return parseFloat(m[1]) * 1_000_000;
+  const n = parseFloat(c); return isNaN(n) ? null : n;
+}
 function formatBudget(val: string | undefined): string {
-  if (!val) return "—";
-  const clean = val.replace(/[$,\s]/g, "");
-  const kMatch = clean.match(/^([\d.]+)[kK]$/);
-  const mMatch = clean.match(/^([\d.]+)[mM]$/);
-  let n: number;
-  if (kMatch) n = parseFloat(kMatch[1]) * 1000;
-  else if (mMatch) n = parseFloat(mMatch[1]) * 1000000;
-  else n = parseFloat(clean);
-  if (isNaN(n)) return esc(val);
+  const n = parseBudgetNum(val);
+  if (n === null) return val ? esc(val) : "—";
   if (n >= 1_000_000) return `$${+(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${+(n / 1_000).toFixed(1)}K`;
   return `$${Math.round(n)}`;
+}
+function remainingBudget(total: string | undefined, spent: string | undefined): { fmt: string; color: string } {
+  const t = parseBudgetNum(total), s = parseBudgetNum(spent);
+  if (t === null || s === null) return { fmt: "—", color: "#9CA3AF" };
+  const r = t - s, abs = Math.abs(r);
+  const fmt = (abs >= 1_000_000 ? `$${+(abs / 1_000_000).toFixed(1)}M` : abs >= 1_000 ? `$${+(abs / 1_000).toFixed(1)}K` : `$${Math.round(abs)}`);
+  return { fmt: r < 0 ? `-${fmt}` : fmt, color: r < 0 ? "#EF4444" : "#10B981" };
 }
 
 function statusBadge(status: string): string {
@@ -347,11 +355,17 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       <div style="font-size:11.5px;color:#8A909B;margin-top:2px">${daysRemaining(project.due)}</div>
     </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Budget</div>
-      <div style="font-size:15px;font-weight:500;color:#1A1D23">${formatBudget(project.budget)}</div>
-      ${project.budget
-        ? `<div style="font-size:11.5px;color:${project.onBudget === true ? "#10B981" : project.onBudget === false ? "#EF4444" : "#9CA3AF"};margin-top:2px">${project.onBudget === true ? "✓ On budget" : project.onBudget === false ? "⚠ Over budget" : "TBD"}</div>`
-        : `<div style="font-size:11.5px;color:#B4BAC4;margin-top:2px">Not set</div>`}
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:8px">Budget</div>
+      ${([ ["Total Budget", project.budget], ["Actual Cost", project.budgetSpent] ] as [string, string | undefined][]).map(([sub, val]) => `
+        <div style="margin-bottom:5px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B4BAC4">${sub}</div>
+          <div style="font-size:13px;font-weight:500;color:#1A1D23">${formatBudget(val)}</div>
+        </div>`).join("")}
+      ${(() => { const r = remainingBudget(project.budget, project.budgetSpent); return `
+        <div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B4BAC4">Remaining</div>
+          <div style="font-size:13px;font-weight:600;color:${r.color}">${r.fmt}</div>
+        </div>`; })()}
     </div>
     <div style="padding:16px 24px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6366F1;margin-bottom:5px">Executive Update</div>
@@ -486,8 +500,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
       </div>
     </details>`;
 
-  const budgetVal = formatBudget(project.budget);
-  const budgetStatus = project.onBudget === true ? `<span style="color:#10B981">On budget</span>` : project.onBudget === false ? `<span style="color:#EF4444">Over budget</span>` : `<span style="color:#9CA3AF">TBD</span>`;
+  const budgetRemaining = remainingBudget(project.budget, project.budgetSpent);
   const progPct = Math.round((doneSubs / Math.max(totalSubs, 1)) * 100);
 
   const pdf = `<!DOCTYPE html>
@@ -541,7 +554,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
       <div class="kpi-label">Progress</div>
       <div class="kpi-val">${progPct}%<span class="prog-track"><span class="prog-fill" style="width:${progPct}%"></span></span>${doneSubs}/${totalSubs} tasks</div>
     </div>
-    <div class="kpi"><div class="kpi-label">Budget</div><div class="kpi-val">${budgetVal} &nbsp;${budgetStatus}</div></div>
+    <div class="kpi"><div class="kpi-label">Budget</div><div class="kpi-val">${formatBudget(project.budget)}<span style="font-size:9px;color:#9CA3AF;margin-left:6px">total</span> · <span style="color:${budgetRemaining.color}">${budgetRemaining.fmt}</span><span style="font-size:9px;color:#9CA3AF;margin-left:4px">remaining</span></div></div>
     <div class="kpi"><div class="kpi-label">RAG status</div><div class="kpi-val">${ragDot(project.risk)}${ragLabel}</div></div>
   </div>
 
