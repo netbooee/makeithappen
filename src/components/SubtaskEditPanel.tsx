@@ -150,19 +150,19 @@ export function SubtaskEditPanel({
               onClick={() => set({ done: !subtask.done })}
             />
           </div>
-        </div>
 
-        <div className="side-panel-foot">
-          <button
-            className="btn btn-ghost"
-            style={{ color: "var(--danger)", borderColor: "color-mix(in oklab, var(--danger) 30%, transparent)" }}
-            onClick={() => { deleteSubtask(projectId, milestoneId, subtask.id); close(); }}
-          >
-            <Trash2 /> Delete
-          </button>
-          <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={close}>
-            Done
-          </button>
+          <div style={{ display: "flex", gap: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+            <button
+              className="btn btn-ghost"
+              style={{ color: "var(--danger)", borderColor: "color-mix(in oklab, var(--danger) 30%, transparent)" }}
+              onClick={() => { deleteSubtask(projectId, milestoneId, subtask.id); close(); }}
+            >
+              <Trash2 /> Delete
+            </button>
+            <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={close}>
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>
