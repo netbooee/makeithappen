@@ -1275,6 +1275,8 @@ function MeetingAgendasSection({ project }: { project: Project }) {
   const [itemInputs, setItemInputs] = useState<Record<string, string>>({});
   const [editingItemKey, setEditingItemKey] = useState<{ agendaId: string; itemId: string } | null>(null);
   const [editingItemText, setEditingItemText] = useState("");
+  const [openAgendas, setOpenAgendas] = useState<Set<string>>(new Set());
+  const [linkInputs, setLinkInputs] = useState<Record<string, { label: string; url: string }>>({});
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
@@ -1357,6 +1359,29 @@ function MeetingAgendasSection({ project }: { project: Project }) {
     });
     setEditingItemKey(null);
   };
+
+  const toggleAgendaOpen = (id: string) =>
+    setOpenAgendas((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const addLink = (agendaId: string) => {
+    const inp = linkInputs[agendaId];
+    if (!inp?.url?.trim()) return;
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === agendaId
+          ? { ...a, resources: [...(a.resources ?? []), { id: "lr" + Date.now(), label: inp.label.trim() || inp.url.trim(), url: inp.url.trim() }] }
+          : a
+      ),
+    });
+    setLinkInputs((p) => ({ ...p, [agendaId]: { label: "", url: "" } }));
+  };
+
+  const removeLink = (agendaId: string, linkId: string) =>
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === agendaId ? { ...a, resources: (a.resources ?? []).filter((r) => r.id !== linkId) } : a
+      ),
+    });
 
   const moveItem = (agendaId: string, itemId: string, dir: -1 | 1) =>
     updateProject(project.id, {
@@ -1478,79 +1503,88 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                 <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
               </div>
             </div>
-          ) : (
-            <div key={agenda.id} className="card" style={{ padding: "10px 14px 12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7 }}>
+          ) : (() => {
+            const isOpen = openAgendas.has(agenda.id);
+            const li = linkInputs[agenda.id] ?? { label: "", url: "" };
+            return (
+              <div key={agenda.id} className="card" style={{ padding: "10px 14px 12px" }}>
+                {/* Header row — always visible */}
+                <div style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }} onClick={() => toggleAgendaOpen(agenda.id)}>
+                  <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
                   <Calendar size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)" }}>{agenda.title}</span>
+                  <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1 }}>{agenda.title}</span>
                   {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts); }}><Download size={12} /></button>
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); startEdit(agenda); }}><Pencil size={12} /></button>
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); deleteMeeting(agenda.id); }}><Trash2 size={12} /></button>
                 </div>
-                {agenda.attendees.length > 0 && (
-                  <div style={{ display: "flex", gap: 3 }}>
-                    {agenda.attendees.map((att) => {
-                      const info = resolve(att);
-                      if (!info) return null;
-                      return <Avatar key={`${att.kind}:${att.id}`} who={info.ini} size={22} color={info.color ?? "var(--ink-3)"} />;
+
+                {/* Body — only when open */}
+                {isOpen && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Attendees */}
+                    {agenda.attendees.length > 0 && (
+                      <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
+                        {agenda.attendees.map((att) => {
+                          const info = resolve(att);
+                          if (!info) return null;
+                          return <Avatar key={`${att.kind}:${att.id}`} who={info.ini} size={22} color={info.color ?? "var(--ink-3)"} />;
+                        })}
+                      </div>
+                    )}
+                    {/* Items */}
+                    {agenda.items.map((item, idx) => {
+                      const isChecked = checked.has(`${agenda.id}:${item.id}`);
+                      return (
+                        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--ink-4)", minWidth: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}.</span>
+                          <button
+                            onClick={() => toggleCheck(agenda.id, item.id)}
+                            style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
+                          >
+                            {isChecked && <Check size={9} style={{ color: "white" }} />}
+                          </button>
+                          {editingItemKey?.agendaId === agenda.id && editingItemKey?.itemId === item.id ? (
+                            <input className="input" autoFocus value={editingItemText} onChange={(e) => setEditingItemText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveItemEdit(); if (e.key === "Escape") setEditingItemKey(null); }} onBlur={saveItemEdit} style={{ flex: 1, fontSize: 13, padding: "2px 6px" }} />
+                          ) : (
+                            <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s", cursor: "text" }} onClick={() => { setEditingItemKey({ agendaId: agenda.id, itemId: item.id }); setEditingItemText(item.text); }}>
+                              {item.text}
+                            </span>
+                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                            <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
+                            <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
+                          </div>
+                          <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
+                        </div>
+                      );
                     })}
+                    {/* Add item */}
+                    <div style={{ display: "flex", gap: 7, marginTop: 2 }}>
+                      <input className="input" placeholder="Add agenda item…" value={itemInputs[agenda.id] ?? ""} onChange={(e) => setItemInputs((p) => ({ ...p, [agenda.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addItem(agenda.id); }} style={{ flex: 1, fontSize: 12.5 }} />
+                      <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => addItem(agenda.id)}>Add</button>
+                    </div>
+                    {/* Resources */}
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4, display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-4)" }}>Links</span>
+                      {(agenda.resources ?? []).map((r) => (
+                        <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <Link2 size={12} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                          <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12.5, color: "var(--accent)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</a>
+                          <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeLink(agenda.id, r.id)}><X size={11} /></button>
+                        </div>
+                      ))}
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        <input className="input" placeholder="Label" value={li.label} onChange={(e) => setLinkInputs((p) => ({ ...p, [agenda.id]: { ...li, label: e.target.value } }))} style={{ width: 110, fontSize: 12 }} />
+                        <input className="input" placeholder="URL" value={li.url} onChange={(e) => setLinkInputs((p) => ({ ...p, [agenda.id]: { ...li, url: e.target.value } }))} onKeyDown={(e) => { if (e.key === "Enter") addLink(agenda.id); }} style={{ flex: 1, minWidth: 140, fontSize: 12 }} />
+                        <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => addLink(agenda.id)}>Add</button>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={() => exportAgendaHtml(project, agenda, data.contacts)}><Download size={12} /></button>
-                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(agenda)}><Pencil size={12} /></button>
-                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => deleteMeeting(agenda.id)}><Trash2 size={12} /></button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {agenda.items.map((item, idx) => {
-                  const isChecked = checked.has(`${agenda.id}:${item.id}`);
-                  return (
-                    <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-4)", minWidth: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}.</span>
-                      <button
-                        onClick={() => toggleCheck(agenda.id, item.id)}
-                        style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
-                      >
-                        {isChecked && <Check size={9} style={{ color: "white" }} />}
-                      </button>
-                      {editingItemKey?.agendaId === agenda.id && editingItemKey?.itemId === item.id ? (
-                        <input
-                          className="input"
-                          autoFocus
-                          value={editingItemText}
-                          onChange={(e) => setEditingItemText(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveItemEdit(); if (e.key === "Escape") setEditingItemKey(null); }}
-                          onBlur={saveItemEdit}
-                          style={{ flex: 1, fontSize: 13, padding: "2px 6px" }}
-                        />
-                      ) : (
-                        <span
-                          style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s", cursor: "text" }}
-                          onClick={() => { setEditingItemKey({ agendaId: agenda.id, itemId: item.id }); setEditingItemText(item.text); }}
-                        >
-                          {item.text}
-                        </span>
-                      )}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
-                        <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
-                        <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
-                      </div>
-                      <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
-                    </div>
-                  );
-                })}
-                <div style={{ display: "flex", gap: 7, marginTop: 4 }}>
-                  <input
-                    className="input"
-                    placeholder="Add agenda item…"
-                    value={itemInputs[agenda.id] ?? ""}
-                    onChange={(e) => setItemInputs((p) => ({ ...p, [agenda.id]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter") addItem(agenda.id); }}
-                    style={{ flex: 1, fontSize: 12.5 }}
-                  />
-                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => addItem(agenda.id)}>Add</button>
-                </div>
-              </div>
-            </div>
-          )
+            );
+          })()
         )}
       </div>
     </div>

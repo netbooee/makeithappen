@@ -114,7 +114,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
             `).join("")}
           </div>`;
         return `
-          <details open style="border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:10px;overflow:hidden">
+          <details style="border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:10px;overflow:hidden">
             <summary class="ms-summary" style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:#EEF0F3;user-select:none">
               <span class="ms-chev">▶</span>
               <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
@@ -234,10 +234,14 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     if (!b.date) return -1;
     return a.date.localeCompare(b.date);
   });
-  const fmtADate = (iso: string) => {
-    if (!iso) return "";
+  const fmtADate = (str: string) => {
+    if (!str) return "";
+    const iso = toDateInputValue(str);
+    if (!iso) return str;
     const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const dt = new Date(y, m - 1, d);
+    if (isNaN(dt.getTime())) return str;
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
   const agendasHtml = sortedAgendas.length === 0 ? "" : `
     <details style="border-top:0.5px solid #E7E9ED">
@@ -246,7 +250,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">Meeting Agendas</span>
         <span style="font-size:11px;color:#9CA3AF;margin-left:2px">(${sortedAgendas.length})</span>
       </summary>
-      <div style="padding:16px 32px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+      <div style="padding:16px 32px 24px;display:flex;flex-direction:column;gap:8px">
         ${sortedAgendas.map((ag) => {
           const attsHtml = ag.attendees.map((att, idx) => {
             const name = att.kind === "internal"
@@ -256,24 +260,34 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
             const ini = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
             return `<span title="${esc(name)}">${avatar(ini, idx)}</span>`;
           }).join("");
-          const itemsHtml = ag.items.length === 0
-            ? `<div style="font-size:12px;color:#B4BAC4;font-style:italic;padding:4px 0">No items.</div>`
-            : ag.items.map((it) => `
+          const itemsHtml = ag.items.length === 0 ? "" : ag.items.map((it) => `
                 <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
                   <div style="width:13px;height:13px;border:1.5px solid #D1D5DB;border-radius:3px;flex-shrink:0"></div>
                   <span style="font-size:12.5px;color:#374151">${esc(it.text)}</span>
                 </div>`).join("");
-          return `
-            <div style="padding:12px 14px;border:0.5px solid #E7E9ED;border-radius:8px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                <div style="flex:1">
-                  <span style="font-size:13px;font-weight:500;color:#1A1D23">${esc(ag.title)}</span>
-                  ${ag.date ? `<span style="font-size:11.5px;color:#9CA3AF;margin-left:8px">${fmtADate(ag.date)}</span>` : ""}
-                </div>
-                ${attsHtml ? `<div style="display:flex;gap:3px">${attsHtml}</div>` : ""}
-              </div>
-              ${itemsHtml}
+          const resourcesHtml = (ag.resources ?? []).length === 0 ? "" : `
+            <div style="border-top:0.5px solid #E7E9ED;margin-top:8px;padding-top:8px;display:flex;flex-direction:column;gap:5px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9CA3AF">Links</div>
+              ${(ag.resources ?? []).map((r) => `
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="color:#4F8EF7;font-size:11px">🔗</span>
+                  <a href="${esc(r.url)}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none">${esc(r.label)}</a>
+                </div>`).join("")}
             </div>`;
+          return `
+            <details style="border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+              <summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;list-style:none;user-select:none;background:#FAFBFC">
+                <span style="font-size:9px;color:#B4BAC4">▶</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span style="font-size:13px;font-weight:500;color:#1A1D23;flex:1">${esc(ag.title)}</span>
+                ${ag.date ? `<span style="font-size:11.5px;color:#9CA3AF">${fmtADate(ag.date)}</span>` : ""}
+                ${attsHtml ? `<div style="display:flex;gap:3px">${attsHtml}</div>` : ""}
+              </summary>
+              <div style="padding:10px 14px 12px">
+                ${itemsHtml}
+                ${resourcesHtml}
+              </div>
+            </details>`;
         }).join("")}
       </div>
     </details>`;
@@ -637,6 +651,18 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   <div style="padding:0 44px">
     ${itemsHtml}
   </div>
+
+  ${(agenda.resources ?? []).length > 0 ? `
+  <div style="padding:20px 44px 24px;border-top:0.5px solid #E7E9ED">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9CA3AF;margin-bottom:10px">Resources</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${(agenda.resources ?? []).map((r) => `
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:#4F8EF7;font-size:12px">🔗</span>
+          <a href="${esc(r.url)}" target="_blank" style="font-size:13px;color:#4F8EF7;text-decoration:none">${esc(r.label)}</a>
+        </div>`).join("")}
+    </div>
+  </div>` : ""}
 
   <div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
     <div style="font-size:14px;color:#6B7280;margin-bottom:16px">Have a topic you'd like to add to this agenda?</div>

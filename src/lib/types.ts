@@ -69,6 +69,7 @@ export interface MeetingAgenda {
   date: string;
   attendees: AgendaAttendee[];
   items: AgendaItem[];
+  resources?: ProjectResource[];
 }
 
 export interface ProjectResource {
