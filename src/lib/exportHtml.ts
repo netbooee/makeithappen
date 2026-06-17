@@ -195,7 +195,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   // ── Executive update KPI ────────────────────────────────────────────────────
   const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
   const execUpdateHtml = execUpdate
-    ? `<div style="font-size:13px;color:#374151;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(execUpdate.text)}</div><div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`
+    ? `<details><summary style="list-style:none;cursor:pointer;font-size:13px;color:#374151;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(execUpdate.text)}<span style="display:inline;font-size:11px;color:#6366F1;margin-left:6px;white-space:nowrap">Read more</span></summary><div style="font-size:13px;color:#374151;line-height:1.55;padding-top:4px">${esc(execUpdate.text)}</div></details><div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`
     : `<div style="font-size:12.5px;color:#B4BAC4;font-style:italic">No executive updates yet.</div>`;
 
   // ── External Team ────────────────────────────────────────────────────────────
@@ -350,9 +350,17 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       ${project.riskNote ? `<div style="font-size:11.5px;color:#8A909B;margin-top:2px">${esc(project.riskNote)}</div>` : ""}
     </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">Timeline</div>
-      <div style="font-size:15px;font-weight:500;color:#1A1D23">${timelineVal}</div>
-      <div style="font-size:11.5px;color:#8A909B;margin-top:2px">${daysRemaining(project.due)}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:8px">Timeline</div>
+      ${project.start ? `
+      <div style="margin-bottom:5px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B4BAC4">Start</div>
+        <div style="font-size:13px;font-weight:500;color:#1A1D23">${esc(project.start)}</div>
+      </div>` : ""}
+      <div style="margin-bottom:4px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B4BAC4">Due</div>
+        <div style="font-size:13px;font-weight:500;color:#1A1D23">${project.due !== "No date" ? esc(project.due) : "—"}</div>
+      </div>
+      <div style="font-size:11px;color:#8A909B">${daysRemaining(project.due)}</div>
     </div>
     <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:8px">Budget</div>

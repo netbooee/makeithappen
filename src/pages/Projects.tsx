@@ -639,6 +639,7 @@ function KpiSection({ project }: { project: Project }) {
   };
 
   const latestExec = project.updates.find((u) => u.type === "executive") ?? null;
+  const [execExpanded, setExecExpanded] = useState(false);
 
   return (
     <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr 2fr", gap: 12, marginBottom: 24 }}>
@@ -669,23 +670,19 @@ function KpiSection({ project }: { project: Project }) {
         />
       </div>
 
-      {/* Timeline (start → end) */}
+      {/* Timeline */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Timeline</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <DateInput
-            value={project.start}
-            onChange={(v) => set({ start: v || undefined })}
-            style={{ ...kpiInput, padding: "2px 0", width: 130 }}
-            className=""
-          />
-          <span style={{ color: "var(--ink-4)", fontSize: 11, lineHeight: 1, paddingLeft: 2 }}>↓</span>
-          <DateInput
-            value={project.due}
-            onChange={(v) => set({ due: v || "No date" })}
-            style={{ ...kpiInput, padding: "2px 0", width: 130 }}
-            className=""
-          />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {([
+            { sub: "Start", val: project.start, onChange: (v: string) => set({ start: v || undefined }) },
+            { sub: "Due",   val: project.due,   onChange: (v: string) => set({ due: v || "No date" }) },
+          ] as const).map(({ sub, val, onChange }) => (
+            <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{sub}</span>
+              <DateInput value={val} onChange={onChange} style={{ ...kpiInput, fontSize: 13, padding: "2px 0", width: 130 }} className="" />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -718,11 +715,16 @@ function KpiSection({ project }: { project: Project }) {
           <>
             <div style={{
               fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55, flex: 1,
-              display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+              ...(!execExpanded ? { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : {}),
             }}>
               {latestExec.text}
             </div>
-            <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 4 }}>{latestExec.when}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+              <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{latestExec.when}</span>
+              <button onClick={() => setExecExpanded((v) => !v)} style={{ fontSize: 11, color: "var(--accent)", fontWeight: 550, marginLeft: "auto" }}>
+                {execExpanded ? "Show less" : "Read more"}
+              </button>
+            </div>
           </>
         ) : (
           <div style={{ fontSize: 12.5, color: "var(--ink-4)", fontStyle: "italic" }}>No executive updates yet.</div>
@@ -1011,12 +1013,23 @@ export function ProjectDetail() {
               <ChevronRight size={13} style={{ marginLeft: "auto", color: "var(--ink-4)", transition: "transform .18s", transform: teamOpen ? "rotate(90deg)" : "none" }} />
             </div>
             {teamOpen && <div className="card" style={{ padding: "6px 10px 8px" }}>
-              {(project.members ?? []).map((mem) => {
+              {(project.members ?? []).map((mem, idx, arr) => {
                 const contact = data.contacts.find((c) => c.id === mem.contactId);
                 if (!contact) return null;
                 const who = contact.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                const moveMember = (dir: -1 | 1) => {
+                  const next = [...arr];
+                  const ni = idx + dir;
+                  if (ni < 0 || ni >= next.length) return;
+                  [next[idx], next[ni]] = [next[ni], next[idx]];
+                  updateProject(project.id, { members: next });
+                };
                 return (
                   <div key={mem.contactId} className="task-row">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                      <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)" }} onClick={() => moveMember(-1)} disabled={idx === 0}><ChevronUp size={10} /></button>
+                      <button className="icon-btn" style={{ width: 16, height: 14, color: idx === arr.length - 1 ? "var(--border)" : "var(--ink-4)" }} onClick={() => moveMember(1)} disabled={idx === arr.length - 1}><ChevronDown size={10} /></button>
+                    </div>
                     <Avatar who={who} size={24} color={contact.color} />
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
                     {mem.role && <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{mem.role}</span>}
