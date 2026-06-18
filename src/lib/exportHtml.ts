@@ -231,7 +231,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         ${resources.map((r) => `
           <div style="display:flex;align-items:center;gap:8px;padding:5px 0">
             <span style="font-size:13px;color:#9CA3AF">↗</span>
-            <a href="${esc(r.url)}" style="font-size:12.5px;color:#185FA5;font-weight:500;text-decoration:none">${esc(r.label)}</a>
+            <a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" style="font-size:12.5px;color:#185FA5;font-weight:500;text-decoration:none">${esc(r.label)}</a>
           </div>`).join("")}
       </div>`;
 
@@ -687,7 +687,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 
   <div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
     <div style="font-size:14px;color:#6B7280;margin-bottom:16px">Have a topic you'd like to add to this agenda?</div>
-    <a href="${mailto}" style="display:inline-block;padding:11px 28px;background:#4F6BED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.01em">Suggest a Topic →</a>
+    <a href="${mailto}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:11px 28px;background:#4F6BED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.01em">Suggest a Topic →</a>
   </div>
 
   <div style="border-top:0.5px solid #E7E9ED;padding:10px 44px;display:flex;align-items:center;justify-content:space-between;background:#FAFBFC">
