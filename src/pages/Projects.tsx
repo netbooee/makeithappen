@@ -1824,7 +1824,7 @@ function ResourcesSection({ project }: { project: Project }) {
         {resources.length === 0 && !adding && (
           <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No resources yet.</div>
         )}
-        {resources.map((r) =>
+        {resources.map((r, idx) =>
           editingId === r.id ? (
             <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
               <input className="input" autoFocus placeholder="URL" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
@@ -1836,6 +1836,16 @@ function ResourcesSection({ project }: { project: Project }) {
             </div>
           ) : (
             <div key={r.id} className="task-row">
+              <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)" }} disabled={idx === 0} onClick={() => {
+                  const next = [...resources]; [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+                  updateProject(project.id, { resources: next });
+                }}><ChevronUp size={10} /></button>
+                <button className="icon-btn" style={{ width: 16, height: 14, color: idx === resources.length - 1 ? "var(--border)" : "var(--ink-4)" }} disabled={idx === resources.length - 1} onClick={() => {
+                  const next = [...resources]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                  updateProject(project.id, { resources: next });
+                }}><ChevronDown size={10} /></button>
+              </div>
               <Link2 size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
               <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {r.label}
