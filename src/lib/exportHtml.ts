@@ -195,7 +195,14 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   // ── Executive update KPI ────────────────────────────────────────────────────
   const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
   const execUpdateHtml = execUpdate
-    ? `<details><summary style="list-style:none;cursor:pointer;font-size:13px;color:#374151;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${esc(execUpdate.text)}<span style="display:inline;font-size:11px;color:#6366F1;margin-left:6px;white-space:nowrap">Read more</span></summary><div style="font-size:13px;color:#374151;line-height:1.55;padding-top:4px">${esc(execUpdate.text)}</div></details><div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`
+    ? (() => {
+        const needsToggle = execUpdate.text.length > 180;
+        const body = needsToggle
+          ? `<div style="font-size:13px;color:#374151;line-height:1.55;max-height:4.7em;overflow:hidden">${esc(execUpdate.text)}</div>
+             <a href="#" onclick="var d=this.previousElementSibling;var exp=!d.style.maxHeight;d.style.maxHeight=exp?'':'4.7em';d.style.overflow=exp?'visible':'hidden';this.textContent=exp?'Show less':'Read more';return false;" style="font-size:11px;color:#6366F1;cursor:pointer;display:inline-block;margin-top:4px;text-decoration:none">Read more</a>`
+          : `<div style="font-size:13px;color:#374151;line-height:1.55">${esc(execUpdate.text)}</div>`;
+        return `${body}<div style="font-size:11px;color:#9CA3AF;margin-top:6px">${esc(execUpdate.when)}</div>`;
+      })()
     : `<div style="font-size:12.5px;color:#B4BAC4;font-style:italic">No executive updates yet.</div>`;
 
   // ── External Team ────────────────────────────────────────────────────────────
