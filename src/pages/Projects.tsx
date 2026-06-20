@@ -1768,35 +1768,27 @@ function StakeholderSection({ project }: { project: Project }) {
                 </div>
               </div>
             ) : (
-              <div key={s.id} className="task-row" style={{ gap: 9, borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined, padding: "7px 0" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)" }}>{s.name}</div>
-                  {s.role && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 1 }}>{s.role}</div>}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-                  {SAT_LEVELS.map((lvl) => {
-                    const active = s.satisfaction === lvl.value;
+              <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 2, borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined, padding: "7px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)", flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                  {(() => {
+                    const lvl = SAT_LEVELS.find(l => l.value === s.satisfaction)!;
+                    const nextIdx = (SAT_LEVELS.indexOf(lvl) + 1) % SAT_LEVELS.length;
                     return (
                       <button
-                        key={lvl.value}
-                        title={lvl.label}
-                        onClick={() => setSat(s.id, lvl.value)}
-                        style={{
-                          width: 28, height: 28, borderRadius: "50%",
-                          border: active ? `2px solid ${lvl.color}` : "1.5px solid var(--border)",
-                          background: active ? lvl.bg : "transparent",
-                          color: active ? lvl.color : "var(--ink-4)",
-                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                          padding: 0, flexShrink: 0,
-                        }}
+                        title={`${lvl.label} — click to change`}
+                        onClick={() => setSat(s.id, SAT_LEVELS[nextIdx].value)}
+                        style={{ display: "flex", alignItems: "center", gap: 4, border: `1.5px solid ${lvl.color}`, borderRadius: 20, background: lvl.bg, padding: "2px 8px 2px 5px", cursor: "pointer", flexShrink: 0 }}
                       >
-                        <SatIcon sat={lvl.value} size={15} />
+                        <span style={{ fontSize: 13, lineHeight: 1 }}>{lvl.icon}</span>
+                        <span style={{ fontSize: 11, fontWeight: 500, color: lvl.color }}>{lvl.label}</span>
                       </button>
                     );
-                  })}
+                  })()}
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(s)}><Pencil size={12} /></button>
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => remove(s.id)}><Trash2 size={12} /></button>
                 </div>
-                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(s)}><Pencil size={12} /></button>
-                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => remove(s.id)}><Trash2 size={12} /></button>
+                {s.role && <div style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{s.role}</div>}
               </div>
             )
           )}
