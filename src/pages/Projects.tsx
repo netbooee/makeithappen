@@ -210,41 +210,50 @@ export function ProjectList() {
               key={p.id}
               className="card card-pad"
               onClick={() => navigate(`/projects/${p.id}`)}
-              style={{ textAlign: "left", display: "flex", flexDirection: "row", gap: 14, cursor: "pointer", transition: "border-color .14s, box-shadow .14s", alignItems: "stretch" }}
+              style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s" }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
             >
-              {p.heroImage && (
-                <img
-                  src={p.heroImage}
-                  alt=""
-                  style={{ width: 72, height: 72, borderRadius: 7, objectFit: "cover", flexShrink: 0, alignSelf: "center" }}
-                />
-              )}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", flex: 1 }}>{p.title}</div>
-                  <StatusChip status={p.status} />
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                {p.heroImage && (
+                  <img
+                    src={p.heroImage}
+                    alt=""
+                    style={{ width: 72, height: 72, borderRadius: 7, objectFit: "cover", flexShrink: 0, alignSelf: "flex-start" }}
+                  />
+                )}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", flex: 1 }}>{p.title}</div>
+                    <StatusChip status={p.status} />
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 38 }}>{p.desc}</div>
-                <div style={{ display: "flex", gap: 3 }}>
-                  {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
-                    const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
-                    return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
-                  })}
-                </div>
-                <Bar value={p.progress} />
-                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)" }}>
+              </div>
+              <div style={{ display: "flex", gap: 3 }}>
+                {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
+                  const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
+                  return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
+                })}
+              </div>
+              <Bar value={p.progress} />
+              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)" }}>
+                {p.risk ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.risk === "green" ? "#10B981" : p.risk === "amber" ? "#F59E0B" : "#EF4444", display: "inline-block", flexShrink: 0 }} />
+                    {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
+                  </span>
+                ) : (
                   <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <CheckCircle2 size={13} /> {done}/{total} subtasks
                   </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <Calendar size={13} /> {p.due}
-                  </span>
-                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
-                    <UserRound size={13} /> {resolveOwner(p.owner)}
-                  </span>
-                </div>
+                )}
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Calendar size={13} /> {p.due}
+                </span>
+                <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+                  <UserRound size={13} /> {resolveOwner(p.owner)}
+                </span>
               </div>
             </button>
           );
