@@ -154,6 +154,31 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
           </div>`;
       }).join("");
 
+  // ── Issue tracker ───────────────────────────────────────────────────────────
+  const issues = project.issues ?? [];
+  const ISSUE_STATUS_COLOR: Record<string, string> = {
+    "open": "#DC2626",
+    "in-progress": "#B45309",
+    "resolved": "#059669",
+  };
+  const issuesHtml = issues.length === 0
+    ? `<div style="font-size:12.5px;color:#9CA3AF">No issues logged.</div>`
+    : issues.map((iss) => {
+        const [sevBg, sevColor] = SEV_STYLE[iss.severity] ?? ["#F3F4F6", "#6B7280"];
+        const statusColor = ISSUE_STATUS_COLOR[iss.status] ?? "#6B7280";
+        const statusLabel = iss.status === "in-progress" ? "In Progress" : iss.status.charAt(0).toUpperCase() + iss.status.slice(1);
+        return `
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid #F3F4F6;align-items:flex-start">
+            <span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:${sevBg};color:${sevColor};white-space:nowrap;flex-shrink:0;text-transform:capitalize">${esc(iss.severity)}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;color:#374151">${esc(iss.title)}</div>
+              ${iss.description ? `<div style="font-size:11.5px;color:#9CA3AF;margin-top:2px">${esc(iss.description)}</div>` : ""}
+              ${iss.resolution ? `<div style="font-size:11.5px;color:#9CA3AF;margin-top:2px">↳ ${esc(iss.resolution)}</div>` : ""}
+            </div>
+            <span style="font-size:10.5px;color:${statusColor};flex-shrink:0;white-space:nowrap">${statusLabel}</span>
+          </div>`;
+      }).join("");
+
   // ── Team ────────────────────────────────────────────────────────────────────
   const members = project.members ?? [];
   const teamHtml = members.length === 0
@@ -394,6 +419,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       ${milestonesHtml}
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin:24px 0 10px">Risk register</div>
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin:24px 0 10px">Issue Tracker</div>
+      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${issuesHtml}</div>
     </div>
     <div style="padding:24px 24px">
       <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">

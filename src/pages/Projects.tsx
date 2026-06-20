@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  AlertCircle, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDateInputValue } from "../components/ui";
@@ -10,7 +10,7 @@ import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { exportAgendaHtml, exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
-import type { AgendaAttendee, AgendaItem, ExternalTeamMember, MeetingAgenda, Milestone, Project, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
+import type { AgendaAttendee, AgendaItem, ExternalTeamMember, IssueSeverity, IssueStatus, MeetingAgenda, Milestone, Project, ProjectIssue, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -1214,6 +1214,7 @@ export function ProjectDetail() {
       </div>
 
       <RiskTracker project={project} />
+      <IssueTracker project={project} />
 
       {/* Project tasks (from the task lists, tagged to this project) */}
       <div style={{ marginTop: 28 }}>
@@ -1882,6 +1883,18 @@ const RSTATUS_STYLE: Record<RiskStatus, React.CSSProperties> = {
   closed:    { background: "color-mix(in oklab,#10B981 12%,transparent)", color: "#059669" },
 };
 
+const ISTATUS_STYLE: Record<IssueStatus, React.CSSProperties> = {
+  "open":        { background: "color-mix(in oklab,#EF4444 12%,transparent)", color: "#DC2626" },
+  "in-progress": { background: "color-mix(in oklab,#F59E0B 12%,transparent)", color: "#B45309" },
+  "resolved":    { background: "color-mix(in oklab,#10B981 12%,transparent)", color: "#059669" },
+};
+
+const ISSUE_STATUS_LABEL: Record<IssueStatus, string> = {
+  "open": "Open",
+  "in-progress": "In Progress",
+  "resolved": "Resolved",
+};
+
 const RISK_CATEGORIES = ["Technical", "Resource", "Schedule", "Budget", "External", "Other"];
 
 const riskPill: React.CSSProperties = {
@@ -1982,6 +1995,23 @@ function RiskTracker({ project }: { project: Project }) {
   const remove = (id: string) =>
     updateProject(project.id, { risks: risks.filter((r) => r.id !== id) });
 
+  const escalate = (r: ProjectRisk) => {
+    const sev = calcSeverity(r.probability, r.impact);
+    const newIssue: ProjectIssue = {
+      id: "issue" + Date.now(),
+      title: r.description,
+      severity: sev,
+      status: "open",
+      reportedDate: new Date().toLocaleDateString("en-CA"),
+      ...(r.owner ? { owner: r.owner } : {}),
+      ...(r.mitigation ? { description: r.mitigation } : {}),
+    };
+    updateProject(project.id, {
+      risks: risks.filter((x) => x.id !== r.id),
+      issues: [...(project.issues ?? []), newIssue],
+    });
+  };
+
   const openCount = risks.filter((r) => r.status === "open").length;
 
   return (
@@ -2015,7 +2045,7 @@ function RiskTracker({ project }: { project: Project }) {
                 style={{
                   fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)",
                   textTransform: "uppercase", letterSpacing: "0.06em",
-                  width: h === "Risk" ? undefined : h === "" ? 48 : h === "P" || h === "I" ? 36 : h === "Severity" ? 68 : h === "Owner" ? 60 : 80,
+                  width: h === "Risk" ? undefined : h === "" ? 72 : h === "P" || h === "I" ? 36 : h === "Severity" ? 68 : h === "Owner" ? 60 : 80,
                   flex: h === "Risk" ? 1 : undefined,
                   flexShrink: h === "Risk" ? undefined : 0,
                   textAlign: h === "P" || h === "I" ? "center" : undefined,
@@ -2065,7 +2095,7 @@ function RiskTracker({ project }: { project: Project }) {
               <span style={{ width: 60, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {r.owner ?? "—"}
               </span>
-              <div style={{ width: 48, flexShrink: 0, display: "flex", gap: 2 }}>
+              <div style={{ width: 72, flexShrink: 0, display: "flex", gap: 2 }}>
                 <button
                   className="icon-btn"
                   style={{ width: 22, height: 22, color: "var(--ink-4)" }}
@@ -2079,6 +2109,209 @@ function RiskTracker({ project }: { project: Project }) {
                   style={{ width: 22, height: 22, color: "var(--ink-4)" }}
                   onClick={() => remove(r.id)}
                   title="Delete risk"
+                >
+                  <Trash2 size={12} />
+                </button>
+                <button
+                  className="icon-btn"
+                  style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                  onClick={() => escalate(r)}
+                  title="Escalate to issue"
+                >
+                  <AlertCircle size={12} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ================= Issue tracker ================= */
+
+function IssueForm({
+  initial, onSave, onCancel,
+}: {
+  initial?: ProjectIssue;
+  onSave: (i: Omit<ProjectIssue, "id" | "reportedDate">) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [severity, setSeverity] = useState<IssueSeverity>(initial?.severity ?? "medium");
+  const [status, setStatus] = useState<IssueStatus>(initial?.status ?? "open");
+  const [owner, setOwner] = useState(initial?.owner ?? "");
+  const [resolution, setResolution] = useState(initial?.resolution ?? "");
+
+  const save = () => {
+    if (!title.trim()) return;
+    onSave({
+      title: title.trim(),
+      severity, status,
+      ...(description.trim() ? { description: description.trim() } : {}),
+      ...(owner.trim() ? { owner: owner.trim() } : {}),
+      ...(resolution.trim() ? { resolution: resolution.trim() } : {}),
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px" }}>
+      <input
+        className="input"
+        autoFocus
+        placeholder="Issue title…"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && save()}
+      />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={severity} onChange={(e) => setSeverity(e.target.value as IssueSeverity)}>
+          <option value="low">Severity: Low</option>
+          <option value="medium">Severity: Medium</option>
+          <option value="high">Severity: High</option>
+          <option value="critical">Severity: Critical</option>
+        </select>
+        <select className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} value={status} onChange={(e) => setStatus(e.target.value as IssueStatus)}>
+          <option value="open">Open</option>
+          <option value="in-progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <input className="input" style={{ flex: 1, minWidth: 110, fontSize: 12.5 }} placeholder="Owner (optional)" value={owner} onChange={(e) => setOwner(e.target.value)} />
+      </div>
+      <input
+        className="input"
+        style={{ fontSize: 12.5 }}
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      {status === "resolved" && (
+        <input
+          className="input"
+          style={{ fontSize: 12.5 }}
+          placeholder="Resolution notes (optional)"
+          value={resolution}
+          onChange={(e) => setResolution(e.target.value)}
+        />
+      )}
+      <div style={{ display: "flex", gap: 7 }}>
+        <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={save}>Save</button>
+        <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function IssueTracker({ project }: { project: Project }) {
+  const { updateProject } = useStore();
+  const issues = project.issues ?? [];
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const saveNew = (data: Omit<ProjectIssue, "id" | "reportedDate">) => {
+    updateProject(project.id, {
+      issues: [...issues, { id: "issue" + Date.now(), reportedDate: new Date().toLocaleDateString("en-CA"), ...data }],
+    });
+    setAdding(false);
+  };
+
+  const saveEdit = (id: string, data: Omit<ProjectIssue, "id" | "reportedDate">) => {
+    updateProject(project.id, {
+      issues: issues.map((i) => i.id === id ? { ...i, ...data } : i),
+    });
+    setEditingId(null);
+  };
+
+  const remove = (id: string) =>
+    updateProject(project.id, { issues: issues.filter((i) => i.id !== id) });
+
+  const openCount = issues.filter((i) => i.status !== "resolved").length;
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <div className="section-h">
+        Issue Tracker
+        {openCount > 0 && (
+          <span style={{ ...riskPill, ...SEV_STYLE.high, marginLeft: 8, fontSize: 10.5 }}>{openCount} open</span>
+        )}
+        <button
+          onClick={() => { setAdding((v) => !v); setEditingId(null); }}
+          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+        >
+          <Plus size={12} /> Add issue
+        </button>
+      </div>
+      <div className="card" style={{ padding: "6px 10px 8px" }}>
+        {adding && (
+          <div style={{ borderBottom: "1px solid var(--border)", marginBottom: 4, paddingBottom: 8 }}>
+            <IssueForm onSave={saveNew} onCancel={() => setAdding(false)} />
+          </div>
+        )}
+        {issues.length === 0 && !adding && (
+          <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No issues logged yet.</div>
+        )}
+        {issues.length > 0 && (
+          <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
+            {(["Severity", "Title", "Status", "Owner", ""] as const).map((h, i) => (
+              <span
+                key={i}
+                style={{
+                  fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)",
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  width: h === "Title" ? undefined : h === "" ? 48 : h === "Severity" ? 68 : h === "Owner" ? 60 : 90,
+                  flex: h === "Title" ? 1 : undefined,
+                  flexShrink: h === "Title" ? undefined : 0,
+                }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+        )}
+        {issues.map((issue) => {
+          if (editingId === issue.id) {
+            return (
+              <div key={issue.id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 4 }}>
+                <IssueForm initial={issue} onSave={(d) => saveEdit(issue.id, d)} onCancel={() => setEditingId(null)} />
+              </div>
+            );
+          }
+          return (
+            <div key={issue.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start" }}>
+              <span style={{ width: 68, flexShrink: 0 }}>
+                <span style={{ ...riskPill, ...SEV_STYLE[issue.severity] }}>{issue.severity}</span>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{issue.title}</div>
+                {issue.description && (
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.4 }}>{issue.description}</div>
+                )}
+                {issue.status === "resolved" && issue.resolution && (
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.4 }}>↳ {issue.resolution}</div>
+                )}
+              </div>
+              <span style={{ width: 90, flexShrink: 0 }}>
+                <span style={{ ...riskPill, ...ISTATUS_STYLE[issue.status] }}>{ISSUE_STATUS_LABEL[issue.status]}</span>
+              </span>
+              <span style={{ width: 60, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {issue.owner ?? "—"}
+              </span>
+              <div style={{ width: 48, flexShrink: 0, display: "flex", gap: 2 }}>
+                <button
+                  className="icon-btn"
+                  style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                  onClick={() => { setEditingId(issue.id); setAdding(false); }}
+                  title="Edit issue"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  className="icon-btn"
+                  style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                  onClick={() => remove(issue.id)}
+                  title="Delete issue"
                 >
                   <Trash2 size={12} />
                 </button>

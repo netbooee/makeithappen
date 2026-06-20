@@ -94,6 +94,20 @@ export interface ProjectRisk {
   mitigation?: string;
 }
 
+export type IssueSeverity = "low" | "medium" | "high" | "critical";
+export type IssueStatus = "open" | "in-progress" | "resolved";
+
+export interface ProjectIssue {
+  id: string;
+  title: string;
+  description?: string;
+  severity: IssueSeverity;
+  status: IssueStatus;
+  owner?: string;
+  reportedDate: string;
+  resolution?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -116,6 +130,7 @@ export interface Project {
   agendas?: MeetingAgenda[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
+  issues?: ProjectIssue[];
   milestones: Milestone[];
   updates: StatusUpdate[];
 }
