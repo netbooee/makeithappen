@@ -10,7 +10,7 @@ import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
 import { exportAgendaHtml, exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
-import type { AgendaAttendee, AgendaItem, ExternalTeamMember, IssueSeverity, IssueStatus, MeetingAgenda, Milestone, Project, ProjectIssue, ProjectMember, ProjectResource, ProjectRisk, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
+import type { AgendaAttendee, AgendaItem, ExternalTeamMember, IssueSeverity, IssueStatus, MeetingAgenda, Milestone, Project, ProjectIssue, ProjectMember, ProjectResource, ProjectRisk, ProjectStakeholder, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, StakeholderSatisfaction, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
 /* ================= Shared Project Modal (create + edit) ================= */
 
@@ -1110,6 +1110,8 @@ export function ProjectDetail() {
 
           <ExternalTeamSection project={project} />
 
+          <StakeholderSection project={project} />
+
           <div className="section-h" style={{ marginTop: 20, cursor: "pointer" }} onClick={() => setUpdatesOpen((v) => !v)}>
             <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: updatesOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
             Status Updates
@@ -1624,6 +1626,189 @@ const AVATAR_COLORS = [
 
 function extInitials(name: string) {
   return name.split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase();
+}
+
+/* ================= Stakeholder section ================= */
+
+const SAT_LEVELS: { value: StakeholderSatisfaction; label: string; icon: string; color: string; bg: string }[] = [
+  { value: "angry",    label: "Angry",     icon: "😠", color: "#A32D2D", bg: "#FCEBEB" },
+  { value: "unhappy",  label: "Unhappy",   icon: "😟", color: "#854F0B", bg: "#FAEEDA" },
+  { value: "neutral",  label: "Neutral",   icon: "😐", color: "#5F5E5A", bg: "#F1EFE8" },
+  { value: "happy",    label: "Happy",     icon: "🙂", color: "#3B6D11", bg: "#EAF3DE" },
+  { value: "delighted",label: "Delighted", icon: "😄", color: "#085041", bg: "#E1F5EE" },
+];
+
+function SatIcon({ sat, size = 16 }: { sat: StakeholderSatisfaction; size?: number }) {
+  const faceMap: Record<StakeholderSatisfaction, JSX.Element> = {
+    angry: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
+        <path d="M8.5 8.5l2 1.5" /><path d="M15.5 8.5l-2 1.5" />
+      </svg>
+    ),
+    unhappy: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
+        <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
+      </svg>
+    ),
+    neutral: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="8" y1="15" x2="16" y2="15" />
+        <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
+      </svg>
+    ),
+    happy: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+        <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
+      </svg>
+    ),
+    delighted: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 13s1.5 3 4 3 4-3 4-3" />
+        <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
+      </svg>
+    ),
+  };
+  return faceMap[sat];
+}
+
+function StakeholderSection({ project }: { project: Project }) {
+  const { updateProject } = useStore();
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addRole, setAddRole] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("");
+
+  const list = project.stakeholders ?? [];
+
+  const add = () => {
+    if (!addName.trim()) return;
+    const entry: ProjectStakeholder = {
+      id: "sk" + Date.now(),
+      name: addName.trim(),
+      role: addRole.trim() || undefined,
+      satisfaction: "neutral",
+    };
+    updateProject(project.id, { stakeholders: [...list, entry] });
+    setAddName(""); setAddRole(""); setAdding(false);
+  };
+
+  const remove = (id: string) =>
+    updateProject(project.id, { stakeholders: list.filter((s) => s.id !== id) });
+
+  const setSat = (id: string, sat: StakeholderSatisfaction) =>
+    updateProject(project.id, { stakeholders: list.map((s) => s.id === id ? { ...s, satisfaction: sat } : s) });
+
+  const startEdit = (s: ProjectStakeholder) => {
+    setEditingId(s.id); setEditName(s.name); setEditRole(s.role ?? "");
+  };
+
+  const saveEdit = () => {
+    if (!editName.trim() || !editingId) return;
+    updateProject(project.id, {
+      stakeholders: list.map((s) =>
+        s.id === editingId ? { ...s, name: editName.trim(), role: editRole.trim() || undefined } : s
+      ),
+    });
+    setEditingId(null);
+  };
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <button
+        className="section-h"
+        style={{ width: "100%", cursor: "pointer", display: "flex", alignItems: "center" }}
+        onClick={() => setOpen((v) => !v)}
+      >
+        Stakeholders
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          {list.length > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-4)" }}>{list.length}</span>
+          )}
+          <ChevronDown size={13} style={{ color: "var(--ink-4)", transition: "transform 0.18s", transform: open ? "rotate(0deg)" : "rotate(-90deg)" }} />
+        </span>
+      </button>
+      {open && (
+        <div className="card" style={{ padding: "6px 10px 8px" }}>
+          {adding && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: "1px solid var(--border)" }}>
+              <input className="input" autoFocus placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
+              <input className="input" placeholder="Role (optional)" value={addRole} onChange={(e) => setAddRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
+              <div style={{ display: "flex", gap: 7 }}>
+                <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={add}>Add</button>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setAddName(""); setAddRole(""); }}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {list.length === 0 && !adding && (
+            <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No stakeholders yet.</div>
+          )}
+          {list.map((s, i) =>
+            editingId === s.id ? (
+              <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined }}>
+                <input className="input" autoFocus placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+                <input className="input" placeholder="Role (optional)" value={editRole} onChange={(e) => setEditRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+                <div style={{ display: "flex", gap: 7 }}>
+                  <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEdit}>Save</button>
+                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div key={s.id} className="task-row" style={{ gap: 9, borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined, padding: "7px 0" }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: AVATAR_COLORS[i % AVATAR_COLORS.length][0], color: AVATAR_COLORS[i % AVATAR_COLORS.length][1] }}>
+                  {extInitials(s.name)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)" }}>{s.name}</div>
+                  {s.role && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 1 }}>{s.role}</div>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                  {SAT_LEVELS.map((lvl) => {
+                    const active = s.satisfaction === lvl.value;
+                    return (
+                      <button
+                        key={lvl.value}
+                        title={lvl.label}
+                        onClick={() => setSat(s.id, lvl.value)}
+                        style={{
+                          width: 28, height: 28, borderRadius: "50%",
+                          border: active ? `2px solid ${lvl.color}` : "1.5px solid var(--border)",
+                          background: active ? lvl.bg : "transparent",
+                          color: active ? lvl.color : "var(--ink-4)",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                          padding: 0, flexShrink: 0,
+                        }}
+                      >
+                        <SatIcon sat={lvl.value} size={15} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(s)}><Pencil size={12} /></button>
+                <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => remove(s.id)}><Trash2 size={12} /></button>
+              </div>
+            )
+          )}
+          <button
+            style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 12, color: "var(--accent-ink)", fontWeight: 550, cursor: "pointer" }}
+            onClick={() => setAdding(true)}
+          >
+            <Plus size={13} /> Add stakeholder
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ExternalTeamSection({ project }: { project: Project }) {

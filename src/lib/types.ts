@@ -108,6 +108,15 @@ export interface ProjectIssue {
   resolution?: string;
 }
 
+export type StakeholderSatisfaction = "angry" | "unhappy" | "neutral" | "happy" | "delighted";
+
+export interface ProjectStakeholder {
+  id: string;
+  name: string;
+  role?: string;
+  satisfaction: StakeholderSatisfaction;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -131,6 +140,7 @@ export interface Project {
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
   issues?: ProjectIssue[];
+  stakeholders?: ProjectStakeholder[];
   milestones: Milestone[];
   updates: StatusUpdate[];
 }
