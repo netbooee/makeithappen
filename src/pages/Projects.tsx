@@ -1671,8 +1671,9 @@ function SatIcon({ sat, size = 16 }: { sat: StakeholderSatisfaction; size?: numb
     delighted: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
-        <path d="M8 13s1.5 3 4 3 4-3 4-3" />
-        <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
+        <path d="M7 14.5 Q12 20.5 17 14.5" />
+        <path d="M9 7.2 L9.45 8.75 L11 9.2 L9.45 9.65 L9 11.2 L8.55 9.65 L7 9.2 L8.55 8.75 Z" fill="currentColor" stroke="none"/>
+        <path d="M15 7.2 L15.45 8.75 L17 9.2 L15.45 9.65 L15 11.2 L14.55 9.65 L13 9.2 L14.55 8.75 Z" fill="currentColor" stroke="none"/>
       </svg>
     ),
   };
@@ -1765,9 +1766,6 @@ function StakeholderSection({ project }: { project: Project }) {
               </div>
             ) : (
               <div key={s.id} className="task-row" style={{ gap: 9, borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined, padding: "7px 0" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: AVATAR_COLORS[i % AVATAR_COLORS.length][0], color: AVATAR_COLORS[i % AVATAR_COLORS.length][1] }}>
-                  {extInitials(s.name)}
-                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)" }}>{s.name}</div>
                   {s.role && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 1 }}>{s.role}</div>}
