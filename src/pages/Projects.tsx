@@ -838,15 +838,10 @@ export function ProjectDetail() {
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
-    project?.milestones.forEach((m) => {
-      map[m.id] =
-        tweaks.defaultState === "all" ? true
-        : tweaks.defaultState === "none" ? false
-        : m.status === "active";
-    });
+    project?.milestones.forEach((m) => { map[m.id] = false; });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id, tweaks.defaultState]);
+  }, [project?.id]);
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(seed);
   useEffect(() => setOpenMap(seed), [seed]);
@@ -1112,6 +1107,8 @@ export function ProjectDetail() {
 
           <StakeholderSection project={project} />
 
+          <ResourcesSection project={project} />
+
           <div className="section-h" style={{ marginTop: 20, cursor: "pointer" }} onClick={() => setUpdatesOpen((v) => !v)}>
             <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: updatesOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
             Status Updates
@@ -1209,9 +1206,6 @@ export function ProjectDetail() {
               </button>
             )}
           </div>}
-
-          {/* Resources */}
-          <ResourcesSection project={project} />
         </div>
       </div>
 
@@ -1924,6 +1918,7 @@ function ExternalTeamSection({ project }: { project: Project }) {
 
 function ResourcesSection({ project }: { project: Project }) {
   const { updateProject } = useStore();
+  const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
@@ -1970,16 +1965,19 @@ function ResourcesSection({ project }: { project: Project }) {
 
   return (
     <div style={{ marginTop: 20 }}>
-      <div className="section-h">
+      <div className="section-h" style={{ marginTop: 0, cursor: "pointer" }} onClick={() => setOpen((v) => !v)}>
+        <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: open ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
         Resources
-        <button
-          onClick={() => setAdding((v) => !v)}
-          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-        >
-          <Plus size={12} /> Add link
-        </button>
+        {open && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
+            style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+          >
+            <Plus size={12} /> Add link
+          </button>
+        )}
       </div>
-      <div className="card" style={{ padding: "6px 10px 8px" }}>
+      {open && <div className="card" style={{ padding: "6px 10px 8px" }}>
         {adding && (
           <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
             <input
@@ -2040,7 +2038,7 @@ function ResourcesSection({ project }: { project: Project }) {
             </div>
           )
         )}
-      </div>
+      </div>}
     </div>
   );
 }
