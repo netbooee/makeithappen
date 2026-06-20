@@ -257,19 +257,29 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 
   // ── Stakeholders ────────────────────────────────────────────────────────────
   const stakeholders = project.stakeholders ?? [];
-  const SAT_EMOJI: Record<string, string> = {
-    angry: "😠", unhappy: "😟", neutral: "😐", happy: "😊", delighted: "😄",
+  const SAT_META: Record<string, { icon: string; label: string; color: string; bg: string }> = {
+    angry:    { icon: "😠", label: "Angry",    color: "#A32D2D", bg: "#FCEBEB" },
+    unhappy:  { icon: "😟", label: "Unhappy",  color: "#854F0B", bg: "#FAEEDA" },
+    neutral:  { icon: "😐", label: "Neutral",  color: "#5F5E5A", bg: "#F1EFE8" },
+    happy:    { icon: "🙂", label: "Happy",    color: "#3B6D11", bg: "#EAF3DE" },
+    delighted:{ icon: "😄", label: "Delighted",color: "#085041", bg: "#E1F5EE" },
   };
   const stakeholdersHtml = stakeholders.length === 0
     ? `<div style="font-size:12.5px;color:#9CA3AF;padding:6px 0">No stakeholders added.</div>`
-    : stakeholders.map((s) => `
-        <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:0.5px solid #F3F4F6">
-          <span style="font-size:16px;flex-shrink:0">${SAT_EMOJI[s.satisfaction] ?? "😐"}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12.5px;font-weight:500;color:#374151">${esc(s.name)}</div>
-            ${s.role ? `<div style="font-size:11px;color:#9CA3AF;margin-top:1px">${esc(s.role)}</div>` : ""}
+    : stakeholders.map((s) => {
+        const sat = SAT_META[s.satisfaction] ?? SAT_META.neutral;
+        return `
+        <div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:0.5px solid #F3F4F6">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0">
+            <div style="font-size:12.5px;font-weight:500;color:#374151;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border:1.5px solid ${sat.color};border-radius:20px;background:${sat.bg};padding:2px 8px 2px 5px;flex-shrink:0">
+              <span style="font-size:12px;line-height:1">${sat.icon}</span>
+              <span style="font-size:11px;font-weight:500;color:${sat.color}">${sat.label}</span>
+            </span>
           </div>
-        </div>`).join("");
+          ${s.role ? `<div style="font-size:11px;color:#9CA3AF">${esc(s.role)}</div>` : ""}
+        </div>`;
+      }).join("");
 
   // ── Resources ───────────────────────────────────────────────────────────────
   const resources = project.resources ?? [];
