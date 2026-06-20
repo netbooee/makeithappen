@@ -1902,6 +1902,10 @@ const riskPill: React.CSSProperties = {
   padding: "2px 7px", borderRadius: 99, textTransform: "capitalize", whiteSpace: "nowrap",
 };
 
+const SEV_WEIGHT = { low: 0, medium: 1, high: 2, critical: 3 };
+const RSTATUS_WEIGHT: Record<RiskStatus, number> = { open: 0, mitigated: 1, closed: 2 };
+const ISTATUS_WEIGHT: Record<IssueStatus, number> = { open: 0, "in-progress": 1, resolved: 2 };
+
 function calcSeverity(prob: RiskProbability, imp: RiskImpact): RiskSeverity {
   return SEVERITY_MATRIX[prob][imp];
 }
@@ -1981,6 +1985,10 @@ function RiskTracker({ project }: { project: Project }) {
   const risks = project.risks ?? [];
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sortCol, setSortCol] = useState<"severity" | "status">("severity");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [filterStatus, setFilterStatus] = useState<"all" | RiskStatus>("all");
+  const [filterSev, setFilterSev] = useState<"all" | RiskSeverity>("all");
 
   const saveNew = (data: Omit<ProjectRisk, "id">) => {
     updateProject(project.id, { risks: [...risks, { id: "risk" + Date.now(), ...data }] });
@@ -2012,7 +2020,50 @@ function RiskTracker({ project }: { project: Project }) {
     });
   };
 
+  const toggleSort = (col: "severity" | "status") => {
+    if (sortCol === col) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const displayed = risks
+    .filter((r) => {
+      if (filterStatus !== "all" && r.status !== filterStatus) return false;
+      if (filterSev !== "all" && calcSeverity(r.probability, r.impact) !== filterSev) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const sevA = SEV_WEIGHT[calcSeverity(a.probability, a.impact)];
+      const sevB = SEV_WEIGHT[calcSeverity(b.probability, b.impact)];
+      if (sortCol === "severity") {
+        const termA = a.status === "closed" ? 1 : 0;
+        const termB = b.status === "closed" ? 1 : 0;
+        if (termA !== termB) return termA - termB;
+        return sortDir === "desc" ? sevB - sevA : sevA - sevB;
+      } else {
+        const wa = RSTATUS_WEIGHT[a.status];
+        const wb = RSTATUS_WEIGHT[b.status];
+        if (wa !== wb) return sortDir === "asc" ? wa - wb : wb - wa;
+        return sevB - sevA;
+      }
+    });
+
   const openCount = risks.filter((r) => r.status === "open").length;
+
+  const SortBtn = ({ col, label }: { col: "severity" | "status"; label: string }) => (
+    <button
+      onClick={() => toggleSort(col)}
+      style={{
+        display: "flex", alignItems: "center", gap: 2,
+        fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+        color: sortCol === col ? "var(--accent-ink)" : "var(--ink-4)",
+        background: "none", border: "none", padding: 0, cursor: "pointer",
+        width: col === "severity" ? 68 : 80, flexShrink: 0,
+      }}
+    >
+      {label}
+      {sortCol === col && (sortDir === "desc" ? <ChevronDown size={10} /> : <ChevronUp size={10} />)}
+    </button>
+  );
 
   return (
     <div style={{ marginTop: 28 }}>
@@ -2021,12 +2072,37 @@ function RiskTracker({ project }: { project: Project }) {
         {openCount > 0 && (
           <span style={{ ...riskPill, ...SEV_STYLE.high, marginLeft: 8, fontSize: 10.5 }}>{openCount} open</span>
         )}
-        <button
-          onClick={() => { setAdding((v) => !v); setEditingId(null); }}
-          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-        >
-          <Plus size={12} /> Add risk
-        </button>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <select
+            className="input"
+            style={{ fontSize: 11, padding: "2px 6px", height: 24 }}
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+          >
+            <option value="all">All statuses</option>
+            <option value="open">Open</option>
+            <option value="mitigated">Mitigated</option>
+            <option value="closed">Closed</option>
+          </select>
+          <select
+            className="input"
+            style={{ fontSize: 11, padding: "2px 6px", height: 24 }}
+            value={filterSev}
+            onChange={(e) => setFilterSev(e.target.value as typeof filterSev)}
+          >
+            <option value="all">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button
+            onClick={() => { setAdding((v) => !v); setEditingId(null); }}
+            style={{ color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+          >
+            <Plus size={12} /> Add risk
+          </button>
+        </div>
       </div>
       <div className="card" style={{ padding: "6px 10px 8px" }}>
         {adding && (
@@ -2037,26 +2113,22 @@ function RiskTracker({ project }: { project: Project }) {
         {risks.length === 0 && !adding && (
           <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No risks logged yet.</div>
         )}
-        {risks.length > 0 && (
+        {risks.length > 0 && displayed.length === 0 && (
+          <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No risks match the current filters.</div>
+        )}
+        {displayed.length > 0 && (
           <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
-            {(["Severity", "Risk", "Category", "P", "I", "Status", "Owner", ""] as const).map((h, i) => (
-              <span
-                key={i}
-                style={{
-                  fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)",
-                  textTransform: "uppercase", letterSpacing: "0.06em",
-                  width: h === "Risk" ? undefined : h === "" ? 72 : h === "P" || h === "I" ? 36 : h === "Severity" ? 68 : h === "Owner" ? 60 : 80,
-                  flex: h === "Risk" ? 1 : undefined,
-                  flexShrink: h === "Risk" ? undefined : 0,
-                  textAlign: h === "P" || h === "I" ? "center" : undefined,
-                }}
-              >
-                {h}
-              </span>
-            ))}
+            <SortBtn col="severity" label="Severity" />
+            <span style={{ flex: 1, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Risk</span>
+            <span style={{ width: 80, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Category</span>
+            <span style={{ width: 36, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>P</span>
+            <span style={{ width: 36, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>I</span>
+            <SortBtn col="status" label="Status" />
+            <span style={{ width: 60, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Owner</span>
+            <span style={{ width: 72, flexShrink: 0 }} />
           </div>
         )}
-        {risks.map((r) => {
+        {displayed.map((r) => {
           const sev = calcSeverity(r.probability, r.impact);
           if (editingId === r.id) {
             return (
@@ -2209,6 +2281,10 @@ function IssueTracker({ project }: { project: Project }) {
   const issues = project.issues ?? [];
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sortCol, setSortCol] = useState<"severity" | "status">("severity");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [filterStatus, setFilterStatus] = useState<"all" | IssueStatus>("all");
+  const [filterSev, setFilterSev] = useState<"all" | IssueSeverity>("all");
 
   const saveNew = (data: Omit<ProjectIssue, "id" | "reportedDate">) => {
     updateProject(project.id, {
@@ -2227,7 +2303,50 @@ function IssueTracker({ project }: { project: Project }) {
   const remove = (id: string) =>
     updateProject(project.id, { issues: issues.filter((i) => i.id !== id) });
 
+  const toggleSort = (col: "severity" | "status") => {
+    if (sortCol === col) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const displayed = issues
+    .filter((iss) => {
+      if (filterStatus !== "all" && iss.status !== filterStatus) return false;
+      if (filterSev !== "all" && iss.severity !== filterSev) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const sevA = SEV_WEIGHT[a.severity];
+      const sevB = SEV_WEIGHT[b.severity];
+      if (sortCol === "severity") {
+        const termA = a.status === "resolved" ? 1 : 0;
+        const termB = b.status === "resolved" ? 1 : 0;
+        if (termA !== termB) return termA - termB;
+        return sortDir === "desc" ? sevB - sevA : sevA - sevB;
+      } else {
+        const wa = ISTATUS_WEIGHT[a.status];
+        const wb = ISTATUS_WEIGHT[b.status];
+        if (wa !== wb) return sortDir === "asc" ? wa - wb : wb - wa;
+        return sevB - sevA;
+      }
+    });
+
   const openCount = issues.filter((i) => i.status !== "resolved").length;
+
+  const SortBtn = ({ col, label, width }: { col: "severity" | "status"; label: string; width: number }) => (
+    <button
+      onClick={() => toggleSort(col)}
+      style={{
+        display: "flex", alignItems: "center", gap: 2,
+        fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+        color: sortCol === col ? "var(--accent-ink)" : "var(--ink-4)",
+        background: "none", border: "none", padding: 0, cursor: "pointer",
+        width, flexShrink: 0,
+      }}
+    >
+      {label}
+      {sortCol === col && (sortDir === "desc" ? <ChevronDown size={10} /> : <ChevronUp size={10} />)}
+    </button>
+  );
 
   return (
     <div style={{ marginTop: 28 }}>
@@ -2236,12 +2355,37 @@ function IssueTracker({ project }: { project: Project }) {
         {openCount > 0 && (
           <span style={{ ...riskPill, ...SEV_STYLE.high, marginLeft: 8, fontSize: 10.5 }}>{openCount} open</span>
         )}
-        <button
-          onClick={() => { setAdding((v) => !v); setEditingId(null); }}
-          style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-        >
-          <Plus size={12} /> Add issue
-        </button>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <select
+            className="input"
+            style={{ fontSize: 11, padding: "2px 6px", height: 24 }}
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+          >
+            <option value="all">All statuses</option>
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select
+            className="input"
+            style={{ fontSize: 11, padding: "2px 6px", height: 24 }}
+            value={filterSev}
+            onChange={(e) => setFilterSev(e.target.value as typeof filterSev)}
+          >
+            <option value="all">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button
+            onClick={() => { setAdding((v) => !v); setEditingId(null); }}
+            style={{ color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+          >
+            <Plus size={12} /> Add issue
+          </button>
+        </div>
       </div>
       <div className="card" style={{ padding: "6px 10px 8px" }}>
         {adding && (
@@ -2252,25 +2396,19 @@ function IssueTracker({ project }: { project: Project }) {
         {issues.length === 0 && !adding && (
           <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No issues logged yet.</div>
         )}
-        {issues.length > 0 && (
+        {issues.length > 0 && displayed.length === 0 && (
+          <div style={{ padding: "10px 4px", fontSize: 13, color: "var(--ink-4)" }}>No issues match the current filters.</div>
+        )}
+        {displayed.length > 0 && (
           <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
-            {(["Severity", "Title", "Status", "Owner", ""] as const).map((h, i) => (
-              <span
-                key={i}
-                style={{
-                  fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)",
-                  textTransform: "uppercase", letterSpacing: "0.06em",
-                  width: h === "Title" ? undefined : h === "" ? 48 : h === "Severity" ? 68 : h === "Owner" ? 60 : 90,
-                  flex: h === "Title" ? 1 : undefined,
-                  flexShrink: h === "Title" ? undefined : 0,
-                }}
-              >
-                {h}
-              </span>
-            ))}
+            <SortBtn col="severity" label="Severity" width={68} />
+            <span style={{ flex: 1, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Title</span>
+            <SortBtn col="status" label="Status" width={90} />
+            <span style={{ width: 60, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Owner</span>
+            <span style={{ width: 48, flexShrink: 0 }} />
           </div>
         )}
-        {issues.map((issue) => {
+        {displayed.map((issue) => {
           if (editingId === issue.id) {
             return (
               <div key={issue.id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 4 }}>
