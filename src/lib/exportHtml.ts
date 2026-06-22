@@ -298,7 +298,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
     if (!a.date && !b.date) return 0;
     if (!a.date) return 1;
     if (!b.date) return -1;
-    return a.date.localeCompare(b.date);
+    return b.date.localeCompare(a.date);
   });
   const fmtADate = (str: string) => {
     if (!str) return "";
@@ -701,13 +701,19 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   const itemsHtml = agenda.items.length === 0
     ? `<p style="color:#9CA3AF;font-style:italic;padding:24px 0">No agenda items added.</p>`
     : agenda.items.map((item, idx) => `
-        <div style="display:flex;align-items:baseline;gap:16px;padding:22px 0;border-bottom:0.5px solid #E7E9ED">
-          <span style="font-size:18px;font-weight:400;color:#D1D5DB;min-width:28px;text-align:right;flex-shrink:0">${idx + 1}.</span>
-          <h2 style="font-size:20px;font-weight:500;color:#1A1D23;letter-spacing:-0.01em;line-height:1.3">${esc(item.text)}</h2>
+        <div style="display:flex;align-items:flex-start;gap:16px;padding:22px 0;border-bottom:0.5px solid #E7E9ED">
+          <span style="font-size:18px;font-weight:400;color:#D1D5DB;min-width:28px;text-align:right;flex-shrink:0;padding-top:2px">${idx + 1}.</span>
+          <div>
+            <h2 style="font-size:20px;font-weight:500;color:#1A1D23;letter-spacing:-0.01em;line-height:1.3">${esc(item.text)}</h2>
+            ${item.detail ? `<p style="font-size:14px;color:#6B7280;margin:8px 0 0;line-height:1.55;white-space:pre-wrap">${esc(item.detail)}</p>` : ""}
+          </div>
         </div>`).join("");
 
   const mailSubject = encodeURIComponent(`Additional Topic – ${agenda.title}`);
-  const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateIso)}\nProject: ${project.title}\n\nProposed topic:\n`);
+  const agendaLines = agenda.items.length > 0
+    ? `\n\nCurrent agenda:\n${agenda.items.map((item, i) => `${i + 1}. ${item.text}`).join("\n")}`
+    : "";
+  const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateIso)}\nProject: ${project.title}${agendaLines}\n\nProposed additional topic:\n`);
   const mailto = `mailto:tmartinez@lowenstein.com?subject=${mailSubject}&body=${mailBody}`;
 
   const html = `<!DOCTYPE html>

@@ -61,6 +61,7 @@ export interface AgendaAttendee {
 export interface AgendaItem {
   id: string;
   text: string;
+  detail?: string;
 }
 
 export interface MeetingAgenda {

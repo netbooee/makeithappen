@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  AlertCircle, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  AlignLeft, AlertCircle, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDateInputValue } from "../components/ui";
@@ -1307,13 +1307,14 @@ function MeetingAgendasSection({ project }: { project: Project }) {
   const [editingItemText, setEditingItemText] = useState("");
   const [openAgendas, setOpenAgendas] = useState<Set<string>>(new Set());
   const [linkInputs, setLinkInputs] = useState<Record<string, { label: string; url: string }>>({});
+  const [detailOpen, setDetailOpen] = useState<Set<string>>(new Set());
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
       if (!a.date && !b.date) return 0;
       if (!a.date) return 1;
       if (!b.date) return -1;
-      return a.date.localeCompare(b.date);
+      return b.date.localeCompare(a.date);
     }),
     [project.agendas],
   );
@@ -1412,6 +1413,18 @@ function MeetingAgendasSection({ project }: { project: Project }) {
         a.id === agendaId ? { ...a, resources: (a.resources ?? []).filter((r) => r.id !== linkId) } : a
       ),
     });
+
+  const toggleDetail = (key: string) =>
+    setDetailOpen((prev) => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; });
+
+  const saveDetail = (agendaId: string, itemId: string, text: string) => {
+    const detail = text.trim() || undefined;
+    updateProject(project.id, {
+      agendas: (project.agendas ?? []).map((a) =>
+        a.id === agendaId ? { ...a, items: a.items.map((i) => i.id === itemId ? { ...i, detail } : i) } : a
+      ),
+    });
+  };
 
   const moveItem = (agendaId: string, itemId: string, dir: -1 | 1) =>
     updateProject(project.id, {
@@ -1566,27 +1579,46 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                     {/* Items */}
                     {agenda.items.map((item, idx) => {
                       const isChecked = checked.has(`${agenda.id}:${item.id}`);
+                      const detailKey = `${agenda.id}:${item.id}`;
+                      const isDetailOpen = detailOpen.has(detailKey);
                       return (
-                        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: "var(--ink-4)", minWidth: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}.</span>
-                          <button
-                            onClick={() => toggleCheck(agenda.id, item.id)}
-                            style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
-                          >
-                            {isChecked && <Check size={9} style={{ color: "white" }} />}
-                          </button>
-                          {editingItemKey?.agendaId === agenda.id && editingItemKey?.itemId === item.id ? (
-                            <input className="input" autoFocus value={editingItemText} onChange={(e) => setEditingItemText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveItemEdit(); if (e.key === "Escape") setEditingItemKey(null); }} onBlur={saveItemEdit} style={{ flex: 1, fontSize: 13, padding: "2px 6px" }} />
-                          ) : (
-                            <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s", cursor: "text" }} onClick={() => { setEditingItemKey({ agendaId: agenda.id, itemId: item.id }); setEditingItemText(item.text); }}>
-                              {item.text}
-                            </span>
-                          )}
-                          <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
-                            <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
-                            <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
+                        <div key={item.id} style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11, color: "var(--ink-4)", minWidth: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}.</span>
+                            <button
+                              onClick={() => toggleCheck(agenda.id, item.id)}
+                              style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${isChecked ? "var(--accent)" : "var(--border)"}`, background: isChecked ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.1s" }}
+                            >
+                              {isChecked && <Check size={9} style={{ color: "white" }} />}
+                            </button>
+                            {editingItemKey?.agendaId === agenda.id && editingItemKey?.itemId === item.id ? (
+                              <input className="input" autoFocus value={editingItemText} onChange={(e) => setEditingItemText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveItemEdit(); if (e.key === "Escape") setEditingItemKey(null); }} onBlur={saveItemEdit} style={{ flex: 1, fontSize: 13, padding: "2px 6px" }} />
+                            ) : (
+                              <span style={{ flex: 1, fontSize: 13, color: isChecked ? "var(--ink-4)" : "var(--ink-2)", textDecoration: isChecked ? "line-through" : "none", transition: "color 0.1s", cursor: "text" }} onClick={() => { setEditingItemKey({ agendaId: agenda.id, itemId: item.id }); setEditingItemText(item.text); }}>
+                                {item.text}
+                              </span>
+                            )}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                              <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)", cursor: idx === 0 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, -1)} disabled={idx === 0}><ChevronUp size={10} /></button>
+                              <button className="icon-btn" style={{ width: 16, height: 14, color: idx === agenda.items.length - 1 ? "var(--border)" : "var(--ink-4)", cursor: idx === agenda.items.length - 1 ? "default" : "pointer" }} onClick={() => moveItem(agenda.id, item.id, 1)} disabled={idx === agenda.items.length - 1}><ChevronDown size={10} /></button>
+                            </div>
+                            <button className="icon-btn" title={isDetailOpen ? "Close notes" : "Add notes"} style={{ width: 20, height: 20, color: item.detail || isDetailOpen ? "var(--accent)" : "var(--ink-4)" }} onClick={() => toggleDetail(detailKey)}><AlignLeft size={11} /></button>
+                            <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
                           </div>
-                          <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeItem(agenda.id, item.id)}><X size={11} /></button>
+                          {!isDetailOpen && item.detail && (
+                            <div style={{ fontSize: 12, color: "var(--ink-3)", paddingLeft: 39, lineHeight: 1.45, marginTop: 2 }}>{item.detail}</div>
+                          )}
+                          {isDetailOpen && (
+                            <textarea
+                              key={detailKey}
+                              autoFocus
+                              defaultValue={item.detail ?? ""}
+                              placeholder="Add notes for this topic…"
+                              onBlur={(e) => saveDetail(agenda.id, item.id, e.target.value)}
+                              rows={3}
+                              style={{ marginLeft: 39, marginTop: 4, fontSize: 12, color: "var(--ink-2)", resize: "vertical", border: "1px solid var(--border)", borderRadius: 5, padding: "5px 8px", background: "transparent", outline: "none", lineHeight: 1.45, fontFamily: "inherit" }}
+                            />
+                          )}
                         </div>
                       );
                     })}
