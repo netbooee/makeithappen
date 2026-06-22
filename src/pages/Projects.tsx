@@ -1035,9 +1035,11 @@ export function ProjectDetail() {
                       <button className="icon-btn" style={{ width: 16, height: 14, color: idx === arr.length - 1 ? "var(--border)" : "var(--ink-4)" }} onClick={() => moveMember(1)} disabled={idx === arr.length - 1}><ChevronDown size={10} /></button>
                     </div>
                     <Avatar who={who} size={24} color={contact.color} />
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
-                    {mem.role && <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{mem.role}</span>}
-                    {contact.company && !mem.role && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{contact.company}</span>}
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
+                      {mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{mem.role}</span>}
+                      {contact.company && !mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{contact.company}</span>}
+                    </div>
                     <button
                       className="icon-btn"
                       style={{ width: 24, height: 24, color: "var(--ink-4)" }}
