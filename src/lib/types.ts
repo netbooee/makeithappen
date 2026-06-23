@@ -1,6 +1,7 @@
 export type Workspace = "work" | "personal";
 export type Status = "active" | "waiting" | "hold" | "complete";
 export type TaskFlow = "delegated" | "waiting";
+export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "completed";
 
 export interface User {
   name: string;
@@ -20,6 +21,7 @@ export interface Subtask {
   due?: string;
   reminder?: string;
   notes?: string;
+  taskStatus?: SubtaskStatus;
 }
 
 export interface Milestone {

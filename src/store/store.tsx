@@ -207,6 +207,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const s = m?.subtasks.find((x) => x.id === subtaskId);
           if (!p || !s) return;
           s.done = !s.done;
+          if (s.done) {
+            s.taskStatus = "completed";
+          } else if (s.taskStatus === "completed") {
+            s.taskStatus = undefined;
+          }
           recomputeProgress(p);
         }),
 

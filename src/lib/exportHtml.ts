@@ -85,6 +85,10 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   const totalSubs = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const doneSubs  = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
   const exportDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const pct = totalSubs > 0 ? doneSubs / totalSubs : 0;
+  const fillArc = (pct * 141.4).toFixed(1);
+  const fillGap = (188.5 - pct * 141.4).toFixed(1);
+  const dialSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 76 76" width="76" height="76" style="display:block"><circle cx="38" cy="38" r="30" fill="none" stroke="#E5E7EB" stroke-width="4.5" stroke-dasharray="141.4 47.1" stroke-linecap="round" transform="rotate(135 38 38)"/><circle cx="38" cy="38" r="30" fill="none" stroke="#4F6BED" stroke-width="4.5" stroke-dasharray="${fillArc} ${fillGap}" stroke-linecap="round" transform="rotate(135 38 38)"/><text x="38" y="38" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="500" fill="#1A1D23">${Math.round(pct * 100)}%</text></svg>`;
   const ragLabel = project.risk ? { green: "Green", amber: "Amber", red: "Red" }[project.risk] : "Not set";
 
   // ── Milestones ─────────────────────────────────────────────────────────────
@@ -386,28 +390,31 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 <body>
 <div class="doc" style="background:#fff;max-width:900px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
 
-  <div style="padding:28px 32px 24px;border-bottom:0.5px solid #E7E9ED">
-    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
-      ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-      <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;flex:1;color:#1A1D23">${esc(project.title)}</div>
-      ${statusBadge(project.status)}
+  <div style="padding:28px 32px 24px;border-bottom:0.5px solid #E7E9ED;display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
+        ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
+        <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;flex:1;color:#1A1D23">${esc(project.title)}</div>
+        ${statusBadge(project.status)}
+      </div>
+      <div style="font-size:13.5px;color:#6B7280;line-height:1.6;margin-bottom:14px">${esc(project.desc)}</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#8A909B">
+        <span><strong style="color:#4A4F58;font-weight:500">Owner</strong>&nbsp;${esc(project.owner)}</span>
+        ${project.due !== "No date" ? `<span><strong style="color:#4A4F58;font-weight:500">${project.start ? "Timeline" : "Due"}</strong>&nbsp;${timelineVal}</span>` : ""}
+        <span><strong style="color:#4A4F58;font-weight:500">Progress</strong>&nbsp;${doneSubs} / ${totalSubs} tasks complete</span>
+        <span><strong style="color:#4A4F58;font-weight:500">Exported</strong>&nbsp;${exportDate}</span>
+      </div>
     </div>
-    <div style="font-size:13.5px;color:#6B7280;line-height:1.6;margin-bottom:14px;max-width:620px">${esc(project.desc)}</div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#8A909B">
-      <span><strong style="color:#4A4F58;font-weight:500">Owner</strong>&nbsp;${esc(project.owner)}</span>
-      ${project.due !== "No date" ? `<span><strong style="color:#4A4F58;font-weight:500">${project.start ? "Timeline" : "Due"}</strong>&nbsp;${timelineVal}</span>` : ""}
-      <span><strong style="color:#4A4F58;font-weight:500">Progress</strong>&nbsp;${doneSubs} / ${totalSubs} tasks complete</span>
-      <span><strong style="color:#4A4F58;font-weight:500">Exported</strong>&nbsp;${exportDate}</span>
-    </div>
+    <div style="flex-shrink:0;padding-top:6px">${dialSvg}</div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr;border-bottom:0.5px solid #E7E9ED">
-    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+    <div style="padding:12px 16px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:5px">RAG status</div>
       <div style="font-size:15px;font-weight:500;color:#1A1D23">${ragDot(project.risk)}${ragLabel}</div>
       ${project.riskNote ? `<div style="font-size:11.5px;color:#8A909B;margin-top:2px">${esc(project.riskNote)}</div>` : ""}
     </div>
-    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+    <div style="padding:12px 16px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:8px">Timeline</div>
       ${project.start ? `
       <div style="margin-bottom:5px">
@@ -420,7 +427,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       </div>
       <div style="font-size:11px;color:#8A909B">${daysRemaining(project.due)}</div>
     </div>
-    <div style="padding:16px 24px;border-right:0.5px solid #E7E9ED">
+    <div style="padding:12px 16px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#B4BAC4;margin-bottom:8px">Budget</div>
       ${([ ["Total Budget", project.budget], ["Actual Cost", project.budgetSpent] ] as [string, string | undefined][]).map(([sub, val]) => `
         <div style="margin-bottom:5px">
@@ -433,7 +440,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
           <div style="font-size:13px;font-weight:600;color:${r.color}">${r.fmt}</div>
         </div>`; })()}
     </div>
-    <div style="padding:16px 24px">
+    <div style="padding:12px 16px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6366F1;margin-bottom:5px">Executive Update</div>
       ${execUpdateHtml}
     </div>

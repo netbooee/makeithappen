@@ -1,6 +1,6 @@
 import { Calendar, Check, Hourglass, UserRound } from "lucide-react";
-import type { CSSProperties } from "react";
-import type { Status, Subtask, Task } from "../lib/types";
+import { Fragment, type CSSProperties } from "react";
+import type { Status, Subtask, SubtaskStatus, Task } from "../lib/types";
 
 /* ---- Date helpers ---- */
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -90,12 +90,26 @@ export function TaskMarker({ task, onClick }: { task: Task | Subtask; onClick?: 
   return <Checkbox done={task.done} onClick={onClick} />;
 }
 
+const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
+  "not-started": "Not started",
+  "scheduled": "Scheduled",
+  "in-progress": "In progress",
+  "completed": "Completed",
+};
+
 /** Next / Delegated / Waiting tag, matching the prototype's StateTag. */
 export function StateTag({ task }: { task: Task | Subtask }) {
   if (task.state === "delegated") return <span className="chip delegate"><UserRound /> {task.to ?? "Delegated"}</span>;
   if (task.state === "waiting") return <span className="chip wait"><Hourglass /> {task.waitFor ?? "Waiting"}</span>;
-  if (task.next && !task.done) return <span className="chip next"><FlagIcon /> Next</span>;
-  return null;
+  const hasStatus = 'taskStatus' in task && task.taskStatus;
+  const hasNext = task.next && !task.done;
+  if (!hasStatus && !hasNext) return null;
+  return (
+    <Fragment>
+      {hasNext && <span className="chip next"><FlagIcon /> Next</span>}
+      {hasStatus && <span className={`chip ts-${task.taskStatus}`}>{TASK_STATUS_LABEL[task.taskStatus as SubtaskStatus]}</span>}
+    </Fragment>
+  );
 }
 
 function FlagIcon() {

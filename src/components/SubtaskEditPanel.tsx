@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
-import type { Subtask } from "../lib/types";
+import type { Subtask, SubtaskStatus } from "../lib/types";
 
 export function SubtaskEditPanel({
   projectId,
@@ -123,6 +123,21 @@ export function SubtaskEditPanel({
                 onChange={(e) => set({ waitFor: e.target.value })}
               />
             )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="field-label">Progress</label>
+            <select
+              className="input"
+              value={subtask.taskStatus ?? ""}
+              onChange={(e) => set({ taskStatus: (e.target.value as SubtaskStatus) || undefined })}
+            >
+              <option value="">— None —</option>
+              <option value="not-started">Not started</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in-progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
           </div>
 
           <div className="tweak-row" style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
