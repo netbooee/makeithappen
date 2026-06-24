@@ -1668,23 +1668,15 @@ function extInitials(name: string) {
 /* ================= Stakeholder section ================= */
 
 const SAT_LEVELS: { value: StakeholderSatisfaction; label: string; icon: string; color: string; bg: string }[] = [
-  { value: "angry",    label: "Angry",     icon: "😠", color: "#A32D2D", bg: "#FCEBEB" },
-  { value: "unhappy",  label: "Unhappy",   icon: "😟", color: "#854F0B", bg: "#FAEEDA" },
-  { value: "neutral",  label: "Neutral",   icon: "😐", color: "#5F5E5A", bg: "#F1EFE8" },
-  { value: "happy",    label: "Happy",     icon: "🙂", color: "#3B6D11", bg: "#EAF3DE" },
-  { value: "delighted",label: "Delighted", icon: "😄", color: "#085041", bg: "#E1F5EE" },
+  { value: "dissatisfied", label: "Dissatisfied", icon: "😟", color: "#A32D2D", bg: "#FCEBEB" },
+  { value: "neutral",      label: "Neutral",      icon: "😐", color: "#5F5E5A", bg: "#F1EFE8" },
+  { value: "satisfied",    label: "Satisfied",    icon: "🙂", color: "#3B6D11", bg: "#EAF3DE" },
+  { value: "delighted",    label: "Delighted",    icon: "😄", color: "#085041", bg: "#E1F5EE" },
 ];
 
 function SatIcon({ sat, size = 16 }: { sat: StakeholderSatisfaction; size?: number }) {
   const faceMap: Record<StakeholderSatisfaction, JSX.Element> = {
-    angry: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
-        <path d="M8.5 8.5l2 1.5" /><path d="M15.5 8.5l-2 1.5" />
-      </svg>
-    ),
-    unhappy: (
+    dissatisfied: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
@@ -1698,7 +1690,7 @@ function SatIcon({ sat, size = 16 }: { sat: StakeholderSatisfaction; size?: numb
         <line x1="9" y1="9" x2="9.01" y2="9" strokeWidth={2.5} /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth={2.5} />
       </svg>
     ),
-    happy: (
+    satisfied: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <path d="M8 14s1.5 2 4 2 4-2 4-2" />

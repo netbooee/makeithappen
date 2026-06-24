@@ -111,7 +111,7 @@ export interface ProjectIssue {
   resolution?: string;
 }
 
-export type StakeholderSatisfaction = "angry" | "unhappy" | "neutral" | "happy" | "delighted";
+export type StakeholderSatisfaction = "dissatisfied" | "neutral" | "satisfied" | "delighted";
 
 export interface ProjectStakeholder {
   id: string;
