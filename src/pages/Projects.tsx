@@ -1667,6 +1667,13 @@ function extInitials(name: string) {
 
 /* ================= Stakeholder section ================= */
 
+const SAT_MIGRATE: Record<string, StakeholderSatisfaction> = {
+  angry: "dissatisfied", unhappy: "dissatisfied", happy: "satisfied",
+};
+function normalizeSat(sat: string): StakeholderSatisfaction {
+  return (SAT_MIGRATE[sat] ?? sat) as StakeholderSatisfaction;
+}
+
 const SAT_LEVELS: { value: StakeholderSatisfaction; label: string; icon: string; color: string; bg: string }[] = [
   { value: "dissatisfied", label: "Dissatisfied", icon: "😟", color: "#A32D2D", bg: "#FCEBEB" },
   { value: "neutral",      label: "Neutral",      icon: "😐", color: "#5F5E5A", bg: "#F1EFE8" },
@@ -1798,7 +1805,8 @@ function StakeholderSection({ project }: { project: Project }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)", flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
                   {(() => {
-                    const lvl = SAT_LEVELS.find(l => l.value === s.satisfaction)!;
+                    const satVal = normalizeSat(s.satisfaction);
+                    const lvl = SAT_LEVELS.find(l => l.value === satVal) ?? SAT_LEVELS[1];
                     const nextIdx = (SAT_LEVELS.indexOf(lvl) + 1) % SAT_LEVELS.length;
                     return (
                       <button
