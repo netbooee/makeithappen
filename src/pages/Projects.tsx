@@ -398,12 +398,12 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
       <div className="task-row" style={{ gap: 8 }}>
         <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
         <button
-          style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
-          className={s.done ? "strike" : ""}
+          style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
           onClick={() => setPanelOpen(true)}
           title="Edit task"
         >
-          {s.t}
+          <span>{s.t}</span>
+          {s.notes && <span style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400 }}>{s.notes}</span>}
         </button>
         <StateTag task={s} />
         {s.due && <DueChip due={s.due} />}
@@ -544,7 +544,7 @@ function MilestoneCard({
               style={{ color: "var(--ink-4)", flexShrink: 0, transition: "transform .18s ease", transform: shown ? "rotate(90deg)" : "none" }}
             />
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
             {showCount && !shown && (
               <span className="chip" style={{ color: total > 0 && done === total ? "var(--next)" : "var(--ink-3)" }}>
                 <CheckCircle2 /> {done}/{total}
@@ -557,7 +557,7 @@ function MilestoneCard({
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
             {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
             <DueChip due={m.due} />
             <StatusChip status={m.status} />
@@ -589,12 +589,12 @@ function MilestoneCard({
             <div key={t.id} className="task-row" style={{ gap: 8 }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
               <button
-                style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
-                className={t.done ? "strike" : ""}
+                style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
                 onClick={() => onEditTask(t.id)}
                 title="Edit task"
               >
-                {t.text}
+                <span>{t.text}</span>
+                {t.notes && <span style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400 }}>{t.notes}</span>}
               </button>
               <StateTag task={t} />
               <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
@@ -966,6 +966,32 @@ export function ProjectDetail() {
             </button>
           </div>
         </div>
+        {total > 0 && (() => {
+          const pct = done / total;
+          const r = 28;
+          const circ = 2 * Math.PI * r;
+          const allDone = done === total;
+          return (
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4 }}>
+              <svg width="72" height="72" viewBox="0 0 72 72" style={{ display: "block" }}>
+                <circle cx="36" cy="36" r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
+                <circle
+                  cx="36" cy="36" r={r}
+                  fill="none"
+                  stroke={allDone ? "var(--next)" : "var(--accent)"}
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={circ}
+                  strokeDashoffset={circ * (1 - pct)}
+                  transform="rotate(-90 36 36)"
+                  style={{ transition: "stroke-dashoffset 0.4s ease" }}
+                />
+                <text x="36" y="33" textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--ink-1)">{Math.round(pct * 100)}%</text>
+                <text x="36" y="47" textAnchor="middle" fontSize="10" fill="var(--ink-4)">{done}/{total}</text>
+              </svg>
+            </div>
+          );
+        })()}
       </div>
 
       <KpiSection project={project} />
@@ -1311,10 +1337,11 @@ function MeetingAgendasSection({ project }: { project: Project }) {
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return b.date.localeCompare(a.date);
+      const da = toDateInputValue(a.date), db = toDateInputValue(b.date);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return db.localeCompare(da);
     }),
     [project.agendas],
   );

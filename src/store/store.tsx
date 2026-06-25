@@ -205,12 +205,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const p = d.projects.find((x) => x.id === projectId);
           const m = p?.milestones.find((x) => x.id === milestoneId);
           const s = m?.subtasks.find((x) => x.id === subtaskId);
-          if (!p || !s) return;
+          if (!p || !s || !m) return;
           s.done = !s.done;
           if (s.done) {
             s.taskStatus = "completed";
           } else if (s.taskStatus === "completed") {
             s.taskStatus = undefined;
+          }
+          const allDone = m.subtasks.length > 0 && m.subtasks.every((x) => x.done);
+          if (allDone) {
+            m.status = "complete";
+          } else if (m.status === "complete") {
+            m.status = "active";
           }
           recomputeProgress(p);
         }),
