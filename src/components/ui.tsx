@@ -25,6 +25,14 @@ function fromDateInputValue(str: string): string {
   return new Date(y, mo - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+export function fmtDue(str: string): string {
+  if (!str || str === "No date" || str === "Not set") return str;
+  const iso = toDateInputValue(str);
+  if (!iso) return str;
+  const [y, mo, d] = iso.split("-").map(Number);
+  return new Date(y, mo - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 export function DateInput({
   value,
   onChange,
@@ -122,7 +130,7 @@ function FlagIcon() {
 }
 
 export function DueChip({ due }: { due: string }) {
-  return <span className="chip"><Calendar /> {due}</span>;
+  return <span className="chip"><Calendar /> {fmtDue(due)}</span>;
 }
 
 export function Bar({ value }: { value: number }) {

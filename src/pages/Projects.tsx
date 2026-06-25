@@ -4,7 +4,7 @@ import {
   AlignLeft, AlertCircle, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
-import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, toDateInputValue } from "../components/ui";
+import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
@@ -598,7 +598,7 @@ function MilestoneCard({
               </button>
               <StateTag task={t} />
               <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
-              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{t.due}</span>}
+              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
             </div>
           ))}
           <AddSubtaskRow projectId={project.id} milestoneId={m.id} />
@@ -1277,7 +1277,7 @@ export function ProjectDetail() {
               <StateTag task={t} />
               <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
               <span className="chip context">{t.context}</span>
-              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{t.due}</span>}
+              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
             </div>
           ))}
           <AddProjectTaskRow projectTitle={project.title} />
