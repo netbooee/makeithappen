@@ -160,7 +160,7 @@ export function ContactList() {
     <div className="page fade">
       <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
         <div style={{ flex: 1 }}>
-          <div className="page-title">E6W Networking</div>
+          <div className="page-title">Contacts</div>
           <div className="page-sub">
             {data.contacts.length} contacts · {e6wCount} in rotation
             {overdueCount > 0 && (
@@ -192,7 +192,7 @@ export function ContactList() {
           }}
           onClick={() => setFilterE6W((v) => !v)}
         >
-          E6W only
+          In rotation
         </button>
         {RELS.map((r) => (
           <button
@@ -217,7 +217,7 @@ export function ContactList() {
                 <th>Email</th>
                 <th className={thClass("rel")} onClick={() => toggleSort("rel")}>Relationship <SortIcon col="rel" /></th>
                 <th className={thClass("lastDate")} onClick={() => toggleSort("lastDate")}>Last Contact <SortIcon col="lastDate" /></th>
-                <th className={thClass("e6w")} onClick={() => toggleSort("e6w")}>E6W <SortIcon col="e6w" /></th>
+                <th className={thClass("e6w")} onClick={() => toggleSort("e6w")}>Rotation <SortIcon col="e6w" /></th>
               </tr>
             </thead>
             <tbody>
@@ -364,7 +364,7 @@ export function ContactDetail() {
     return (
       <div className="page fade">
         <div className="page-title">Contact not found</div>
-        <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={() => navigate("/contacts")}>Back to E6W Networking</button>
+        <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={() => navigate("/contacts")}>Back to Contacts</button>
       </div>
     );
   }
@@ -392,7 +392,7 @@ export function ContactDetail() {
         onClick={() => navigate("/contacts")}
         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-3)", marginBottom: 16, fontWeight: 500 }}
       >
-        <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> E6W Networking
+        <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Contacts
       </button>
 
       <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -478,7 +478,7 @@ export function ContactDetail() {
         {/* E6W toggle */}
         <div className="tweak-row" style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
           <div>
-            <div style={{ fontSize: 13.5, fontWeight: 550, color: "var(--ink)" }}>E6W rotation</div>
+            <div style={{ fontSize: 13.5, fontWeight: 550, color: "var(--ink)" }}>Rotation</div>
             <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Keep in touch every 6 weeks</div>
           </div>
           <button

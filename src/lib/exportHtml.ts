@@ -1,4 +1,4 @@
-import type { Contact, MeetingAgenda, Project } from "./types";
+import type { Contact, MeetingAgenda, Project, SubtaskStatus } from "./types";
 import { toDateInputValue } from "../components/ui";
 
 function esc(s: string): string {
@@ -26,6 +26,25 @@ function remainingBudget(total: string | undefined, spent: string | undefined): 
   const r = t - s, abs = Math.abs(r);
   const fmt = (abs >= 1_000_000 ? `$${+(abs / 1_000_000).toFixed(1)}M` : abs >= 1_000 ? `$${+(abs / 1_000).toFixed(1)}K` : `$${Math.round(abs)}`);
   return { fmt: r < 0 ? `-${fmt}` : fmt, color: r < 0 ? "#EF4444" : "#10B981" };
+}
+
+function taskStatusPill(status: SubtaskStatus | undefined): string {
+  if (!status) return "";
+  const styles: Record<string, [string, string]> = {
+    "not-started": ["#F6F7F9", "#8A909B"],
+    "scheduled":   ["#EEF1FD", "#2E45B8"],
+    "in-progress": ["#FBF3E3", "#97650B"],
+    "completed":   ["#E7F7F1", "#0A7D58"],
+  };
+  const labels: Record<string, string> = {
+    "not-started": "Not started",
+    "scheduled":   "Scheduled",
+    "in-progress": "In progress",
+    "completed":   "Completed",
+  };
+  const [bg, color] = styles[status] ?? ["#F6F7F9", "#8A909B"];
+  const label = labels[status] ?? status;
+  return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:${bg};color:${color};white-space:nowrap;flex-shrink:0">${label}</span>`;
 }
 
 function statusBadge(status: string): string {
@@ -58,6 +77,12 @@ function ragDot(rag?: "green" | "amber" | "red"): string {
   return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c};margin-right:5px;vertical-align:middle"></span>`;
 }
 
+function feedbackPill(projectTitle: string, section: string, email: string): string {
+  if (!email) return "";
+  const subject = encodeURIComponent(`${projectTitle}: ${section}`);
+  return `<a href="mailto:${email}?subject=${subject}" style="display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:#F3F4F6;color:#9CA3AF;text-decoration:none;border:0.5px solid #E7E9ED;white-space:nowrap;flex-shrink:0" onclick="event.stopPropagation()">Feedback</a>`;
+}
+
 function daysRemaining(due: string): string {
   if (!due || due === "No date") return "";
   const d = new Date(due);
@@ -81,7 +106,7 @@ const SEV_STYLE: Record<string, [string, string]> = {
   critical: ["rgba(239,68,68,.14)",   "#A32D2D"],
 };
 
-export function exportProjectHtml(project: Project, contacts: Contact[]): void {
+export function exportProjectHtml(project: Project, contacts: Contact[], feedbackEmail = ""): void {
   const totalSubs = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const doneSubs  = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
   const exportDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -118,12 +143,16 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         const subtasksHtml = sorted.length === 0 ? "" : `
           <div style="padding:6px 14px 8px">
             ${sorted.map((s) => `
-              <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid #F3F4F6">
-                <div style="width:14px;height:14px;border-radius:50%;${s.done ? "background:#10B981;border:1.5px solid #10B981;display:flex;align-items:center;justify-content:center" : "border:1.5px solid #9CA3AF"};flex-shrink:0">
+              <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid #F3F4F6">
+                <div style="width:14px;height:14px;border-radius:50%;${s.done ? "background:#10B981;border:1.5px solid #10B981;display:flex;align-items:center;justify-content:center" : "border:1.5px solid #9CA3AF"};flex-shrink:0;margin-top:1px;align-self:flex-start">
                   ${s.done ? `<span style="color:white;font-size:9px;font-weight:700">✓</span>` : ""}
                 </div>
-                <span style="font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"};flex:1">${esc(s.t)}</span>
-                ${s.due ? `<span style="font-size:11px;color:#6B7280">${esc(s.due)}</span>` : ""}
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
+                  ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
+                </div>
+                ${taskStatusPill(s.taskStatus)}
+                ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(s.due)}</span>` : ""}
                 <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
               </div>
             `).join("")}
@@ -263,7 +292,10 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
       <summary style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
         <span style="display:inline-block;font-size:9px;color:#6B7280;flex-shrink:0;transition:transform .18s" class="ext-chev">▶</span>
         <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">External Team</span>
-        ${externalTeam.length > 0 ? `<span style="font-size:10px;color:#6B7280;margin-left:auto">${externalTeam.length}</span>` : ""}
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+          ${externalTeam.length > 0 ? `<span style="font-size:10px;color:#6B7280">${externalTeam.length}</span>` : ""}
+          ${feedbackPill(project.title, "External Team", feedbackEmail)}
+        </div>
       </summary>
       <div style="padding:4px 12px 4px">${extTeamBody}</div>
     </details>`;
@@ -310,10 +342,11 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 
   // ── Meeting Agendas ─────────────────────────────────────────────────────────
   const sortedAgendas = [...(project.agendas ?? [])].sort((a, b) => {
-    if (!a.date && !b.date) return 0;
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return b.date.localeCompare(a.date);
+    const da = toDateInputValue(a.date), db = toDateInputValue(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return db.localeCompare(da);
   });
   const fmtADate = (str: string) => {
     if (!str) return "";
@@ -330,6 +363,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         <span class="ag-chev" style="display:inline-block;font-size:9px;color:#6B7280">▶</span>
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">Meeting Agendas</span>
         <span style="font-size:11px;color:#6B7280;margin-left:2px">(${sortedAgendas.length})</span>
+        <div style="margin-left:auto">${feedbackPill(project.title, "Meeting Agendas", feedbackEmail)}</div>
       </summary>
       <div style="padding:16px 32px 24px;display:flex;flex-direction:column;gap:8px">
         ${sortedAgendas.map((ag) => {
@@ -399,7 +433,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
   </style>
 </head>
 <body>
-<div class="doc" style="background:#fff;max-width:900px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
+<div class="doc" style="background:#fff;max-width:1100px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
 
   <div style="padding:28px 32px 24px;border-bottom:0.5px solid #E7E9ED;display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
     <div style="flex:1;min-width:0">
@@ -459,11 +493,11 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
 
   <div style="display:grid;grid-template-columns:1.4fr 1fr">
     <div style="padding:24px 28px;border-right:0.5px solid #E7E9ED">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:12px">Milestones</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Milestones</div>${feedbackPill(project.title, "Milestones", feedbackEmail)}</div>
       ${milestonesHtml}
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin:24px 0 10px">Risk register</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Risk register</div>${feedbackPill(project.title, "Risk register", feedbackEmail)}</div>
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin:24px 0 10px">Issue Tracker</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Issue Tracker</div>${feedbackPill(project.title, "Issue Tracker", feedbackEmail)}</div>
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${issuesHtml}</div>
     </div>
     <div style="padding:24px 24px">
@@ -471,6 +505,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
           <span class="ms-chev">▶</span>
           <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Internal Team</span>
+          <div style="margin-left:auto">${feedbackPill(project.title, "Internal Team", feedbackEmail)}</div>
         </summary>
         <div style="padding:4px 12px 4px">${teamHtml}</div>
       </details>
@@ -479,13 +514,16 @@ export function exportProjectHtml(project: Project, contacts: Contact[]): void {
         <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
           <span class="ms-chev">▶</span>
           <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Stakeholders</span>
-          ${stakeholders.length > 0 ? `<span style="font-size:10px;color:#6B7280;margin-left:auto">${stakeholders.length}</span>` : ""}
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            ${stakeholders.length > 0 ? `<span style="font-size:10px;color:#6B7280">${stakeholders.length}</span>` : ""}
+            ${feedbackPill(project.title, "Stakeholders", feedbackEmail)}
+          </div>
         </summary>
         <div style="padding:4px 12px 4px">${stakeholdersHtml}</div>
       </details>
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:10px">Resources</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Resources</div>${feedbackPill(project.title, "Resources", feedbackEmail)}</div>
       <div style="margin-bottom:20px">${resourcesHtml}</div>
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:10px">Status updates</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Status updates</div>${feedbackPill(project.title, "Status updates", feedbackEmail)}</div>
       ${updatesHtml}
     </div>
   </div>
@@ -688,7 +726,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
 
 // ── Agenda HTML export ───────────────────────────────────────────────────────
 
-export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[]): void {
+export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[], feedbackEmail = ""): void {
   // Dates are stored in display format ("Jun 20, 2026") by DateInput — normalize to ISO first
   const dateIso = toDateInputValue(agenda.date) || new Date().toISOString().slice(0, 10);
 
@@ -735,7 +773,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
     ? `\n\nCurrent agenda:\n${agenda.items.map((item, i) => `${i + 1}. ${item.text}`).join("\n")}`
     : "";
   const mailBody = encodeURIComponent(`Meeting: ${agenda.title}\nDate: ${fmtDate(dateIso)}\nProject: ${project.title}${agendaLines}\n\nProposed additional topic:\n`);
-  const mailto = `mailto:tmartinez@lowenstein.com?subject=${mailSubject}&body=${mailBody}`;
+  const mailto = feedbackEmail ? `mailto:${feedbackEmail}?subject=${mailSubject}&body=${mailBody}` : "#";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -780,10 +818,10 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
     </div>
   </div>` : ""}
 
-  <div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
+  ${feedbackEmail ? `<div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
     <div style="font-size:14px;color:#6B7280;margin-bottom:16px">Have a topic you'd like to add to this agenda?</div>
     <a href="${mailto}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:11px 28px;background:#4F6BED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.01em">Suggest a Topic →</a>
-  </div>
+  </div>` : ""}
 
   <div style="border-top:0.5px solid #E7E9ED;padding:10px 44px;display:flex;align-items:center;justify-content:space-between;background:#FAFBFC">
     <div style="font-size:11px;color:#6B7280">${esc(project.title)} · ${esc(agenda.title)}</div>

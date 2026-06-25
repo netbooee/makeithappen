@@ -951,7 +951,7 @@ export function ProjectDetail() {
             <button
               className="btn btn-ghost"
               style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectHtml(project, data.contacts)}
+              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "")}
               title="Download self-contained HTML report"
             >
               <Download size={12} /> Export HTML
@@ -1315,7 +1315,7 @@ function fmtAgendaDate(str: string): string {
 }
 
 function MeetingAgendasSection({ project }: { project: Project }) {
-  const { data, updateProject } = useStore();
+  const { data, updateProject, all } = useStore();
 
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
@@ -1584,7 +1584,7 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                   <Calendar size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1 }}>{agenda.title}</span>
                   {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
-                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts); }}><Download size={12} /></button>
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts, all.user.feedbackEmail ?? ""); }}><Download size={12} /></button>
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); startEdit(agenda); }}><Pencil size={12} /></button>
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); deleteMeeting(agenda.id); }}><Trash2 size={12} /></button>
                 </div>

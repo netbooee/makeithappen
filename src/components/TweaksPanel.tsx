@@ -5,13 +5,22 @@ import { supabaseConfigured, saveAnthropicKey, clearAnthropicKey, hasAnthropicKe
 import type { AppData } from "../lib/types";
 
 export function TweaksPanel({ close }: { close: () => void }) {
-  const { tweaks, setTweak, resetDemoData, all, importData } = useStore();
+  const { tweaks, setTweak, resetDemoData, all, importData, updateUser } = useStore();
   const importRef = useRef<HTMLInputElement>(null);
 
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [keyExists, setKeyExists] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [feedbackEmail, setFeedbackEmail] = useState(all.user.feedbackEmail ?? "");
+  const [emailSaved, setEmailSaved] = useState(false);
+
+  const saveEmail = () => {
+    updateUser({ feedbackEmail: feedbackEmail.trim() });
+    setEmailSaved(true);
+    setTimeout(() => setEmailSaved(false), 2000);
+  };
 
   useEffect(() => {
     if (!supabaseConfigured) return;
@@ -64,6 +73,31 @@ export function TweaksPanel({ close }: { close: () => void }) {
         Settings
         <button className="icon-btn" style={{ marginLeft: "auto" }} onClick={close}><X /></button>
       </h4>
+
+      <div className="tweak-section">Profile</div>
+      <div style={{ padding: "4px 0 6px", fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
+        Email for feedback buttons in HTML exports. Required to enable those buttons.
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <input
+          className="input"
+          type="email"
+          placeholder="your@email.com"
+          value={feedbackEmail}
+          onChange={(e) => { setFeedbackEmail(e.target.value); setEmailSaved(false); }}
+          onKeyDown={(e) => e.key === "Enter" && saveEmail()}
+          style={{ flex: 1, fontSize: 12.5 }}
+          autoComplete="email"
+        />
+        <button
+          className="btn btn-primary"
+          style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+          onClick={saveEmail}
+          disabled={!feedbackEmail.trim()}
+        >
+          {emailSaved ? "Saved ✓" : "Save"}
+        </button>
+      </div>
 
       <div className="tweak-section">Appearance</div>
 

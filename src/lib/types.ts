@@ -7,6 +7,7 @@ export interface User {
   name: string;
   email: string;
   initials: string;
+  feedbackEmail?: string;
 }
 
 export interface Subtask {

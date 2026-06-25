@@ -58,6 +58,7 @@ export interface Store {
   addContacts: (contacts: Contact[]) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
+  updateUser: (patch: Partial<import("../lib/types").User>) => void;
 }
 
 function computeStreak(checkins: string[]): number {
@@ -391,6 +392,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setAll(data);
         saveUserData(data);
       },
+
+      updateUser: (patch) =>
+        setAll((s) => ({ ...s, user: { ...s.user, ...patch } })),
     };
   }, [all, workspace, tweaks]);
 
