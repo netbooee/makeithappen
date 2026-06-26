@@ -83,10 +83,25 @@ function feedbackPill(projectTitle: string, section: string, email: string): str
   return `<a href="mailto:${email}?subject=${subject}" style="display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:#F3F4F6;color:#9CA3AF;text-decoration:none;border:0.5px solid #E7E9ED;white-space:nowrap;flex-shrink:0" onclick="event.stopPropagation()">Feedback</a>`;
 }
 
+const _MONTHS_EXP = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function parseExportDate(str: string): Date | null {
+  if (!str || str === "No date" || str === "Not set") return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, mo, d] = str.split("-").map(Number);
+    return new Date(y, mo - 1, d);
+  }
+  const m = str.match(/^(\w{3})\s+(\d{1,2})(?:[,\s]+(\d{4}))?$/);
+  if (m) {
+    const mo = _MONTHS_EXP.findIndex(x => x === m[1]);
+    if (mo >= 0) return new Date(m[3] ? +m[3] : new Date().getFullYear(), mo, +m[2]);
+  }
+  return null;
+}
+
 function daysRemaining(due: string): string {
   if (!due || due === "No date") return "";
-  const d = new Date(due);
-  if (isNaN(d.getTime())) return "";
+  const d = parseExportDate(due);
+  if (!d) return "";
   const diff = Math.ceil((d.getTime() - Date.now()) / 86400000);
   if (diff < 0) return `${Math.abs(diff)} days overdue`;
   if (diff === 0) return "Due today";
@@ -380,6 +395,11 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                   <div style="width:13px;height:13px;border:1.5px solid #9CA3AF;border-radius:3px;flex-shrink:0"></div>
                   <span style="font-size:12.5px;color:#374151">${esc(it.text)}</span>
                 </div>`).join("");
+          const notesHtml = ag.notes ? `
+            <div style="border-top:0.5px solid #E7E9ED;margin-top:8px;padding-top:8px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:5px">Meeting Notes</div>
+              <p style="font-size:12.5px;color:#374151;line-height:1.6;white-space:pre-wrap">${esc(ag.notes)}</p>
+            </div>` : "";
           const resourcesHtml = (ag.resources ?? []).length === 0 ? "" : `
             <div style="border-top:0.5px solid #E7E9ED;margin-top:8px;padding-top:8px;display:flex;flex-direction:column;gap:5px">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">Links</div>
@@ -400,6 +420,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
               </summary>
               <div style="padding:10px 14px 12px">
                 ${itemsHtml}
+                ${notesHtml}
                 ${resourcesHtml}
               </div>
             </details>`;
@@ -793,7 +814,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
       ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none">${esc(project.title)}</a>` : esc(project.title)}</div>
+      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
     </div>
     <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
     <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
