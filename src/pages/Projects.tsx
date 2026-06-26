@@ -35,6 +35,7 @@ function ProjectModal({
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
   const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
   const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
+  const [webUrl, setWebUrl] = useState(initial.webUrl ?? "");
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,6 +64,7 @@ function ProjectModal({
       active: status === "active",
       heroImage: heroImage || undefined,
       clientLogo: clientLogo || undefined,
+      webUrl: webUrl.trim() || undefined,
     });
     close();
   };
@@ -149,6 +151,16 @@ function ProjectModal({
               </button>
             )}
           </div>
+        </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Project URL</div>
+          <input
+            className="input"
+            type="url"
+            placeholder="https://…"
+            value={webUrl}
+            onChange={(e) => setWebUrl(e.target.value)}
+          />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-primary" onClick={submit}>

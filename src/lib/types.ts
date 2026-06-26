@@ -137,6 +137,7 @@ export interface Project {
   onBudget?: boolean;
   risk?: "green" | "amber" | "red";
   riskNote?: string;
+  webUrl?: string;
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];

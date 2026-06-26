@@ -793,7 +793,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
       ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${esc(project.title)}</div>
+      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none">${esc(project.title)}</a>` : esc(project.title)}</div>
     </div>
     <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
     <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
