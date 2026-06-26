@@ -1654,6 +1654,23 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                       <input className="input" placeholder="Add agenda item…" value={itemInputs[agenda.id] ?? ""} onChange={(e) => setItemInputs((p) => ({ ...p, [agenda.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addItem(agenda.id); }} style={{ flex: 1, fontSize: 12.5 }} />
                       <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => addItem(agenda.id)}>Add</button>
                     </div>
+                    {/* Meeting notes */}
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4, display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-4)" }}>Meeting notes</span>
+                      <textarea
+                        key={agenda.id + "-notes"}
+                        defaultValue={agenda.notes ?? ""}
+                        placeholder="Paste meeting minutes or summarize key decisions and action items…"
+                        onBlur={(e) => {
+                          const val = e.target.value;
+                          updateProject(project.id, {
+                            agendas: (project.agendas ?? []).map((a) => a.id === agenda.id ? { ...a, notes: val } : a),
+                          });
+                        }}
+                        rows={5}
+                        style={{ fontSize: 13, color: "var(--ink-2)", resize: "vertical", border: "1px solid var(--border)", borderRadius: 5, padding: "7px 10px", background: "transparent", outline: "none", lineHeight: 1.55, fontFamily: "inherit" }}
+                      />
+                    </div>
                     {/* Resources */}
                     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4, display: "flex", flexDirection: "column", gap: 5 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-4)" }}>Links</span>

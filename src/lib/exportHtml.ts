@@ -806,6 +806,12 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
     ${itemsHtml}
   </div>
 
+  ${agenda.notes ? `
+  <div style="padding:28px 44px 24px;border-top:0.5px solid #E7E9ED">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:10px">Meeting Notes</div>
+    <p style="font-size:14px;color:#374151;line-height:1.65;white-space:pre-wrap">${esc(agenda.notes)}</p>
+  </div>` : ""}
+
   ${(agenda.resources ?? []).length > 0 ? `
   <div style="padding:20px 44px 24px;border-top:0.5px solid #E7E9ED">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:10px">Resources</div>

@@ -74,6 +74,7 @@ export interface MeetingAgenda {
   attendees: AgendaAttendee[];
   items: AgendaItem[];
   resources?: ProjectResource[];
+  notes?: string;
 }
 
 export interface ProjectResource {
