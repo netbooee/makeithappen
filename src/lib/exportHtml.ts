@@ -158,17 +158,19 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         const subtasksHtml = sorted.length === 0 ? "" : `
           <div style="padding:6px 14px 8px">
             ${sorted.map((s) => `
-              <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid #F3F4F6">
-                <div style="width:14px;height:14px;border-radius:50%;${s.done ? "background:#10B981;border:1.5px solid #10B981;display:flex;align-items:center;justify-content:center" : "border:1.5px solid #9CA3AF"};flex-shrink:0;margin-top:1px;align-self:flex-start">
+              <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid #F3F4F6">
+                <div style="width:14px;height:14px;border-radius:50%;${s.done ? "background:#10B981;border:1.5px solid #10B981;display:flex;align-items:center;justify-content:center" : "border:1.5px solid #9CA3AF"};flex-shrink:0;margin-top:2px">
                   ${s.done ? `<span style="color:white;font-size:9px;font-weight:700">✓</span>` : ""}
                 </div>
-                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-                  <span style="font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="flex:1;font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
+                    ${taskStatusPill(s.taskStatus)}
+                    ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(s.due)}</span>` : ""}
+                    <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
+                  </div>
                   ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
                 </div>
-                ${taskStatusPill(s.taskStatus)}
-                ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap;align-self:flex-start">${esc(s.due)}</span>` : ""}
-                <span style="font-size:10.5px;color:#6B7280;align-self:flex-start">${esc(s.who)}</span>
               </div>
             `).join("")}
           </div>`;

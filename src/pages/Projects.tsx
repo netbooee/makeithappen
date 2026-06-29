@@ -409,25 +409,36 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
     <>
       <div className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
         <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
-        <button
-          style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
-          onClick={() => setPanelOpen(true)}
-          title="Edit task"
-        >
-          <span>{s.t}</span>
-          {s.notes && <span style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400 }}>{s.notes}</span>}
-        </button>
-        <StateTag task={s} />
-        {s.due && <DueChip due={s.due} />}
-        <Avatar who={s.who} size={20} color="var(--ink-3)" />
-        <button
-          className="icon-btn"
-          style={{ color: "var(--ink-4)" }}
-          onClick={() => deleteSubtask(projectId, milestoneId, s.id)}
-          title="Delete task"
-        >
-          <Trash2 size={12} />
-        </button>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
+              onClick={() => setPanelOpen(true)}
+              title="Edit task"
+            >
+              {s.t}
+            </button>
+            <StateTag task={s} />
+            {s.due && <DueChip due={s.due} />}
+            <Avatar who={s.who} size={20} color="var(--ink-3)" />
+            <button
+              className="icon-btn"
+              style={{ color: "var(--ink-4)" }}
+              onClick={() => deleteSubtask(projectId, milestoneId, s.id)}
+              title="Delete task"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+          {s.notes && (
+            <span
+              style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, cursor: "pointer" }}
+              onClick={() => setPanelOpen(true)}
+            >
+              {s.notes}
+            </span>
+          )}
+        </div>
       </div>
       {panelOpen && (
         <SubtaskEditPanel
@@ -617,17 +628,28 @@ function MilestoneCard({
           {linkedTasks.map(({ task: t, list }) => (
             <div key={t.id} className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
-              <button
-                style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
-                onClick={() => onEditTask(t.id)}
-                title="Edit task"
-              >
-                <span>{t.text}</span>
-                {t.notes && <span style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400 }}>{t.notes}</span>}
-              </button>
-              <StateTag task={t} />
-              <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
-              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
+                    onClick={() => onEditTask(t.id)}
+                    title="Edit task"
+                  >
+                    {t.text}
+                  </button>
+                  <StateTag task={t} />
+                  <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
+                  {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
+                </div>
+                {t.notes && (
+                  <span
+                    style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, cursor: "pointer" }}
+                    onClick={() => onEditTask(t.id)}
+                  >
+                    {t.notes}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
           <AddSubtaskRow projectId={project.id} milestoneId={m.id} />
