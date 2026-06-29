@@ -146,8 +146,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     : sortedMilestones.map((m) => {
         const dotColor = m.status === "active" ? "#4F6BED" : "#6B7280";
         const statusDot = m.status === "complete"
-          ? `<span style="font-size:13px;line-height:1;flex-shrink:0">✅</span>`
-          : `<div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>`;
+          ? `<span style="font-size:13px;line-height:1;flex-shrink:0;align-self:flex-start;margin-top:2px">✅</span>`
+          : `<div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;align-self:flex-start;margin-top:4px"></div>`;
         const sorted = [...m.subtasks].sort((a, b) => {
           if (a.done !== b.done) return a.done ? 1 : -1;
           if (!a.due && !b.due) return 0;
@@ -175,7 +175,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         return `
           <details style="border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:10px;overflow:hidden">
             <summary class="ms-summary" style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:#EEF0F3;user-select:none">
-              <span class="ms-chev">▶</span>
+              <span class="ms-chev" style="align-self:flex-start;margin-top:2px">▶</span>
               ${statusDot}
               <div style="flex:1;min-width:0">
                 <div style="font-size:13px;font-weight:500;color:#1A1D23">${esc(m.title)}</div>
@@ -596,8 +596,8 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     : sortedMilestones.map((m) => {
         const dot = m.status === "active" ? "#4F6BED" : m.status === "waiting" ? "#8B5CF6" : "#F59E0B";
         const pdfStatusDot = m.status === "complete"
-          ? `<span style="font-size:11px;line-height:1;flex-shrink:0">✅</span>`
-          : `<div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></div>`;
+          ? `<span style="font-size:11px;line-height:1;flex-shrink:0;align-self:flex-start;margin-top:2px">✅</span>`
+          : `<div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0;align-self:flex-start;margin-top:3px"></div>`;
         return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;background:#F9FAFB;border:0.5px solid #F0F1F3;margin-bottom:4px">
           ${pdfStatusDot}
           <div style="flex:1;min-width:0">

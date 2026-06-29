@@ -1025,9 +1025,9 @@ export function ProjectDetail() {
 
       <KpiSection project={project} />
 
-      <div className="project-cols" style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 20, alignItems: "start" }}>
+      <div className="project-cols" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, alignItems: "start" }}>
         {/* LEFT: milestones */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div className="section-h">
             Milestones / Workstreams
             {tweaks.collapsible && (
@@ -1064,7 +1064,7 @@ export function ProjectDetail() {
         </div>
 
         {/* RIGHT: team + status updates */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           {/* Team */}
           <div style={{ marginBottom: 20 }}>
             <div className="section-h" style={{ cursor: "pointer", userSelect: "none" }} onClick={() => setTeamOpen((v) => !v)}>
