@@ -177,9 +177,12 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
             <summary class="ms-summary" style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:#EEF0F3;user-select:none">
               <span class="ms-chev">▶</span>
               ${statusDot}
-              <div style="font-size:13px;font-weight:500;flex:1;color:#1A1D23">${esc(m.title)}</div>
-              ${m.start ? `<span style="font-size:11px;color:#6B7280">${esc(m.start)} →</span>` : ""}
-              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:#6B7280">${esc(m.due)}</span>` : ""}
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500;color:#1A1D23">${esc(m.title)}</div>
+                ${m.desc ? `<div style="font-size:11px;color:#6B7280;margin-top:2px">${esc(m.desc)}</div>` : ""}
+              </div>
+              ${m.start ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(m.start)} →</span>` : ""}
+              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(m.due)}</span>` : ""}
               ${statusBadge(m.status)}
             </summary>
             ${subtasksHtml}
@@ -597,8 +600,11 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
           : `<div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></div>`;
         return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;background:#F9FAFB;border:0.5px solid #F0F1F3;margin-bottom:4px">
           ${pdfStatusDot}
-          <div style="font-size:10.5px;font-weight:500;color:#1A1D23;flex:1">${esc(m.title)}</div>
-          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:#6B7280">${esc(m.due)}</span>` : ""}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10.5px;font-weight:500;color:#1A1D23">${esc(m.title)}</div>
+            ${m.desc ? `<div style="font-size:9.5px;color:#6B7280;margin-top:1px">${esc(m.desc)}</div>` : ""}
+          </div>
+          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:#6B7280;white-space:nowrap">${esc(m.due)}</span>` : ""}
           ${statusBadge(m.status)}
         </div>`;
       }).join("");

@@ -28,6 +28,7 @@ export interface Subtask {
 export interface Milestone {
   id: string;
   title: string;
+  desc?: string;
   start?: string;
   due: string;
   status: Status;

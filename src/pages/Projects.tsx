@@ -463,20 +463,23 @@ function MilestoneCard({
 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(m.title);
+  const [editDesc, setEditDesc] = useState(m.desc ?? "");
   const [editStart, setEditStart] = useState(m.start ?? "");
   const [editDue, setEditDue] = useState(m.due === "No date" ? "" : m.due);
   const [editStatus, setEditStatus] = useState<Status>(m.status);
 
   useEffect(() => {
     setEditTitle(m.title);
+    setEditDesc(m.desc ?? "");
     setEditStart(m.start ?? "");
     setEditDue(m.due === "No date" ? "" : m.due);
     setEditStatus(m.status);
-  }, [m.title, m.start, m.due, m.status]);
+  }, [m.title, m.desc, m.start, m.due, m.status]);
 
   const commitEdit = () => {
     updateMilestone(project.id, m.id, {
       title: editTitle.trim() || m.title,
+      desc: editDesc.trim() || undefined,
       start: editStart.trim() || undefined,
       due: editDue.trim() || "No date",
       status: editStatus,
@@ -502,6 +505,14 @@ function MilestoneCard({
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditing(false); }}
             style={{ fontWeight: 600, fontSize: 14 }}
+          />
+          <textarea
+            className="input"
+            placeholder="Description (optional)"
+            value={editDesc}
+            onChange={(e) => setEditDesc(e.target.value)}
+            rows={2}
+            style={{ fontSize: 12.5, resize: "vertical" }}
           />
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <DateInput value={editStart} onChange={setEditStart} style={{ width: 140, fontSize: 12.5 }} />
@@ -556,7 +567,10 @@ function MilestoneCard({
               style={{ color: "var(--ink-4)", flexShrink: 0, transition: "transform .18s ease", transform: shown ? "rotate(90deg)" : "none" }}
             />
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+              {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
+            </div>
             {showCount && !shown && (
               <span className="chip" style={{ color: total > 0 && done === total ? "var(--next)" : "var(--ink-3)" }}>
                 <CheckCircle2 /> {done}/{total}
@@ -569,7 +583,10 @@ function MilestoneCard({
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+              {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
+            </div>
             {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
             <DueChip due={m.due} />
             <StatusChip status={m.status} />
