@@ -44,7 +44,7 @@ function taskStatusPill(status: SubtaskStatus | undefined): string {
   };
   const [bg, color] = styles[status] ?? ["#F6F7F9", "#8A909B"];
   const label = labels[status] ?? status;
-  return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:${bg};color:${color};white-space:nowrap;flex-shrink:0">${label}</span>`;
+  return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:${bg};color:${color};white-space:nowrap;flex-shrink:0;align-self:flex-start">${label}</span>`;
 }
 
 function statusBadge(status: string): string {
@@ -167,8 +167,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                   ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
                 </div>
                 ${taskStatusPill(s.taskStatus)}
-                ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(s.due)}</span>` : ""}
-                <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
+                ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap;align-self:flex-start">${esc(s.due)}</span>` : ""}
+                <span style="font-size:10.5px;color:#6B7280;align-self:flex-start">${esc(s.who)}</span>
               </div>
             `).join("")}
           </div>`;

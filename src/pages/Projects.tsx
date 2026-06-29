@@ -407,7 +407,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
 
   return (
     <>
-      <div className="task-row" style={{ gap: 8 }}>
+      <div className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
         <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
         <button
           style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
@@ -615,7 +615,7 @@ function MilestoneCard({
               <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
             ))}
           {linkedTasks.map(({ task: t, list }) => (
-            <div key={t.id} className="task-row" style={{ gap: 8 }}>
+            <div key={t.id} className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
               <button
                 style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 }}
