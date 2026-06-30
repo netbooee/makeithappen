@@ -78,7 +78,7 @@ export function Tasks() {
   };
 
   const matches = (t: Task) =>
-    (!filterProject || t.project === filterProject) &&
+    (!filterProject || (filterProject === "__none__" ? !t.project : t.project === filterProject)) &&
     (!nextOnly || (t.next && !t.done));
 
   const goToProject = (title: string | null) => {
@@ -193,7 +193,7 @@ export function Tasks() {
       const mile = r.kind === "task" ? (r.milestoneName ?? "") : r.milestoneTitle;
       if (tFilterDone !== "all" && (tFilterDone === "done") !== isDone) return false;
       if (tFilterGroup !== "all" && r.group !== tFilterGroup) return false;
-      if (tFilterProject !== "all" && proj !== tFilterProject) return false;
+      if (tFilterProject !== "all" && (tFilterProject === "__none__" ? proj !== "" : proj !== tFilterProject)) return false;
       if (tFilterMilestone !== "all" && mile !== tFilterMilestone) return false;
       if (nextOnly && r.kind === "task" && (!r.task.next || r.task.done)) return false;
       return true;
@@ -292,16 +292,16 @@ export function Tasks() {
         >
           Next actions only
         </button>
-        {projectTitles.map((p) => (
-          <button
-            key={p}
-            className="chip"
-            style={{ cursor: "pointer", borderColor: filterProject === p ? "var(--accent)" : undefined, color: filterProject === p ? "var(--accent-ink)" : undefined }}
-            onClick={() => setFilterProject(filterProject === p ? null : p)}
-          >
-            {p}
-          </button>
-        ))}
+        <select
+          className="input"
+          style={{ fontSize: 12.5, padding: "4px 8px", height: 28 }}
+          value={filterProject ?? "all"}
+          onChange={(e) => setFilterProject(e.target.value === "all" ? null : e.target.value)}
+        >
+          <option value="all">All projects</option>
+          <option value="__none__">No project</option>
+          {data.projects.map((p) => <option key={p.id} value={p.title}>{p.title}</option>)}
+        </select>
       </div>
 
       {view === "table" ? (
@@ -338,6 +338,7 @@ export function Tasks() {
                 <td>
                   <select className="table-filter" value={tFilterProject} onChange={(e) => setTFilterProject(e.target.value)}>
                     <option value="all">All projects</option>
+                    <option value="__none__">No project</option>
                     {data.projects.map((p) => <option key={p.id} value={p.title}>{p.title}</option>)}
                   </select>
                 </td>
