@@ -444,14 +444,17 @@ export function Tasks() {
       <>
       {sections.map(({ key, label, list, pSubs }) => {
         const visible = list.filter(matches);
-        const totalOpen = visible.filter((t) => !t.done).length + pSubs.length;
+        const filteredPSubs = filterProject
+          ? filterProject === "__none__" ? [] : pSubs.filter((s) => s.projectTitle === filterProject)
+          : pSubs;
+        const totalOpen = visible.filter((t) => !t.done).length + filteredPSubs.filter((s) => !s.subtask.done).length;
         return (
           <div key={key} style={{ marginBottom: 22 }}>
             <div className="section-h">
               {label} <span style={{ fontWeight: 500 }}>{totalOpen}</span>
             </div>
             <div className="card" style={{ padding: "6px 10px 8px" }}>
-              {visible.length === 0 && pSubs.length === 0 && (
+              {visible.length === 0 && filteredPSubs.length === 0 && (
                 <div style={{ padding: "10px 8px", fontSize: 13, color: "var(--ink-4)" }}>Nothing here.</div>
               )}
               {visible.map((t) => (
@@ -482,7 +485,7 @@ export function Tasks() {
                   </button>
                 </div>
               ))}
-              {pSubs.map(({ projectId, milestoneId, projectTitle, subtask }) => (
+              {filteredPSubs.map(({ projectId, milestoneId, projectTitle, subtask }) => (
                 <div key={subtask.id} className="task-row">
                   <TaskMarker task={subtask} onClick={() => toggleSubtask(projectId, milestoneId, subtask.id)} />
                   <button
