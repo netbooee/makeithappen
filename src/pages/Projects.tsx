@@ -4,7 +4,7 @@ import {
   AlignLeft, AlertCircle, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Copy, Download, ExternalLink, LayoutGrid, Link2, List, Mail, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../store/store";
-import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, toDateInputValue } from "../components/ui";
+import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
@@ -303,7 +303,7 @@ export function ProjectList() {
                       <CheckCircle2 size={13} /> {done}/{total} subtasks
                     </span>
                   )}
-                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, color: isOverdue(p.due) ? "var(--danger)" : undefined }}>
                     <Calendar size={13} /> {p.due}
                   </span>
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
@@ -375,7 +375,7 @@ export function ProjectList() {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={12} /> {p.due}</span>
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
@@ -536,7 +536,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
               {s.t}
             </button>
             <StateTag task={s} />
-            {s.due && <DueChip due={s.due} />}
+            {s.due && <DueChip due={s.due} done={s.done} />}
             <Avatar who={s.who} size={20} color="var(--ink-3)" />
             <button
               className="icon-btn"
@@ -561,7 +561,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
         <SubtaskEditPanel
           projectId={projectId}
           milestoneId={milestoneId}
-          subtask={s}
+          subtaskId={s.id}
           close={() => setPanelOpen(false)}
         />
       )}
@@ -756,7 +756,7 @@ function MilestoneCard({
                   </button>
                   <StateTag task={t} />
                   <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
-                  {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
+                  {t.due && <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
                 </div>
                 {t.notes && (
                   <span
@@ -1114,7 +1114,7 @@ export function ProjectDetail() {
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
             <span className="chip"><UserRound /> {project.owner}</span>
-            <span className="chip"><Calendar /> Due {project.due}</span>
+            <span className={`chip${isOverdue(project.due) ? " overdue" : ""}`}><Calendar /> Due {project.due}</span>
             <span className="chip"><CheckCircle2 /> {done}/{total} done</span>
             <button
               className="btn btn-ghost"
@@ -1445,7 +1445,11 @@ export function ProjectDetail() {
               <StateTag task={t} />
               <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
               <span className="chip context">{t.context}</span>
-              {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
+              {t.due && (
+                <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>
+                  {fmtDue(t.due)}
+                </span>
+              )}
             </div>
           ))}
           <AddProjectTaskRow projectTitle={project.title} />

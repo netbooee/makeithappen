@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, ChevronUp, LayoutList, Plus, Table2 } from "lucide-react";
 import { useStore } from "../store/store";
-import { DateInput, StateTag, TaskMarker, fmtDue, toDateInputValue } from "../components/ui";
+import { DateInput, StateTag, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
@@ -23,7 +23,7 @@ export function Tasks() {
   const [filterProject, setFilterProject] = useState<string | null>(null);
   const [nextOnly, setNextOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtask: Subtask } | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtaskId: string } | null>(null);
   const [view, setView] = useState<"list" | "table">(() =>
     (localStorage.getItem("mih_tasks_view") as "list" | "table") ?? "list"
   );
@@ -396,7 +396,7 @@ export function Tasks() {
                         ) : "—"}
                       </td>
                       <td style={{ fontSize: 11, color: "var(--ink-3)" }}>{row.milestoneName ?? "—"}</td>
-                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{t.due ? fmtDue(t.due) : "—"}</td>
+                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: t.due && isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-3)" }}>{t.due ? fmtDue(t.due) : "—"}</td>
                     </tr>
                   );
                 } else {
@@ -411,7 +411,7 @@ export function Tasks() {
                           <button
                             style={{ textAlign: "left", cursor: "pointer", fontSize: 13, color: "var(--ink)" }}
                             className={subtask.done ? "strike" : ""}
-                            onClick={() => setEditingSubtask({ projectId, milestoneId, subtask })}
+                            onClick={() => setEditingSubtask({ projectId, milestoneId, subtaskId: subtask.id })}
                           >
                             {subtask.t}
                           </button>
@@ -429,7 +429,7 @@ export function Tasks() {
                         </button>
                       </td>
                       <td style={{ fontSize: 11, color: "var(--ink-3)" }}>{milestoneTitle}</td>
-                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>{subtask.due ? fmtDue(subtask.due) : "—"}</td>
+                      <td style={{ whiteSpace: "nowrap", fontSize: 12, color: subtask.due && isOverdue(subtask.due, subtask.done) ? "var(--danger)" : "var(--ink-3)" }}>{subtask.due ? fmtDue(subtask.due) : "—"}</td>
                     </tr>
                   );
                 }
@@ -474,7 +474,7 @@ export function Tasks() {
                       {t.project}
                     </button>
                   )}
-                  {t.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
+                  {t.due && <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
                   <button
                     className="icon-btn"
                     style={{ width: 24, height: 24, color: t.reminder ? "var(--accent)" : undefined }}
@@ -492,7 +492,7 @@ export function Tasks() {
                     style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
                     className={subtask.done ? "strike" : ""}
                     title="Edit task"
-                    onClick={() => setEditingSubtask({ projectId, milestoneId, subtask })}
+                    onClick={() => setEditingSubtask({ projectId, milestoneId, subtaskId: subtask.id })}
                   >
                     {subtask.t}
                   </button>
@@ -500,7 +500,7 @@ export function Tasks() {
                   <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(projectTitle)}>
                     {projectTitle}
                   </button>
-                  {subtask.due && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(subtask.due)}</span>}
+                  {subtask.due && <span style={{ fontSize: 11.5, color: isOverdue(subtask.due, subtask.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(subtask.due)}</span>}
                 </div>
               ))}
             </div>
@@ -515,7 +515,7 @@ export function Tasks() {
         <SubtaskEditPanel
           projectId={editingSubtask.projectId}
           milestoneId={editingSubtask.milestoneId}
-          subtask={editingSubtask.subtask}
+          subtaskId={editingSubtask.subtaskId}
           close={() => setEditingSubtask(null)}
         />
       )}

@@ -98,6 +98,13 @@ function parseExportDate(str: string): Date | null {
   return null;
 }
 
+function isExportOverdue(due: string): boolean {
+  const d = parseExportDate(due);
+  if (!d) return false;
+  const now = new Date();
+  return d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 function daysRemaining(due: string): string {
   if (!due || due === "No date") return "";
   const d = parseExportDate(due);
@@ -166,7 +173,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                   <div style="display:flex;align-items:center;gap:8px">
                     <span style="flex:1;font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
                     ${taskStatusPill(s.taskStatus)}
-                    ${s.due ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(s.due)}</span>` : ""}
+                    ${s.due ? `<span style="font-size:11px;color:${isExportOverdue(s.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(s.due)}</span>` : ""}
                     <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
                   </div>
                   ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
@@ -184,7 +191,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                 ${m.desc ? `<div style="font-size:11px;color:#6B7280;margin-top:2px">${esc(m.desc)}</div>` : ""}
               </div>
               ${m.start ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(m.start)} →</span>` : ""}
-              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(m.due)}</span>` : ""}
+              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:${isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
               ${statusBadge(m.status)}
             </summary>
             ${subtasksHtml}
@@ -606,7 +613,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
             <div style="font-size:10.5px;font-weight:500;color:#1A1D23">${esc(m.title)}</div>
             ${m.desc ? `<div style="font-size:9.5px;color:#6B7280;margin-top:1px">${esc(m.desc)}</div>` : ""}
           </div>
-          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:#6B7280;white-space:nowrap">${esc(m.due)}</span>` : ""}
+          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:${isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
           ${statusBadge(m.status)}
         </div>`;
       }).join("");

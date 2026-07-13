@@ -33,6 +33,15 @@ export function fmtDue(str: string): string {
   return new Date(y, mo - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+export function isOverdue(due: string | undefined, done = false): boolean {
+  if (!due || done) return false;
+  const iso = toDateInputValue(due);
+  if (!iso) return false;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return iso < today;
+}
+
 export function DateInput({
   value,
   onChange,
@@ -129,8 +138,8 @@ function FlagIcon() {
   );
 }
 
-export function DueChip({ due }: { due: string }) {
-  return <span className="chip"><Calendar /> {fmtDue(due)}</span>;
+export function DueChip({ due, done = false }: { due: string; done?: boolean }) {
+  return <span className={`chip${isOverdue(due, done) ? " overdue" : ""}`}><Calendar /> {fmtDue(due)}</span>;
 }
 
 export function Bar({ value }: { value: number }) {
