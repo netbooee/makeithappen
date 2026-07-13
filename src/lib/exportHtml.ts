@@ -397,6 +397,8 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
           const attsHtml = ag.attendees.map((att, idx) => {
             const name = att.kind === "internal"
               ? (contacts.find((c) => c.id === att.id)?.name ?? "")
+              : att.kind === "stakeholder"
+              ? ((project.stakeholders ?? []).find((s) => s.id === att.id)?.name ?? "")
               : ((project.externalTeam ?? []).find((e) => e.id === att.id)?.name ?? "");
             if (!name) return "";
             const ini = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -778,6 +780,8 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   const resolvedAttendees = agenda.attendees.flatMap((att, i) => {
     const name = att.kind === "internal"
       ? (contacts.find((c) => c.id === att.id)?.name ?? "")
+      : att.kind === "stakeholder"
+      ? ((project.stakeholders ?? []).find((s) => s.id === att.id)?.name ?? "")
       : ((project.externalTeam ?? []).find((e) => e.id === att.id)?.name ?? "");
     if (!name) return [];
     const ini = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();

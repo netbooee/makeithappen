@@ -58,7 +58,7 @@ export interface ExternalTeamMember {
 }
 
 export interface AgendaAttendee {
-  kind: "internal" | "external";
+  kind: "internal" | "external" | "stakeholder";
   id: string;
 }
 

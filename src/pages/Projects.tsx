@@ -345,8 +345,23 @@ export function ProjectList() {
                 return (
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
                     <td className="td-primary" style={{ padding: "10px 12px", minWidth: 200 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
-                      {p.desc && <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2, fontWeight: 400 }}>{p.desc}</div>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {p.heroImage ? (
+                          <img
+                            src={p.heroImage}
+                            alt=""
+                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+                          />
+                        ) : (
+                          <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--surface-2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--ink-3)" }}>
+                            {p.title.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
+                          {p.desc && <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2, fontWeight: 400 }}>{p.desc}</div>}
+                        </div>
+                      </div>
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       <StatusChip status={p.status} />
@@ -1531,8 +1546,12 @@ function MeetingAgendasSection({ project }: { project: Project }) {
       const ini = ext.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
       out.push({ att: { kind: "external", id: ext.id }, name: ext.name, ini });
     }
+    for (const sh of project.stakeholders ?? []) {
+      const ini = sh.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+      out.push({ att: { kind: "stakeholder", id: sh.id }, name: sh.name, ini });
+    }
     return out;
-  }, [project.members, project.externalTeam, data.contacts]);
+  }, [project.members, project.externalTeam, project.stakeholders, data.contacts]);
 
   const resolve = (att: AgendaAttendee) =>
     pool.find((p) => p.att.kind === att.kind && p.att.id === att.id);
@@ -1674,13 +1693,13 @@ function MeetingAgendasSection({ project }: { project: Project }) {
             value=""
             onChange={(e) => {
               const [kind, id] = e.target.value.split(":");
-              if (kind && id) setAtts([...attendees, { kind: kind as "internal" | "external", id }]);
+              if (kind && id) setAtts([...attendees, { kind: kind as "internal" | "external" | "stakeholder", id }]);
             }}
           >
             <option value="">+ Add attendee</option>
             {available.map((p) => (
               <option key={`${p.att.kind}:${p.att.id}`} value={`${p.att.kind}:${p.att.id}`}>
-                {p.name}{p.att.kind === "external" ? " (ext)" : ""}
+                {p.name}{p.att.kind === "external" ? " (ext)" : p.att.kind === "stakeholder" ? " (stakeholder)" : ""}
               </option>
             ))}
           </select>
