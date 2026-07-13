@@ -7,19 +7,26 @@ import type { Subtask, SubtaskStatus } from "../lib/types";
 export function SubtaskEditPanel({
   projectId,
   milestoneId,
-  subtask,
+  subtaskId,
   close,
 }: {
   projectId: string;
   milestoneId: string;
-  subtask: Subtask;
+  subtaskId: string;
   close: () => void;
 }) {
-  const { updateSubtask, deleteSubtask } = useStore();
+  const { data, updateSubtask, deleteSubtask } = useStore();
   const bodyRef = useRef<HTMLDivElement>(null);
-  const set = (patch: Partial<Subtask>) => updateSubtask(projectId, milestoneId, subtask.id, patch);
 
+  const proj = data.projects.find((p) => p.id === projectId);
+  const mile = proj?.milestones.find((m) => m.id === milestoneId);
+  const subtask = mile?.subtasks.find((s) => s.id === subtaskId);
+
+  useEffect(() => { if (!subtask) close(); }, [subtask, close]);
   useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
+  if (!subtask) return null;
+
+  const set = (patch: Partial<Subtask>) => updateSubtask(projectId, milestoneId, subtaskId, patch);
 
   const flow = subtask.state ?? "normal";
 
