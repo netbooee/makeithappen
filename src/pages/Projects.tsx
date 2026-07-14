@@ -8,7 +8,7 @@ import { Avatar, Bar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtD
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { draftStatusEmail } from "../lib/claude";
-import { exportAgendaHtml, exportProjectHtml, exportProjectPdf } from "../lib/exportHtml";
+import { exportAgendaHtml, exportProjectHtml, exportProjectPdf, getMeetingAgendaUrl } from "../lib/exportHtml";
 import { CONTEXTS } from "../lib/constants";
 import type { AgendaAttendee, AgendaItem, ExternalTeamMember, IssueSeverity, IssueStatus, MeetingAgenda, Milestone, Project, ProjectIssue, ProjectMember, ProjectResource, ProjectRisk, ProjectStakeholder, RiskImpact, RiskProbability, RiskSeverity, RiskStatus, StakeholderSatisfaction, Status, StatusUpdate, Subtask, Task, TaskGroup, UpdateType } from "../lib/types";
 
@@ -36,6 +36,7 @@ function ProjectModal({
   const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
   const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
   const [webUrl, setWebUrl] = useState(initial.webUrl ?? "");
+  const [meetingAgendaLocationUrl, setMeetingAgendaLocationUrl] = useState(initial.meetingAgendaLocationUrl ?? "");
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,6 +66,7 @@ function ProjectModal({
       heroImage: heroImage || undefined,
       clientLogo: clientLogo || undefined,
       webUrl: webUrl.trim() || undefined,
+      meetingAgendaLocationUrl: meetingAgendaLocationUrl.trim() || undefined,
     });
     close();
   };
@@ -160,6 +162,16 @@ function ProjectModal({
             placeholder="https://…"
             value={webUrl}
             onChange={(e) => setWebUrl(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Meeting Agenda Location URL</div>
+          <input
+            className="input"
+            type="url"
+            placeholder="https://…"
+            value={meetingAgendaLocationUrl}
+            onChange={(e) => setMeetingAgendaLocationUrl(e.target.value)}
           />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -1563,6 +1575,7 @@ function MeetingAgendasSection({ project }: { project: Project }) {
   const [editingItemKey, setEditingItemKey] = useState<{ agendaId: string; itemId: string } | null>(null);
   const [editingItemText, setEditingItemText] = useState("");
   const [openAgendas, setOpenAgendas] = useState<Set<string>>(new Set());
+  const [copiedAgendaId, setCopiedAgendaId] = useState<string | null>(null);
   const [linkInputs, setLinkInputs] = useState<Record<string, { label: string; url: string }>>({});
   const [detailOpen, setDetailOpen] = useState<Set<string>>(new Set());
 
@@ -1820,6 +1833,23 @@ function MeetingAgendasSection({ project }: { project: Project }) {
                   <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1 }}>{agenda.title}</span>
                   {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts, all.user.feedbackEmail ?? ""); }}><Download size={12} /></button>
+                  {project.meetingAgendaLocationUrl?.trim() && (
+                    <button
+                      className="icon-btn"
+                      style={{ width: 26, height: 26, color: copiedAgendaId === agenda.id ? "var(--green, #16a34a)" : "var(--ink-4)" }}
+                      title="Copy meeting URL"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = getMeetingAgendaUrl(project, agenda);
+                        if (!url) return;
+                        navigator.clipboard.writeText(url);
+                        setCopiedAgendaId(agenda.id);
+                        setTimeout(() => setCopiedAgendaId((cur) => (cur === agenda.id ? null : cur)), 1600);
+                      }}
+                    >
+                      {copiedAgendaId === agenda.id ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  )}
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); startEdit(agenda); }}><Pencil size={12} /></button>
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={(e) => { e.stopPropagation(); deleteMeeting(agenda.id); }}><Trash2 size={12} /></button>
                 </div>

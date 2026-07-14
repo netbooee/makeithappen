@@ -764,6 +764,19 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
 
 // ── Agenda HTML export ───────────────────────────────────────────────────────
 
+export function getAgendaHtmlFilename(project: Project, agenda: MeetingAgenda): string {
+  const dateIso = toDateInputValue(agenda.date) || new Date().toISOString().slice(0, 10);
+  const sanitize = (s: string) => s.replace(/[/\\:*?"<>|]/g, "").trim();
+  return `${dateIso}_${sanitize(project.title)}_${sanitize(agenda.title)}.html`;
+}
+
+export function getMeetingAgendaUrl(project: Project, agenda: MeetingAgenda): string | undefined {
+  const base = project.meetingAgendaLocationUrl?.trim();
+  if (!base) return undefined;
+  const filename = getAgendaHtmlFilename(project, agenda);
+  return `${base.replace(/\/+$/, "")}/${encodeURIComponent(filename)}`;
+}
+
 export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[], feedbackEmail = ""): void {
   // Dates are stored in display format ("Jun 20, 2026") by DateInput — normalize to ISO first
   const dateIso = toDateInputValue(agenda.date) || new Date().toISOString().slice(0, 10);
@@ -878,8 +891,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 </body>
 </html>`;
 
-  const sanitize = (s: string) => s.replace(/[/\\:*?"<>|]/g, "").trim();
-  const filename = `${dateIso}_${sanitize(project.title)}_${sanitize(agenda.title)}.html`;
+  const filename = getAgendaHtmlFilename(project, agenda);
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);

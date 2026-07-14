@@ -139,6 +139,7 @@ export interface Project {
   risk?: "green" | "amber" | "red";
   riskNote?: string;
   webUrl?: string;
+  meetingAgendaLocationUrl?: string;
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];
