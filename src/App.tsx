@@ -10,6 +10,7 @@ import { ContactDetail, ContactList } from "./pages/Contacts";
 import { HabitDetail, HabitList } from "./pages/Habits";
 import { Assistant } from "./pages/Assistant";
 import { Updates } from "./pages/Updates";
+import { ProjectSites } from "./pages/ProjectSites";
 import { Login } from "./pages/Login";
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/habits" element={<HabitList />} />
             <Route path="/habits/:id" element={<HabitDetail />} />
             <Route path="/updates" element={<Updates />} />
+            <Route path="/project-sites" element={<ProjectSites />} />
             <Route path="/assistant" element={<Assistant />} />
             <Route path="*" element={<Navigate to="/projects" replace />} />
           </Route>
