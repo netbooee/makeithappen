@@ -163,6 +163,7 @@ export interface Task {
   context: string;
   project: string | null;
   milestoneId?: string;
+  who?: string;
   due?: string;
   reminder?: string;
   notes?: string;

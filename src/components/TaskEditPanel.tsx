@@ -108,9 +108,20 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
             );
           })()}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label className="field-label">Due</label>
-            <DateInput value={task.due} onChange={(v) => set({ due: v || undefined })} />
+          <div className="row">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="field-label">Assigned to</label>
+              <input
+                className="input"
+                placeholder="Initials or name"
+                value={task.who ?? ""}
+                onChange={(e) => set({ who: e.target.value || undefined })}
+              />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="field-label">Due</label>
+              <DateInput value={task.due} onChange={(v) => set({ due: v || undefined })} />
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, ChevronUp, LayoutList, Plus, Table2 } from "lucide-react";
 import { useStore } from "../store/store";
-import { DateInput, StateTag, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../components/ui";
+import { Avatar, DateInput, StateTag, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
@@ -20,6 +20,8 @@ export function Tasks() {
   const [due, setDue] = useState("");
   const [group, setGroup] = useState<TaskGroup>("today");
   const [project, setProject] = useState("");
+  const [milestoneId, setMilestoneId] = useState("");
+  const [who, setWho] = useState("");
   const [filterProject, setFilterProject] = useState<string | null>(null);
   const [nextOnly, setNextOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function Tasks() {
     else { setSortCol(col); setSortDir("asc"); }
   };
 
-  useEffect(() => { setProject(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setProject(""); setMilestoneId(""); setWho(""); setEditingId(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // press T anywhere to focus quick capture
   useEffect(() => {
@@ -61,6 +63,11 @@ export function Tasks() {
     [data],
   );
 
+  const captureMilestones = useMemo(
+    () => data.projects.find((p) => p.title === project)?.milestones ?? [],
+    [data.projects, project],
+  );
+
   const capture = () => {
     if (!text.trim()) return;
     const task: Task = {
@@ -70,11 +77,15 @@ export function Tasks() {
       next: false,
       context: "",
       project: project || null,
+      ...(milestoneId ? { milestoneId } : {}),
+      ...(who.trim() ? { who: who.trim() } : {}),
       ...(due ? { due } : {}),
     };
     addTask(task, group);
     setText("");
     setDue("");
+    setMilestoneId("");
+    setWho("");
   };
 
   const matches = (t: Task) =>
@@ -271,10 +282,32 @@ export function Tasks() {
           onChange={setDue}
           style={{ width: 130, fontSize: 12.5 }}
         />
-        <select className="input" style={{ width: 150, fontSize: 12.5 }} value={project} onChange={(e) => setProject(e.target.value)}>
+        <select
+          className="input"
+          style={{ width: 150, fontSize: 12.5 }}
+          value={project}
+          onChange={(e) => { setProject(e.target.value); setMilestoneId(""); }}
+        >
           <option value="">No project</option>
           {data.projects.map((p) => <option key={p.id} value={p.title}>{p.title}</option>)}
         </select>
+        <select
+          className="input"
+          style={{ width: 150, fontSize: 12.5 }}
+          value={milestoneId}
+          onChange={(e) => setMilestoneId(e.target.value)}
+          disabled={!project}
+        >
+          <option value="">No milestone</option>
+          {captureMilestones.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+        </select>
+        <input
+          className="input"
+          style={{ width: 120, fontSize: 12.5 }}
+          placeholder="Assigned to"
+          value={who}
+          onChange={(e) => setWho(e.target.value)}
+        />
         <select className="input" style={{ width: 105, fontSize: 12.5 }} value={group} onChange={(e) => setGroup(e.target.value as TaskGroup)}>
           <option value="today">Today</option>
           <option value="upcoming">Upcoming</option>
@@ -370,6 +403,7 @@ export function Tasks() {
                             {t.text}
                           </button>
                           <StateTag task={t} />
+                          {t.who && <Avatar who={t.who} size={20} color="var(--ink-3)" />}
                         </div>
                       </td>
                       <td>
@@ -416,6 +450,7 @@ export function Tasks() {
                             {subtask.t}
                           </button>
                           <StateTag task={subtask} />
+                          {subtask.who && <Avatar who={subtask.who} size={20} color="var(--ink-3)" />}
                         </div>
                       </td>
                       <td>
@@ -469,6 +504,7 @@ export function Tasks() {
                     {t.text}
                   </button>
                   <StateTag task={t} />
+                  {t.who && <Avatar who={t.who} size={20} color="var(--ink-3)" />}
                   {t.project && (
                     <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(t.project)}>
                       {t.project}
@@ -497,6 +533,7 @@ export function Tasks() {
                     {subtask.t}
                   </button>
                   <StateTag task={subtask} />
+                  {subtask.who && <Avatar who={subtask.who} size={20} color="var(--ink-3)" />}
                   <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(projectTitle)}>
                     {projectTitle}
                   </button>
