@@ -562,7 +562,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
               <Trash2 size={12} />
             </button>
           </div>
-          {s.notes && (
+          {s.notes && !s.done && (
             <span
               style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, cursor: "pointer" }}
               onClick={() => setPanelOpen(true)}
@@ -773,7 +773,7 @@ function MilestoneCard({
                   <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
                   {t.due && <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
                 </div>
-                {t.notes && (
+                {t.notes && !t.done && (
                   <span
                     style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, cursor: "pointer" }}
                     onClick={() => onEditTask(t.id)}
@@ -1027,6 +1027,8 @@ export function ProjectDetail() {
   const [addingMember, setAddingMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editMemberRole, setEditMemberRole] = useState("");
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -1237,6 +1239,41 @@ export function ProjectDetail() {
                   [next[idx], next[ni]] = [next[ni], next[idx]];
                   updateProject(project.id, { members: next });
                 };
+                const startEditMember = () => {
+                  setEditingMemberId(mem.contactId);
+                  setEditMemberRole(mem.role ?? "");
+                };
+                const saveEditMember = () => {
+                  updateProject(project.id, {
+                    members: (project.members ?? []).map((m) =>
+                      m.contactId === editingMemberId ? { ...m, role: editMemberRole.trim() } : m
+                    ),
+                  });
+                  setEditingMemberId(null);
+                };
+                if (editingMemberId === mem.contactId) {
+                  return (
+                    <div key={mem.contactId} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <Avatar who={who} size={24} color={contact.color} />
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
+                      </div>
+                      <input
+                        className="input"
+                        autoFocus
+                        placeholder="Project role"
+                        value={editMemberRole}
+                        onChange={(e) => setEditMemberRole(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && saveEditMember()}
+                        style={{ fontSize: 13 }}
+                      />
+                      <div style={{ display: "flex", gap: 7 }}>
+                        <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEditMember}>Save</button>
+                        <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingMemberId(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div key={mem.contactId} className="task-row">
                     <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
@@ -1249,6 +1286,13 @@ export function ProjectDetail() {
                       {mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{mem.role}</span>}
                       {contact.company && !mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{contact.company}</span>}
                     </div>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 24, height: 24, color: "var(--ink-4)" }}
+                      onClick={startEditMember}
+                    >
+                      <Pencil size={12} />
+                    </button>
                     <button
                       className="icon-btn"
                       style={{ width: 24, height: 24, color: "var(--ink-4)" }}

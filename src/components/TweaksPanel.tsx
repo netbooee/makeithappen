@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, X } from "lucide-react";
+import { Eye, EyeOff, X, TriangleAlert } from "lucide-react";
 import { useStore } from "../store/store";
 import { supabaseConfigured, saveAnthropicKey, clearAnthropicKey, hasAnthropicKey } from "../lib/supabase";
 import type { AppData } from "../lib/types";
@@ -15,6 +15,21 @@ export function TweaksPanel({ close }: { close: () => void }) {
 
   const [feedbackEmail, setFeedbackEmail] = useState(all.user.feedbackEmail ?? "");
   const [emailSaved, setEmailSaved] = useState(false);
+
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+
+  const confirmReset = () => {
+    if (resetConfirmText.trim().toLowerCase() !== "delete") return;
+    resetDemoData();
+    setConfirmingReset(false);
+    setResetConfirmText("");
+  };
+
+  const cancelReset = () => {
+    setConfirmingReset(false);
+    setResetConfirmText("");
+  };
 
   const saveEmail = () => {
     updateUser({ feedbackEmail: feedbackEmail.trim() });
@@ -215,11 +230,77 @@ export function TweaksPanel({ close }: { close: () => void }) {
         </button>
         <input ref={importRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleImport} />
       </div>
-      <div className="tweak-row">
-        Reset to seed data
-        <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={resetDemoData}>
-          Reset
-        </button>
+      <div
+        style={{
+          marginTop: 4,
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: "1px solid var(--danger, #e5484d)",
+          background: "rgba(229, 72, 77, 0.08)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <TriangleAlert size={16} color="var(--danger, #e5484d)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+            <strong style={{ color: "var(--danger, #e5484d)" }}>Warning: this permanently erases all your data.</strong>
+            {" "}Resetting to seed data replaces every project, task, and setting with the demo dataset. This cannot be undone.
+          </div>
+        </div>
+
+        <div className="tweak-row" style={{ marginTop: 8, paddingTop: 0, border: "none" }}>
+          Reset to seed data
+          {!confirmingReset && (
+            <button
+              className="btn btn-ghost"
+              style={{ padding: "4px 10px", fontSize: 12 }}
+              onClick={() => setConfirmingReset(true)}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {confirmingReset && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 12, marginBottom: 6 }}>
+              Are you sure? Type <strong>delete</strong> to confirm.
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                className="input"
+                type="text"
+                placeholder="delete"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmReset()}
+                style={{ flex: 1, fontSize: 12.5 }}
+                autoComplete="off"
+                autoFocus
+              />
+              <button
+                className="btn btn-ghost"
+                style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                onClick={cancelReset}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  whiteSpace: "nowrap",
+                  background: "var(--danger, #e5484d)",
+                  borderColor: "var(--danger, #e5484d)",
+                }}
+                onClick={confirmReset}
+                disabled={resetConfirmText.trim().toLowerCase() !== "delete"}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
