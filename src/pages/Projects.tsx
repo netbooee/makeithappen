@@ -732,7 +732,7 @@ function MilestoneCard({
               </span>
             )}
             {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
-            <DueChip due={m.due} />
+            <DueChip due={m.due} done={m.status === "complete"} />
             <StatusChip status={m.status} />
           </button>
         ) : (
@@ -743,7 +743,7 @@ function MilestoneCard({
               {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
             </div>
             {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}
-            <DueChip due={m.due} />
+            <DueChip due={m.due} done={m.status === "complete"} />
             <StatusChip status={m.status} />
           </div>
         )}
