@@ -15,7 +15,7 @@ export function SubtaskEditPanel({
   subtaskId: string;
   close: () => void;
 }) {
-  const { data, updateSubtask, deleteSubtask } = useStore();
+  const { data, updateSubtask, deleteSubtask, moveSubtask } = useStore();
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const proj = data.projects.find((p) => p.id === projectId);
@@ -61,6 +61,21 @@ export function SubtaskEditPanel({
               style={{ fontWeight: 500 }}
             />
           </div>
+
+          {proj && proj.milestones.length > 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="field-label">Milestone / Workstream</label>
+              <select
+                className="input"
+                value={milestoneId}
+                onChange={(e) => moveSubtask(projectId, milestoneId, subtaskId, e.target.value)}
+              >
+                {proj.milestones.map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="row">
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>

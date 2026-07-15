@@ -42,6 +42,7 @@ export interface Store {
   addSubtask: (projectId: string, milestoneId: string, title: string) => void;
   updateSubtask: (projectId: string, milestoneId: string, subtaskId: string, patch: Partial<Subtask>) => void;
   deleteSubtask: (projectId: string, milestoneId: string, subtaskId: string) => void;
+  moveSubtask: (projectId: string, fromMilestoneId: string, subtaskId: string, toMilestoneId: string) => void;
   updateStatusUpdate: (projectId: string, updateId: string, text: string, type?: import("../lib/types").UpdateType) => void;
   deleteStatusUpdate: (projectId: string, updateId: string) => void;
   deleteContact: (id: string) => void;
@@ -274,6 +275,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const m = p?.milestones.find((x) => x.id === milestoneId);
           if (!p || !m) return;
           m.subtasks = m.subtasks.filter((x) => x.id !== subtaskId);
+          recomputeProgress(p);
+        }),
+
+      moveSubtask: (projectId, fromMilestoneId, subtaskId, toMilestoneId) =>
+        mutate((d) => {
+          if (fromMilestoneId === toMilestoneId) return;
+          const p = d.projects.find((x) => x.id === projectId);
+          const from = p?.milestones.find((x) => x.id === fromMilestoneId);
+          const to = p?.milestones.find((x) => x.id === toMilestoneId);
+          const s = from?.subtasks.find((x) => x.id === subtaskId);
+          if (!p || !from || !to || !s) return;
+          from.subtasks = from.subtasks.filter((x) => x.id !== subtaskId);
+          to.subtasks.push(s);
           recomputeProgress(p);
         }),
 
