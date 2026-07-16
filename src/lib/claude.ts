@@ -137,17 +137,19 @@ export function draftStatusEmailHtml(project: Project, update: StatusUpdate, use
         `<tr><td style="padding:2px 8px 2px 0;white-space:nowrap;">${escapeHtml(fmtDue(m.due))}</td><td style="padding:2px 6px;">${statusEmoji[m.status]}</td><td style="padding:2px 0;">${escapeHtml(m.title.toUpperCase())}</td></tr>`,
     )
     .join("");
+  const mono = 'font-family:Courier, monospace;';
   return `<p>Hi [recipient],</p>
 <p>${escapeHtml(update.text).replace(/\n/g, "<br>")}</p>
 <p><b>Project details:</b><br>
 ${nameLineHtml}<br>
-${escapeHtml(project.desc)}<br>
+${escapeHtml(project.desc)}</p>
+<p style="${mono}">
 <b>Timeline:</b> ${escapeHtml(timeline)}<br>
 <b>Budget:</b> ${escapeHtml(budget)}<br>
 <b>RAG:</b> ${escapeHtml(ragLabel)}<br>
 <b>Progress:</b> ${doneSubtasks}/${totalSubtasks} tasks complete</p>
 <p><b>Milestones:</b></p>
-<table style="border-collapse:collapse;">${milestoneRows}</table>
+<table style="border-collapse:collapse;${mono}">${milestoneRows}</table>
 <p>Let me know if you have any questions.</p>
 <p>${escapeHtml(user.name.split(" ")[0])}</p>`;
 }
