@@ -77,6 +77,22 @@ function ragDot(rag?: "green" | "amber" | "red"): string {
   return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c};margin-right:5px;vertical-align:middle"></span>`;
 }
 
+function subRiskRows(project: { timelineRisk?: "green" | "amber" | "red"; budgetRisk?: "green" | "amber" | "red"; resourceRisk?: "green" | "amber" | "red" }): string {
+  const rows = ([
+    ["Timeline risk", project.timelineRisk],
+    ["Budget risk", project.budgetRisk],
+    ["Resource risk", project.resourceRisk],
+  ] as [string, "green" | "amber" | "red" | undefined][]).filter(([, rag]) => !!rag);
+  if (rows.length === 0) return "";
+  return `<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid #E7E9ED;display:flex;flex-direction:column;gap:4px">
+    ${rows.map(([label, rag]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;color:#6B7280">${label}</span>
+      <span style="font-size:11px;font-weight:500;color:#1A1D23">${ragDot(rag)}${{ green: "Green", amber: "Amber", red: "Red" }[rag!]}</span>
+    </div>`).join("")}
+  </div>`;
+}
+
 function feedbackPill(projectTitle: string, section: string, email: string): string {
   if (!email) return "";
   const subject = encodeURIComponent(`${projectTitle}: ${section}`);
@@ -96,6 +112,10 @@ function parseExportDate(str: string): Date | null {
     if (mo >= 0) return new Date(m[3] ? +m[3] : new Date().getFullYear(), mo, +m[2]);
   }
   return null;
+}
+
+function isSubtaskComplete(s: { done: boolean; taskStatus?: SubtaskStatus }): boolean {
+  return s.done || s.taskStatus === "completed";
 }
 
 function isExportOverdue(due: string): boolean {
@@ -173,7 +193,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                   <div style="display:flex;align-items:center;gap:8px">
                     <span style="flex:1;font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
                     ${taskStatusPill(s.taskStatus)}
-                    ${s.due ? `<span style="font-size:11px;color:${isExportOverdue(s.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(s.due)}</span>` : ""}
+                    ${s.due ? `<span style="font-size:11px;color:${!isSubtaskComplete(s) && isExportOverdue(s.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(s.due)}</span>` : ""}
                     <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
                   </div>
                   ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
@@ -191,7 +211,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                 ${m.desc ? `<div style="font-size:11px;color:#6B7280;margin-top:2px">${esc(m.desc)}</div>` : ""}
               </div>
               ${m.start ? `<span style="font-size:11px;color:#6B7280;white-space:nowrap">${esc(m.start)} →</span>` : ""}
-              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:${isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
+              ${m.due && m.due !== "No date" ? `<span style="font-size:11px;color:${m.status !== "complete" && isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
               ${statusBadge(m.status)}
             </summary>
             ${subtasksHtml}
@@ -493,6 +513,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:5px">RAG status</div>
       <div style="font-size:15px;font-weight:500;color:#1A1D23">${ragDot(project.risk)}${ragLabel}</div>
       ${project.riskNote ? `<div style="font-size:11.5px;color:#6B7280;margin-top:2px">${esc(project.riskNote)}</div>` : ""}
+      ${subRiskRows(project)}
     </div>
     <div style="padding:12px 16px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:8px">Timeline</div>
@@ -615,7 +636,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
             <div style="font-size:10.5px;font-weight:500;color:#1A1D23">${esc(m.title)}</div>
             ${m.desc ? `<div style="font-size:9.5px;color:#6B7280;margin-top:1px">${esc(m.desc)}</div>` : ""}
           </div>
-          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:${isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
+          ${m.due && m.due !== "No date" ? `<span style="font-size:9.5px;color:${m.status !== "complete" && isExportOverdue(m.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(m.due)}</span>` : ""}
           ${statusBadge(m.status)}
         </div>`;
       }).join("");
@@ -728,7 +749,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
       <div class="kpi-val">${progPct}%<span class="prog-track"><span class="prog-fill" style="width:${progPct}%"></span></span>${doneSubs}/${totalSubs} tasks</div>
     </div>
     <div class="kpi"><div class="kpi-label">Budget</div><div class="kpi-val">${formatBudget(project.budget)}<span style="font-size:9px;color:#6B7280;margin-left:6px">total</span> · <span style="color:${budgetRemaining.color}">${budgetRemaining.fmt}</span><span style="font-size:9px;color:#6B7280;margin-left:4px">remaining</span></div></div>
-    <div class="kpi"><div class="kpi-label">RAG status</div><div class="kpi-val">${ragDot(project.risk)}${ragLabel}</div></div>
+    <div class="kpi"><div class="kpi-label">RAG status</div><div class="kpi-val">${ragDot(project.risk)}${ragLabel}</div>${subRiskRows(project)}</div>
   </div>
 
   <div class="body">
