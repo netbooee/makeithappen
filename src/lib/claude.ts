@@ -1,3 +1,4 @@
+import { fmtDue } from "../components/ui";
 import { supabase, supabaseConfigured } from "./supabase";
 import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
 
@@ -76,7 +77,7 @@ async function callClaude(
 
 function emailContext(project: Project) {
   const ragLabel = project.risk
-    ? ({ green: "Green — on track", amber: "Amber — some risk", red: "Red — at risk" } as const)[project.risk]
+    ? ({ green: "🟢 Green — on track", amber: "🟡 Amber — some risk", red: "🔴 Red — at risk" } as const)[project.risk]
     : "Not set";
   const timeline =
     project.start && project.due !== "No date"
@@ -89,26 +90,27 @@ function emailContext(project: Project) {
     : "Not set";
   const totalSubtasks = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const doneSubtasks = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
+  const statusEmoji = { complete: "✅", active: "➡️", hold: "⏳", waiting: "⏳" } as const;
   const milestoneLines = project.milestones
-    .map((m) => {
-      const label = m.status === "hold" ? "On Hold" : m.status === "waiting" ? "Waiting" : m.status.charAt(0).toUpperCase() + m.status.slice(1);
-      return `  ${label} · ${m.due}  —  ${m.title}`;
-    })
+    .map((m) => `${fmtDue(m.due).padEnd(7)}${statusEmoji[m.status]}   ${m.title.toUpperCase()}`)
     .join("\n");
-  return { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines };
+  const nameLine = project.webUrl ? `${project.title} — ${project.webUrl}` : project.title;
+  return { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines, nameLine };
 }
 
 function localEmailDraft(project: Project, update: StatusUpdate, user: User): string {
-  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines } = emailContext(project);
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines, nameLine } = emailContext(project);
   return `Hi [recipient],
 
 ${update.text}
 
 Project details:
-  Timeline:  ${timeline}
-  Budget:    ${budget}
-  RAG:       ${ragLabel}
-  Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
+${nameLine}
+${project.desc}
+Timeline:  ${timeline}
+Budget:    ${budget}
+RAG:       ${ragLabel}
+Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
 
 Milestones:
 ${milestoneLines}
@@ -116,6 +118,38 @@ ${milestoneLines}
 Let me know if you have any questions.
 
 ${user.name.split(" ")[0]}`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** HTML version of the same draft, for pasting into rich-text clients (e.g. Outlook). */
+export function draftStatusEmailHtml(project: Project, update: StatusUpdate, user: User): string {
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, nameLine } = emailContext(project);
+  const statusEmoji = { complete: "✅", active: "➡️", hold: "⏳", waiting: "⏳" } as const;
+  const nameLineHtml = project.webUrl
+    ? `<a href="${escapeHtml(project.webUrl)}">${escapeHtml(project.title)}</a>`
+    : escapeHtml(project.title);
+  const milestoneRows = project.milestones
+    .map(
+      (m) =>
+        `<tr><td style="padding:2px 8px 2px 0;white-space:nowrap;">${escapeHtml(fmtDue(m.due))}</td><td style="padding:2px 6px;">${statusEmoji[m.status]}</td><td style="padding:2px 0;">${escapeHtml(m.title.toUpperCase())}</td></tr>`,
+    )
+    .join("");
+  return `<p>Hi [recipient],</p>
+<p>${escapeHtml(update.text).replace(/\n/g, "<br>")}</p>
+<p><b>Project details:</b><br>
+${nameLineHtml}<br>
+${escapeHtml(project.desc)}<br>
+<b>Timeline:</b> ${escapeHtml(timeline)}<br>
+<b>Budget:</b> ${escapeHtml(budget)}<br>
+<b>RAG:</b> ${escapeHtml(ragLabel)}<br>
+<b>Progress:</b> ${doneSubtasks}/${totalSubtasks} tasks complete</p>
+<p><b>Milestones:</b></p>
+<table style="border-collapse:collapse;">${milestoneRows}</table>
+<p>Let me know if you have any questions.</p>
+<p>${escapeHtml(user.name.split(" ")[0])}</p>`;
 }
 
 export async function draftStatusEmail(
@@ -127,19 +161,21 @@ export async function draftStatusEmail(
     await new Promise((r) => setTimeout(r, 1100));
     return localEmailDraft(project, update, user);
   }
-  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines } = emailContext(project);
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines, nameLine } = emailContext(project);
   const system = `You draft concise, professional status-update emails for ${user.name}. Plain text only, no subject line. Sign off with the sender's first name. Follow the exact structure provided — do not rearrange, paraphrase the update text, or add extra commentary.`;
   const prompt = `Write a status update email for "${project.title}" using this exact structure:
 
 1. Greeting: "Hi [recipient],"
 2. Blank line, then the status update text verbatim (copy it exactly):
    "${update.text}"
-3. Blank line, then these project details exactly:
+3. Blank line, then these project details exactly (no indentation, keep the label padding as shown):
    Project details:
-     Timeline:  ${timeline}
-     Budget:    ${budget}
-     RAG:       ${ragLabel}
-     Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
+   ${nameLine}
+   ${project.desc}
+   Timeline:  ${timeline}
+   Budget:    ${budget}
+   RAG:       ${ragLabel}
+   Progress:  ${doneSubtasks}/${totalSubtasks} tasks complete
 4. Blank line, then this milestones section exactly:
    Milestones:
 ${milestoneLines}

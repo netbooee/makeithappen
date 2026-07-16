@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Mail, Sparkles, X } from "lucide-react";
 import { useStore } from "../../store/store";
-import { draftStatusEmail } from "../../lib/claude";
+import { draftStatusEmail, draftStatusEmailHtml } from "../../lib/claude";
 import type { Project, StatusUpdate } from "../../lib/types";
 
 export function DraftEmailPanel({ project, update, close }: { project: Project; update: StatusUpdate; close: () => void }) {
@@ -10,6 +10,7 @@ export function DraftEmailPanel({ project, update, close }: { project: Project; 
   const [body, setBody] = useState("");
   const [subject, setSubject] = useState(`${project.title} — status update`);
   const [copied, setCopied] = useState(false);
+  const [copiedRich, setCopiedRich] = useState(false);
 
   const allContacts = [...all.work.contacts, ...all.personal.contacts];
   const toEmails = (project.members ?? [])
@@ -30,6 +31,18 @@ export function DraftEmailPanel({ project, update, close }: { project: Project; 
     await navigator.clipboard.writeText(body);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+  };
+
+  const doCopyRich = async () => {
+    const html = draftStatusEmailHtml(project, update, all.user);
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([body], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      }),
+    ]);
+    setCopiedRich(true);
+    setTimeout(() => setCopiedRich(false), 1600);
   };
 
   const toParam = toEmails.join(",");
@@ -123,6 +136,9 @@ export function DraftEmailPanel({ project, update, close }: { project: Project; 
           </button>
           <button className="btn btn-ghost" disabled={stage !== "ready"} onClick={doCopy}>
             {copied ? <><Check /> Copied</> : <><Copy /> Copy</>}
+          </button>
+          <button className="btn btn-ghost" disabled={stage !== "ready"} onClick={doCopyRich}>
+            {copiedRich ? <><Check /> Copied</> : <><Copy /> Copy as rich text</>}
           </button>
           <button className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={close}>Cancel</button>
         </div>

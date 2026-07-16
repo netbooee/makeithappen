@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Calendar, CheckCircle2, ChevronDown, ChevronRight, ChevronUp,
-  Download, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp,
+  Copy, Download, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../../components/ui";
@@ -52,6 +52,7 @@ export function ProjectDetail() {
   const [newMemberRole, setNewMemberRole] = useState("");
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editMemberRole, setEditMemberRole] = useState("");
+  const [urlCopied, setUrlCopied] = useState(false);
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -118,6 +119,13 @@ export function ProjectDetail() {
     setEditingUpdateId(null);
   };
 
+  const copyProjectUrl = () => {
+    if (!project.webUrl) return;
+    navigator.clipboard.writeText(project.webUrl);
+    setUrlCopied(true);
+    setTimeout(() => setUrlCopied(false), 1600);
+  };
+
   return (
     <div className="page fade" style={{ maxWidth: 1100 }}>
       <button
@@ -149,6 +157,15 @@ export function ProjectDetail() {
               title="Edit project"
             >
               <Pencil size={15} />
+            </button>
+            <button
+              className="icon-btn"
+              style={{ color: urlCopied ? "var(--next)" : "var(--ink-4)" }}
+              onClick={copyProjectUrl}
+              disabled={!project.webUrl}
+              title={project.webUrl ? "Copy project URL" : "No project URL set"}
+            >
+              {urlCopied ? <Check size={15} /> : <Copy size={15} />}
             </button>
           </div>
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
