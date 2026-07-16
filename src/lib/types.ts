@@ -138,6 +138,9 @@ export interface Project {
   onBudget?: boolean;
   risk?: "green" | "amber" | "red";
   riskNote?: string;
+  timelineRisk?: "green" | "amber" | "red";
+  budgetRisk?: "green" | "amber" | "red";
+  resourceRisk?: "green" | "amber" | "red";
   webUrl?: string;
   meetingAgendaLocationUrl?: string;
   heroImage?: string;

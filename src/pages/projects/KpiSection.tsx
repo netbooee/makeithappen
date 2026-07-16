@@ -70,6 +70,33 @@ export function KpiSection({ project }: { project: Project }) {
           value={project.riskNote ?? ""}
           onChange={(e) => set({ riskNote: e.target.value || undefined })}
         />
+        <div style={{ borderTop: "1px solid var(--border)", marginTop: 2, paddingTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+          {([
+            { sub: "Timeline risk", key: "timelineRisk" as const },
+            { sub: "Budget risk", key: "budgetRisk" as const },
+            { sub: "Resource risk", key: "resourceRisk" as const },
+          ]).map(({ sub, key }) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 12, color: "var(--ink-2)" }}>{sub}</span>
+              <div style={{ display: "flex", gap: 5 }}>
+                {(["green", "amber", "red"] as const).map((r) => (
+                  <button
+                    key={r}
+                    title={r.charAt(0).toUpperCase() + r.slice(1)}
+                    onClick={() => set({ [key]: project[key] === r ? undefined : r })}
+                    style={{
+                      width: 12, height: 12, borderRadius: "50%", flexShrink: 0,
+                      background: RAG[r],
+                      opacity: project[key] && project[key] !== r ? 0.25 : 1,
+                      border: project[key] === r ? "1.5px solid var(--ink)" : "1.5px solid transparent",
+                      transition: "opacity .15s, border .15s",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Timeline */}
