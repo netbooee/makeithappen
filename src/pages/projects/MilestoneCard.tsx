@@ -55,11 +55,19 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(s.t);
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [editingDue, setEditingDue] = useState(false);
+  const [editingWho, setEditingWho] = useState(false);
+  const [whoDraft, setWhoDraft] = useState(s.who);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!editingTitle) setTitleDraft(s.t);
   }, [s.t, editingTitle]);
+
+  useEffect(() => {
+    if (!editingWho) setWhoDraft(s.who);
+  }, [s.who, editingWho]);
 
   useEffect(() => () => { if (clickTimer.current) clearTimeout(clickTimer.current); }, []);
 
@@ -67,6 +75,12 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
     const trimmed = titleDraft.trim();
     if (trimmed && trimmed !== s.t) updateSubtask(projectId, milestoneId, s.id, { t: trimmed });
     setEditingTitle(false);
+  };
+
+  const commitWho = () => {
+    const trimmed = whoDraft.trim();
+    if (trimmed && trimmed !== s.who) updateSubtask(projectId, milestoneId, s.id, { who: trimmed });
+    setEditingWho(false);
   };
 
   return (
@@ -104,9 +118,63 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                 {s.t}
               </button>
             )}
-            <StateTag task={s} />
-            {s.due && <DueChip due={s.due} done={s.done} />}
-            <Avatar who={s.who} size={20} color="var(--ink-3)" />
+            {s.state === "delegated" || s.state === "waiting" ? (
+              <StateTag task={s} />
+            ) : editingStatus ? (
+              <select
+                className="input"
+                autoFocus
+                value={s.taskStatus ?? ""}
+                onChange={(e) => {
+                  updateSubtask(projectId, milestoneId, s.id, { taskStatus: (e.target.value as Subtask["taskStatus"]) || undefined });
+                  setEditingStatus(false);
+                }}
+                onBlur={() => setEditingStatus(false)}
+                style={{ fontSize: 11, padding: "2px 4px", width: 106 }}
+              >
+                <option value="">— None —</option>
+                <option value="not-started">Not started</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in-progress">In progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            ) : (
+              <span onClick={() => setEditingStatus(true)} style={{ cursor: "pointer" }} title="Click to edit status">
+                {s.taskStatus || s.next ? <StateTag task={s} /> : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>+ Status</span>}
+              </span>
+            )}
+            {editingDue ? (
+              <DateInput
+                value={s.due}
+                onChange={(v) => {
+                  updateSubtask(projectId, milestoneId, s.id, { due: v || undefined });
+                  setEditingDue(false);
+                }}
+                style={{ width: 118, fontSize: 11, padding: "2px 4px" }}
+              />
+            ) : (
+              <span onClick={() => setEditingDue(true)} style={{ cursor: "pointer" }} title="Click to edit due date">
+                {s.due ? <DueChip due={s.due} done={s.done} /> : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>+ Due</span>}
+              </span>
+            )}
+            {editingWho ? (
+              <input
+                className="input"
+                autoFocus
+                value={whoDraft}
+                onChange={(e) => setWhoDraft(e.target.value)}
+                onBlur={commitWho}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitWho();
+                  if (e.key === "Escape") { setWhoDraft(s.who); setEditingWho(false); }
+                }}
+                style={{ width: 56, fontSize: 11, padding: "2px 4px" }}
+              />
+            ) : (
+              <span onClick={() => setEditingWho(true)} style={{ cursor: "pointer" }} title="Click to edit assignee">
+                <Avatar who={s.who} size={20} color="var(--ink-3)" />
+              </span>
+            )}
             <button
               className="icon-btn"
               style={{ color: "var(--ink-4)" }}
