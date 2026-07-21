@@ -138,20 +138,21 @@ export function draftStatusEmailHtml(project: Project, update: StatusUpdate, use
     )
     .join("");
   const mono = 'font-family:Courier, monospace;';
-  return `<p>Hi [recipient],</p>
-<p>${escapeHtml(update.text).replace(/\n/g, "<br>")}</p>
-<p><b>Project details:</b><br>
+  const p = 'margin:0 0 16px 0;';
+  return `<p style="${p}">Hi [recipient],</p>
+<p style="${p}">${escapeHtml(update.text).replace(/\n/g, "<br>")}</p>
+<p style="${p}"><b>Project details:</b><br>
 ${nameLineHtml}<br>
 ${escapeHtml(project.desc)}</p>
-<p style="${mono}">
+<p style="${p}${mono}">
 <b>Timeline:</b> ${escapeHtml(timeline)}<br>
 <b>Budget:</b> ${escapeHtml(budget)}<br>
 <b>RAG:</b> ${escapeHtml(ragLabel)}<br>
 <b>Progress:</b> ${doneSubtasks}/${totalSubtasks} tasks complete</p>
-<p><b>Milestones:</b></p>
-<table style="border-collapse:collapse;${mono}">${milestoneRows}</table>
-<p>Let me know if you have any questions.</p>
-<p>${escapeHtml(user.name.split(" ")[0])}</p>`;
+<p style="${p}"><b>Milestones:</b></p>
+<table style="border-collapse:collapse;margin:0 0 16px 0;${mono}">${milestoneRows}</table>
+<p style="${p}">Let me know if you have any questions.</p>
+<p style="margin:0;">${escapeHtml(user.name.split(" ")[0])}</p>`;
 }
 
 export async function draftStatusEmail(

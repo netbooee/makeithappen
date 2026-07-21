@@ -87,8 +87,8 @@ function subRiskRows(project: { timelineRisk?: "green" | "amber" | "red"; budget
   return `<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid #E7E9ED;display:flex;flex-direction:column;gap:4px">
     ${rows.map(([label, rag]) => `
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:11px;color:#6B7280">${label}</span>
-      <span style="font-size:11px;font-weight:500;color:#1A1D23">${ragDot(rag)}${{ green: "Green", amber: "Amber", red: "Red" }[rag!]}</span>
+      <span style="font-size:11px;color:#6B7280">${ragDot(rag)}${label}</span>
+      <span style="font-size:11px;font-weight:500;color:#1A1D23">${{ green: "Green", amber: "Amber", red: "Red" }[rag!]}</span>
     </div>`).join("")}
   </div>`;
 }

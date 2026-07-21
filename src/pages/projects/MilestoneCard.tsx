@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Avatar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue } from "../../components/ui";
@@ -51,8 +51,23 @@ function AddSubtaskRow({ projectId, milestoneId }: { projectId: string; mileston
 /* ================= Subtask row (click-to-edit + delete) ================= */
 
 function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; milestoneId: string; s: Subtask }) {
-  const { toggleSubtask, deleteSubtask } = useStore();
+  const { toggleSubtask, deleteSubtask, updateSubtask } = useStore();
   const [panelOpen, setPanelOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(s.t);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!editingTitle) setTitleDraft(s.t);
+  }, [s.t, editingTitle]);
+
+  useEffect(() => () => { if (clickTimer.current) clearTimeout(clickTimer.current); }, []);
+
+  const commitTitle = () => {
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== s.t) updateSubtask(projectId, milestoneId, s.id, { t: trimmed });
+    setEditingTitle(false);
+  };
 
   return (
     <>
@@ -60,13 +75,35 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
         <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
-              onClick={() => setPanelOpen(true)}
-              title="Edit task"
-            >
-              {s.t}
-            </button>
+            {editingTitle ? (
+              <input
+                className="input"
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={commitTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitTitle();
+                  if (e.key === "Escape") { setTitleDraft(s.t); setEditingTitle(false); }
+                }}
+                style={{ flex: 1, fontSize: 13, padding: "3px 6px" }}
+              />
+            ) : (
+              <button
+                style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "text" }}
+                onClick={() => {
+                  if (clickTimer.current) clearTimeout(clickTimer.current);
+                  clickTimer.current = setTimeout(() => setEditingTitle(true), 200);
+                }}
+                title="Click to edit, or double-click for full task details"
+                onDoubleClick={() => {
+                  if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; }
+                  setPanelOpen(true);
+                }}
+              >
+                {s.t}
+              </button>
+            )}
             <StateTag task={s} />
             {s.due && <DueChip due={s.due} done={s.done} />}
             <Avatar who={s.who} size={20} color="var(--ink-3)" />
