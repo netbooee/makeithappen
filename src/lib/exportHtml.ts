@@ -23,8 +23,14 @@ function mdNotes(s: string): string {
     list = [];
   };
   for (const line of lines) {
+    const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
     const m = line.match(/^\s*[-*]\s+(.*)$/);
-    if (m) list.push(`<li>${inline(m[1])}</li>`);
+    if (h) {
+      flushList();
+      const level = h[1].length;
+      const size = level === 1 ? 15 : level === 2 ? 13.5 : 12.5;
+      blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 6 : 0}px 0 2px">${inline(h[2])}</strong>`);
+    } else if (m) list.push(`<li>${inline(m[1])}</li>`);
     else {
       flushList();
       if (line.trim()) blocks.push(inline(line));
