@@ -5,6 +5,35 @@ function esc(s: string): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** Renders a small Markdown subset (bold, italics, links, lists) to safe HTML; everything else stays escaped plain text. */
+function mdNotes(s: string): string {
+  const escInline = (t: string) => esc(t).replace(/"/g, "&quot;");
+  const inline = (t: string) =>
+    escInline(t)
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_m, label, url) =>
+        `<a href="${url}" target="_blank" style="color:#4F8EF7">${label}</a>`)
+      .replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (_m, a, b) => `<strong>${a ?? b}</strong>`)
+      .replace(/\*([^*]+)\*|_([^_]+)_/g, (_m, a, b) => `<em>${a ?? b}</em>`);
+
+  const lines = s.split("\n");
+  const blocks: string[] = [];
+  let list: string[] = [];
+  const flushList = () => {
+    if (list.length) blocks.push(`<ul style="margin:4px 0;padding-left:18px">${list.join("")}</ul>`);
+    list = [];
+  };
+  for (const line of lines) {
+    const m = line.match(/^\s*[-*]\s+(.*)$/);
+    if (m) list.push(`<li>${inline(m[1])}</li>`);
+    else {
+      flushList();
+      if (line.trim()) blocks.push(inline(line));
+    }
+  }
+  flushList();
+  return blocks.join("<br/>").replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul");
+}
+
 function parseBudgetNum(val: string | undefined): number | null {
   if (!val) return null;
   const c = val.replace(/[$,\s]/g, "");
@@ -196,7 +225,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                     ${s.due ? `<span style="font-size:11px;color:${!isSubtaskComplete(s) && isExportOverdue(s.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(s.due)}</span>` : ""}
                     <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
                   </div>
-                  ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${esc(s.notes)}</span>` : ""}
+                  ${s.notes ? `<span style="font-size:11px;color:#9CA3AF">${mdNotes(s.notes)}</span>` : ""}
                 </div>
               </div>
             `).join("")}
@@ -432,7 +461,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
           const notesHtml = ag.notes ? `
             <div style="border-top:0.5px solid #E7E9ED;margin-top:8px;padding-top:8px">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:5px">Meeting Notes</div>
-              <p style="font-size:12.5px;color:#374151;line-height:1.6;white-space:pre-wrap">${esc(ag.notes)}</p>
+              <p style="font-size:12.5px;color:#374151;line-height:1.6">${mdNotes(ag.notes)}</p>
             </div>` : "";
           const resourcesHtml = (ag.resources ?? []).length === 0 ? "" : `
             <div style="border-top:0.5px solid #E7E9ED;margin-top:8px;padding-top:8px;display:flex;flex-direction:column;gap:5px">
@@ -895,7 +924,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   ${agenda.notes ? `
   <div style="padding:28px 44px 24px;border-top:0.5px solid #E7E9ED">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:10px">Meeting Notes</div>
-    <p style="font-size:14px;color:#374151;line-height:1.65;white-space:pre-wrap">${esc(agenda.notes)}</p>
+    <p style="font-size:14px;color:#374151;line-height:1.65">${mdNotes(agenda.notes)}</p>
   </div>` : ""}
 
   ${feedbackEmail ? `<div class="cta" style="margin-top:8px;padding:28px 44px 36px;text-align:center;border-top:0.5px solid #E7E9ED;background:#FAFBFC">
