@@ -9,6 +9,7 @@ import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInpu
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
 import type { ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
+import { lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddMilestone } from "./AddMilestone";
@@ -356,6 +357,8 @@ export function ProjectDetail() {
                     <option value="">Pick a contact…</option>
                     {data.contacts
                       .filter((c) => !(project.members ?? []).some((m) => m.contactId === c.id))
+                      .slice()
+                      .sort((a, b) => lastNameOf(a.name).localeCompare(lastNameOf(b.name)))
                       .map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}{c.company ? ` — ${c.company}` : ""}

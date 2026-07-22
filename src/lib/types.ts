@@ -1,3 +1,8 @@
+export function lastNameOf(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  return parts[parts.length - 1] ?? "";
+}
+
 export type Workspace = "work" | "personal";
 export type Status = "active" | "waiting" | "hold" | "complete";
 export type TaskFlow = "delegated" | "waiting";

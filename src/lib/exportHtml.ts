@@ -833,7 +833,7 @@ export function getMeetingAgendaUrl(project: Project, agenda: MeetingAgenda): st
   return `${base.replace(/\/+$/, "")}/${encodeURIComponent(filename)}`;
 }
 
-export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[], feedbackEmail = ""): void {
+export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contacts: Contact[], feedbackEmail = "", includeProjectLink = true): void {
   // Dates are stored in display format ("Jun 20, 2026") by DateInput — normalize to ISO first
   const dateIso = toDateInputValue(agenda.date) || new Date().toISOString().slice(0, 10);
 
@@ -902,7 +902,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
       ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
+      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl && includeProjectLink ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
     </div>
     <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
     <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">

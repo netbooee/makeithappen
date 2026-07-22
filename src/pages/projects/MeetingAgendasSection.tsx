@@ -6,6 +6,7 @@ import { useStore } from "../../store/store";
 import { Avatar, DateInput, toDateInputValue } from "../../components/ui";
 import { exportAgendaHtml, getMeetingAgendaUrl } from "../../lib/exportHtml";
 import type { AgendaAttendee, AgendaItem, MeetingAgenda, Project } from "../../lib/types";
+import { lastNameOf } from "../../lib/types";
 
 function fmtAgendaDate(str: string): string {
   if (!str) return "";
@@ -38,6 +39,7 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
   const [copiedAgendaId, setCopiedAgendaId] = useState<string | null>(null);
   const [linkInputs, setLinkInputs] = useState<Record<string, { label: string; url: string }>>({});
   const [detailOpen, setDetailOpen] = useState<Set<string>>(new Set());
+  const [linkExcluded, setLinkExcluded] = useState<Set<string>>(new Set());
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
@@ -67,7 +69,7 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
       const ini = sh.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
       out.push({ att: { kind: "stakeholder", id: sh.id }, name: sh.name, ini });
     }
-    return out;
+    return out.sort((a, b) => lastNameOf(a.name).localeCompare(lastNameOf(b.name)));
   }, [project.members, project.externalTeam, project.stakeholders, data.contacts]);
 
   const resolve = (att: AgendaAttendee) =>
@@ -292,7 +294,29 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
                   <Calendar size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1 }}>{agenda.title}</span>
                   {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
-                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts, all.user.feedbackEmail ?? ""); }}><Download size={12} /></button>
+                  {project.webUrl?.trim() && (
+                    <label
+                      title="Include project site link in export"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--ink-4)", cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!linkExcluded.has(agenda.id)}
+                        onChange={(e) =>
+                          setLinkExcluded((p) => {
+                            const next = new Set(p);
+                            if (e.target.checked) next.delete(agenda.id);
+                            else next.add(agenda.id);
+                            return next;
+                          })
+                        }
+                        style={{ margin: 0 }}
+                      />
+                      Link
+                    </label>
+                  )}
+                  <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} title="Export agenda HTML" onClick={(e) => { e.stopPropagation(); exportAgendaHtml(project, agenda, data.contacts, all.user.feedbackEmail ?? "", !linkExcluded.has(agenda.id)); }}><Download size={12} /></button>
                   {project.meetingAgendaLocationUrl?.trim() && (
                     <button
                       className="icon-btn"
