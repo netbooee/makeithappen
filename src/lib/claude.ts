@@ -193,6 +193,68 @@ Output only the email body. No extra commentary.`;
   }
 }
 
+/* ---------- status update drafting ---------- */
+
+function localStatusUpdateDraft(project: Project): string {
+  const done = project.milestones.filter((m) => m.status === "complete").length;
+  const active = project.milestones.find((m) => m.status === "active");
+  return active
+    ? `Progress continues on ${project.title}. ${done}/${project.milestones.length} milestones complete; currently focused on "${active.title}" (due ${active.due}).`
+    : `Progress continues on ${project.title}. ${done}/${project.milestones.length} milestones complete.`;
+}
+
+/** Generates a fresh, short status update from project context. */
+export async function draftStatusUpdate(project: Project): Promise<string> {
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return localStatusUpdateDraft(project);
+  }
+  const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, milestoneLines } = emailContext(project);
+  const recentUpdates = (project.updates ?? []).slice(0, 3).map((u) => `- [${u.type ?? "update"}] ${u.when}: ${u.text}`).join("\n") || "None yet.";
+  const system = `You write short, sharp project status updates for a busy PM. Plain text, 2-4 sentences max, no greeting or sign-off, no headers. Output only the update text.`;
+  const prompt = `Draft a short status update for "${project.title}".
+
+Context:
+${project.desc}
+Timeline: ${timeline}
+Budget: ${budget}
+RAG: ${ragLabel}
+Progress: ${doneSubtasks}/${totalSubtasks} tasks complete
+Milestones:
+${milestoneLines}
+
+Recent updates (most recent first):
+${recentUpdates}
+
+Write a fresh, short status update (not a duplicate of recent ones). Output only the update text, no preamble.`;
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    return localStatusUpdateDraft(project);
+  }
+}
+
+/** Suggests corrections/improvements to a draft the user has already typed. */
+export async function suggestStatusUpdateEdits(project: Project, currentText: string): Promise<string> {
+  if (!currentText.trim()) return currentText;
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return currentText.trim();
+  }
+  const system = `You lightly edit project status updates for clarity, concision, and professionalism. Preserve the author's meaning, facts, and tone — do not invent new information. Plain text, no greeting or sign-off, no headers, no commentary. Output only the corrected text.`;
+  const prompt = `Project: "${project.title}"
+
+Here is a draft status update the author typed:
+"${currentText}"
+
+Improve clarity and concision without changing the meaning or adding new facts. Output only the corrected update text.`;
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    return currentText.trim();
+  }
+}
+
 /* ---------- assistant chat ---------- */
 
 export function serializeContext(ws: Workspace, data: WorkspaceData, user: User): string {

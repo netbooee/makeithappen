@@ -8,6 +8,7 @@ import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
+import { draftStatusUpdate, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
 import { lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
@@ -55,6 +56,7 @@ export function ProjectDetail() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
+  const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | null>(null);
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -106,6 +108,26 @@ export function ProjectDetail() {
     setUpdateText("");
     setUpdateType("update");
     setAdding(false);
+  };
+
+  const handleDraftFresh = async () => {
+    if (!project) return;
+    setAiBusy("draft");
+    try {
+      setUpdateText(await draftStatusUpdate(project));
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  const handleSuggestEdits = async () => {
+    if (!project || !updateText.trim()) return;
+    setAiBusy("suggest");
+    try {
+      setUpdateText(await suggestStatusUpdateEdits(project, updateText));
+    } finally {
+      setAiBusy(null);
+    }
   };
 
   const startEditUpdate = (u: StatusUpdate) => {
@@ -441,6 +463,24 @@ export function ProjectDetail() {
                   value={updateText}
                   onChange={(e) => setUpdateText(e.target.value)}
                 />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
+                    disabled={!!aiBusy}
+                    onClick={handleDraftFresh}
+                  >
+                    <Sparkles size={12} /> {aiBusy === "draft" ? "Drafting…" : "Draft with AI"}
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
+                    disabled={!!aiBusy || !updateText.trim()}
+                    onClick={handleSuggestEdits}
+                  >
+                    <Sparkles size={12} /> {aiBusy === "suggest" ? "Improving…" : "Suggest corrections"}
+                  </button>
+                </div>
                 <UpdateTypePicker value={updateType} onChange={setUpdateType} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={submitUpdate}>
@@ -518,9 +558,9 @@ export function ProjectDetail() {
         </div>
       </div>
 
-      <RiskTracker project={project} />
-      <IssueTracker project={project} />
       <DecisionsTracker project={project} />
+      <IssueTracker project={project} />
+      <RiskTracker project={project} />
 
       {/* Project tasks (from the task lists, tagged to this project) */}
       <div style={{ marginTop: 28 }}>

@@ -302,6 +302,29 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
           </div>`;
       }).join("");
 
+  // ── Decisions log ────────────────────────────────────────────────────────────
+  const decisions = [...(project.decisions ?? [])].sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
+  const DECISION_STATUS_COLOR: Record<string, string> = {
+    proposed: "#B45309",
+    decided: "#059669",
+    reversed: "#DC2626",
+  };
+  const decisionsHtml = decisions.length === 0
+    ? `<div style="font-size:12.5px;color:#6B7280">No decisions logged.</div>`
+    : decisions.map((d) => {
+        const statusColor = DECISION_STATUS_COLOR[d.status] ?? "#6B7280";
+        return `
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid #F3F4F6;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;color:#374151">${esc(d.title)}</div>
+              ${d.description ? `<div style="font-size:11.5px;color:#6B7280;margin-top:2px">↳ ${esc(d.description)}</div>` : ""}
+            </div>
+            ${d.owner ? `<span style="font-size:11.5px;color:#6B7280;flex-shrink:0;white-space:nowrap">${esc(d.owner)}</span>` : ""}
+            <span style="font-size:11px;color:#9CA3AF;flex-shrink:0;white-space:nowrap">${esc(d.decidedDate)}</span>
+            <span style="font-size:10.5px;color:${statusColor};text-transform:capitalize;flex-shrink:0;white-space:nowrap">${d.status}</span>
+          </div>`;
+      }).join("");
+
   // ── Team ────────────────────────────────────────────────────────────────────
   const members = project.members ?? [];
   const teamHtml = members.length === 0
@@ -592,10 +615,12 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     <div style="padding:24px 28px;border-right:0.5px solid #E7E9ED">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Milestones</div>${feedbackPill(project.title, "Milestones", feedbackEmail)}</div>
       ${milestonesHtml}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Risk register</div>${feedbackPill(project.title, "Risk register", feedbackEmail)}</div>
-      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Decisions Log</div>${feedbackPill(project.title, "Decisions Log", feedbackEmail)}</div>
+      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${decisionsHtml}</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Issue Tracker</div>${feedbackPill(project.title, "Issue Tracker", feedbackEmail)}</div>
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${issuesHtml}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Risk register</div>${feedbackPill(project.title, "Risk register", feedbackEmail)}</div>
+      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
     </div>
     <div style="padding:24px 24px">
       <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
