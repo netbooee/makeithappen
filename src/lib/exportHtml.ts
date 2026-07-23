@@ -899,33 +899,34 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
 <body>
 <div class="doc" style="background:#fff;max-width:760px;margin:0 auto;border:0.5px solid #E2E5EA;border-radius:12px;overflow:hidden">
 
-  <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-      ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-      <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl && includeProjectLink ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
+  <div style="padding:36px 44px 32px;border-bottom:0.5px solid #E7E9ED;display:flex;justify-content:space-between;gap:24px">
+    <div style="min-width:0;flex:1">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
+        <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl && includeProjectLink ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
+      </div>
+      <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
+      <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
+        ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#6B7280;margin-left:10px">${fmtDate(dateIso)}</span>` : ""}
+      </div>
+      ${attendeesHtml}
     </div>
-    <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
-    <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
-      ${esc(agenda.title)}${agenda.date ? `<span style="font-weight:400;color:#6B7280;margin-left:10px">${fmtDate(dateIso)}</span>` : ""}
-    </div>
-    ${attendeesHtml}
+    ${(agenda.resources ?? []).length > 0 ? `
+    <div style="flex-shrink:0;width:200px;border:0.5px solid #E7E9ED;border-radius:8px;padding:12px 14px;background:#FAFBFC">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:8px">Resources</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${(agenda.resources ?? []).map((r) => `
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="color:#4F8EF7;font-size:11px">🔗</span>
+            <a href="${esc(r.url)}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.label)}</a>
+          </div>`).join("")}
+      </div>
+    </div>` : ""}
   </div>
 
   <div style="padding:0 44px">
     ${itemsHtml}
   </div>
-
-  ${(agenda.resources ?? []).length > 0 ? `
-  <div style="padding:20px 44px 24px;border-top:0.5px solid #E7E9ED">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:10px">Resources</div>
-    <div style="display:flex;flex-direction:column;gap:7px">
-      ${(agenda.resources ?? []).map((r) => `
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="color:#4F8EF7;font-size:12px">🔗</span>
-          <a href="${esc(r.url)}" target="_blank" style="font-size:13px;color:#4F8EF7;text-decoration:none">${esc(r.label)}</a>
-        </div>`).join("")}
-    </div>
-  </div>` : ""}
 
   ${agenda.notes ? `
   <div style="padding:28px 44px 24px;border-top:0.5px solid #E7E9ED">
