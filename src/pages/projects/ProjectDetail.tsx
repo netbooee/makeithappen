@@ -18,6 +18,7 @@ import { StakeholderSection } from "./StakeholderSection";
 import { ResourcesSection } from "./ResourcesSection";
 import { RiskTracker } from "./RiskTracker";
 import { IssueTracker } from "./IssueTracker";
+import { DecisionsTracker } from "./DecisionsTracker";
 import { UpdateTypeTag, UpdateTypePicker } from "./UpdateTypeTag";
 import { DraftEmailPanel } from "./DraftEmailPanel";
 import { AddProjectTaskRow } from "./AddProjectTaskRow";
@@ -159,15 +160,16 @@ export function ProjectDetail() {
             >
               <Pencil size={15} />
             </button>
-            <button
-              className="icon-btn"
-              style={{ color: urlCopied ? "var(--next)" : "var(--ink-4)" }}
-              onClick={copyProjectUrl}
-              disabled={!project.webUrl}
-              title={project.webUrl ? "Copy project URL" : "No project URL set"}
-            >
-              {urlCopied ? <Check size={15} /> : <Copy size={15} />}
-            </button>
+            {project.webUrl && (
+              <button
+                className="icon-btn"
+                style={{ color: urlCopied ? "var(--next)" : "var(--ink-4)" }}
+                onClick={copyProjectUrl}
+                title="Copy project URL"
+              >
+                {urlCopied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
+            )}
           </div>
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -518,6 +520,7 @@ export function ProjectDetail() {
 
       <RiskTracker project={project} />
       <IssueTracker project={project} />
+      <DecisionsTracker project={project} />
 
       {/* Project tasks (from the task lists, tagged to this project) */}
       <div style={{ marginTop: 28 }}>

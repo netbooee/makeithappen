@@ -119,6 +119,17 @@ export interface ProjectIssue {
   resolution?: string;
 }
 
+export type DecisionStatus = "proposed" | "decided" | "reversed";
+
+export interface ProjectDecision {
+  id: string;
+  title: string;
+  description?: string;
+  status: DecisionStatus;
+  owner?: string;
+  decidedDate: string;
+}
+
 export type StakeholderSatisfaction = "dissatisfied" | "neutral" | "satisfied" | "delighted";
 
 export interface ProjectStakeholder {
@@ -156,6 +167,7 @@ export interface Project {
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
   issues?: ProjectIssue[];
+  decisions?: ProjectDecision[];
   stakeholders?: ProjectStakeholder[];
   milestones: Milestone[];
   updates: StatusUpdate[];

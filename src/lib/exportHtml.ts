@@ -330,16 +330,22 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     const [bg, color, label] = UPDATE_TYPE_STYLE[type ?? "update"] ?? UPDATE_TYPE_STYLE["update"];
     return `<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px;background:${bg};color:${color};flex-shrink:0">${label}</span>`;
   };
-  const updatesHtml = project.updates.length === 0
-    ? `<div style="font-size:12.5px;color:#6B7280">No updates yet.</div>`
-    : project.updates.map((u) => `
+  const renderUpdateCard = (u: (typeof project.updates)[number]) => `
         <div style="padding:10px 14px;border:0.5px solid #E7E9ED;border-radius:8px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
             ${updateTypePill(u.type)}
             <span style="font-size:11px;color:#6B7280;margin-left:auto">${esc(u.when)}</span>
           </div>
           <div style="font-size:12.5px;color:#4B5563;line-height:1.55">${esc(u.text)}</div>
-        </div>`).join("");
+        </div>`;
+  const RECENT_UPDATES_COUNT = 3;
+  const recentUpdates = project.updates.slice(0, RECENT_UPDATES_COUNT);
+  const olderUpdates = project.updates.slice(RECENT_UPDATES_COUNT);
+  const updatesHtml = project.updates.length === 0
+    ? `<div style="font-size:12.5px;color:#6B7280">No updates yet.</div>`
+    : recentUpdates.map(renderUpdateCard).join("") + (olderUpdates.length === 0 ? "" : `
+        <a href="#" onclick="this.nextElementSibling.style.display='block';this.style.display='none';return false;" style="font-size:11.5px;color:#6366F1;text-decoration:none;display:inline-block;margin-top:2px">Show ${olderUpdates.length} older update${olderUpdates.length === 1 ? "" : "s"}</a>
+        <div style="display:none">${olderUpdates.map(renderUpdateCard).join("")}</div>`);
 
   // ── Executive update KPI ────────────────────────────────────────────────────
   const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
