@@ -138,7 +138,10 @@ export function draftStatusEmailHtml(project: Project, update: StatusUpdate, use
     )
     .join("");
   const mono = 'font-family:Courier, monospace;';
-  const p = 'margin:0 0 16px 0;';
+  // Outlook's Word rendering engine ignores plain CSS margin on <p>; it needs the
+  // mso-margin-*-alt properties (in points) to actually render the gap after paste.
+  const p = 'margin:0 0 16px 0;mso-margin-top-alt:0;mso-margin-bottom-alt:16pt;';
+  const pTight = 'margin:0;mso-margin-top-alt:0;mso-margin-bottom-alt:0;';
   return `<p style="${p}">Hi [recipient],</p>
 <p style="${p}">${escapeHtml(update.text).replace(/\n/g, "<br>")}</p>
 <p style="${p}"><b>Project details:</b><br>
@@ -150,9 +153,9 @@ ${escapeHtml(project.desc)}</p>
 <b>RAG:</b> ${escapeHtml(ragLabel)}<br>
 <b>Progress:</b> ${doneSubtasks}/${totalSubtasks} tasks complete</p>
 <p style="${p}"><b>Milestones:</b></p>
-<table style="border-collapse:collapse;margin:0 0 16px 0;${mono}">${milestoneRows}</table>
+<table style="border-collapse:collapse;margin:0 0 16px 0;mso-margin-top-alt:0;mso-margin-bottom-alt:16pt;${mono}">${milestoneRows}</table>
 <p style="${p}">Let me know if you have any questions.</p>
-<p style="margin:0;">${escapeHtml(user.name.split(" ")[0])}</p>`;
+<p style="${pTight}">${escapeHtml(user.name.split(" ")[0])}</p>`;
 }
 
 export async function draftStatusEmail(
