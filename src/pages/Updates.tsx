@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
+import { exportStatusUpdatesCsv } from "../lib/exportHtml";
 import type { StatusUpdate, UpdateType } from "../lib/types";
 
 type SortCol = "when" | "project" | "type";
@@ -144,9 +145,18 @@ export function Updates() {
 
   return (
     <div className="page fade">
-      <div className="page-head">
-        <div className="page-title">Status Updates</div>
-        <div className="page-sub">{totalCount} updates across {data.projects.length} projects</div>
+      <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
+        <div style={{ flex: 1 }}>
+          <div className="page-title">Status Updates</div>
+          <div className="page-sub">{totalCount} updates across {data.projects.length} projects</div>
+        </div>
+        <button
+          className="btn btn-ghost"
+          style={{ fontSize: 12.5 }}
+          onClick={() => exportStatusUpdatesCsv(flat.map(({ projectTitle, update }) => ({ projectTitle, update })))}
+        >
+          <Download size={14} /> Export CSV
+        </button>
       </div>
 
       {/* Filter bar */}

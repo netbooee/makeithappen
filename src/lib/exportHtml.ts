@@ -1,4 +1,4 @@
-import type { Contact, MeetingAgenda, Project, SubtaskStatus } from "./types";
+import type { Contact, MeetingAgenda, Project, StatusUpdate, SubtaskStatus } from "./types";
 import { toDateInputValue } from "../components/ui";
 
 function esc(s: string): string {
@@ -988,6 +988,35 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(s: string): string {
+  const v = String(s ?? "");
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+export function exportStatusUpdatesCsv(rows: { projectTitle: string; update: StatusUpdate }[]): void {
+  const header = ["Date", "Type", "Project", "Update", "Author"];
+  const lines = [header.join(",")];
+  for (const { projectTitle, update: u } of rows) {
+    lines.push([
+      csvCell(u.when),
+      csvCell(u.type ?? "update"),
+      csvCell(projectTitle),
+      csvCell(u.text),
+      csvCell(u.who),
+    ].join(","));
+  }
+  const csv = lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `status-updates-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

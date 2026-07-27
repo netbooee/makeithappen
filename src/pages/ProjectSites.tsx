@@ -22,7 +22,7 @@ export function ProjectSites() {
         <table className="data-table">
           <thead>
             <tr>
-              {["Project Name", "Project Site URL", "Project Meeting URL"].map((label) => (
+              {["Project Name", "Project Site URL", "Project Meeting URL", "SharePoint URL", "SharePoint Project ID"].map((label) => (
                 <th
                   key={label}
                   style={{ padding: "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}
@@ -36,6 +36,7 @@ export function ProjectSites() {
             {data.projects.map((p) => {
               const siteKey = `${p.id}:site`;
               const meetingKey = `${p.id}:meeting`;
+              const sharepointKey = `${p.id}:sharepoint`;
               return (
                 <tr key={p.id}>
                   <td className="td-primary" style={{ padding: "10px 12px", minWidth: 200 }}>
@@ -88,6 +89,37 @@ export function ProjectSites() {
                         {copiedKey === meetingKey ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </div>
+                  </td>
+                  <td style={{ padding: "10px 12px", minWidth: 240 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="https://…"
+                        value={p.sharepointUrl ?? ""}
+                        onChange={(e) => updateProject(p.id, { sharepointUrl: e.target.value })}
+                        style={{ width: "100%" }}
+                      />
+                      <button
+                        className="icon-btn"
+                        style={{ color: copiedKey === sharepointKey ? "var(--next)" : "var(--ink-4)", flexShrink: 0 }}
+                        onClick={() => copy(sharepointKey, p.sharepointUrl ?? "")}
+                        disabled={!p.sharepointUrl}
+                        title={p.sharepointUrl ? "Copy URL" : "No URL set"}
+                      >
+                        {copiedKey === sharepointKey ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 12px", minWidth: 160 }}>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="ID"
+                      value={p.sharepointProjectId ?? ""}
+                      onChange={(e) => updateProject(p.id, { sharepointProjectId: e.target.value })}
+                      style={{ width: "100%" }}
+                    />
                   </td>
                 </tr>
               );

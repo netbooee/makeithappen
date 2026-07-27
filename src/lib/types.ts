@@ -161,6 +161,8 @@ export interface Project {
   budgetNote?: string;
   webUrl?: string;
   meetingAgendaLocationUrl?: string;
+  sharepointUrl?: string;
+  sharepointProjectId?: string;
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];

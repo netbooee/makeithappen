@@ -27,6 +27,8 @@ export function ProjectModal({
   const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
   const [webUrl, setWebUrl] = useState(initial.webUrl ?? "");
   const [meetingAgendaLocationUrl, setMeetingAgendaLocationUrl] = useState(initial.meetingAgendaLocationUrl ?? "");
+  const [sharepointUrl, setSharepointUrl] = useState(initial.sharepointUrl ?? "");
+  const [sharepointProjectId, setSharepointProjectId] = useState(initial.sharepointProjectId ?? "");
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,6 +59,8 @@ export function ProjectModal({
       clientLogo: clientLogo || undefined,
       webUrl: webUrl.trim() || undefined,
       meetingAgendaLocationUrl: meetingAgendaLocationUrl.trim() || undefined,
+      sharepointUrl: sharepointUrl.trim() || undefined,
+      sharepointProjectId: sharepointProjectId.trim() || undefined,
     });
     close();
   };
@@ -163,6 +167,27 @@ export function ProjectModal({
             value={meetingAgendaLocationUrl}
             onChange={(e) => setMeetingAgendaLocationUrl(e.target.value)}
           />
+        </div>
+        <div className="row">
+          <div style={{ flex: 1 }}>
+            <div className="field-label" style={{ marginBottom: 7 }}>SharePoint URL</div>
+            <input
+              className="input"
+              type="url"
+              placeholder="https://…"
+              value={sharepointUrl}
+              onChange={(e) => setSharepointUrl(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div className="field-label" style={{ marginBottom: 7 }}>SharePoint Project ID</div>
+            <input
+              className="input"
+              placeholder="ID"
+              value={sharepointProjectId}
+              onChange={(e) => setSharepointProjectId(e.target.value)}
+            />
+          </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-primary" onClick={submit}>

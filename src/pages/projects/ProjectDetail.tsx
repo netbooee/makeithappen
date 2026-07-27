@@ -56,6 +56,7 @@ export function ProjectDetail() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
+  const [spUrlCopied, setSpUrlCopied] = useState(false);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | null>(null);
 
   const seed = useMemo(() => {
@@ -150,6 +151,13 @@ export function ProjectDetail() {
     setTimeout(() => setUrlCopied(false), 1600);
   };
 
+  const copySharepointUrl = () => {
+    if (!project.sharepointUrl) return;
+    navigator.clipboard.writeText(project.sharepointUrl);
+    setSpUrlCopied(true);
+    setTimeout(() => setSpUrlCopied(false), 1600);
+  };
+
   return (
     <div className="page fade" style={{ maxWidth: 1100 }}>
       <button
@@ -192,12 +200,25 @@ export function ProjectDetail() {
                 {urlCopied ? <Check size={15} /> : <Copy size={15} />}
               </button>
             )}
+            {project.sharepointUrl && (
+              <button
+                className="icon-btn"
+                style={{ color: spUrlCopied ? "var(--next)" : "var(--ink-4)" }}
+                onClick={copySharepointUrl}
+                title="Copy SharePoint URL"
+              >
+                {spUrlCopied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
+            )}
           </div>
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
             <span className="chip"><UserRound /> {project.owner}</span>
             <span className={`chip${isOverdue(project.due) ? " overdue" : ""}`}><Calendar /> Due {project.due}</span>
             <span className="chip"><CheckCircle2 /> {done}/{total} done</span>
+            {project.sharepointProjectId && (
+              <span className="chip" title="SharePoint Project ID">SP ID: {project.sharepointProjectId}</span>
+            )}
             <button
               className="btn btn-ghost"
               style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
