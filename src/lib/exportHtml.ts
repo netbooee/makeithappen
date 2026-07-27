@@ -591,6 +591,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         <div style="font-size:13px;font-weight:500;color:#1A1D23">${project.due !== "No date" ? esc(project.due) : "—"}</div>
       </div>
       <div style="font-size:11px;color:#6B7280">${daysRemaining(project.due)}</div>
+      ${project.timelineNote ? `<div style="font-size:11.5px;color:#6B7280;margin-top:8px;padding-top:8px;border-top:0.5px solid #E7E9ED">${esc(project.timelineNote)}</div>` : ""}
     </div>
     <div style="padding:12px 16px;border-right:0.5px solid #E7E9ED">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280;margin-bottom:8px">Budget</div>
@@ -604,6 +605,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280">Remaining</div>
           <div style="font-size:13px;font-weight:600;color:${r.color}">${r.fmt}</div>
         </div>`; })()}
+      ${project.budgetNote ? `<div style="font-size:11.5px;color:#6B7280;margin-top:8px;padding-top:8px;border-top:0.5px solid #E7E9ED">${esc(project.budgetNote)}</div>` : ""}
     </div>
     <div style="padding:12px 16px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6366F1;margin-bottom:5px">Executive Update</div>

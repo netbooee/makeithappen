@@ -113,6 +113,12 @@ export function KpiSection({ project }: { project: Project }) {
             </div>
           ))}
         </div>
+        <textarea
+          style={{ ...kpiInput, fontSize: 12, fontWeight: 400, color: "var(--ink-3)", resize: "none", lineHeight: 1.4, minHeight: 32, borderTop: "1px solid var(--border)", marginTop: 2, paddingTop: 8 }}
+          placeholder="Note…"
+          value={project.timelineNote ?? ""}
+          onChange={(e) => set({ timelineNote: e.target.value || undefined })}
+        />
       </div>
 
       {/* Budget */}
@@ -135,6 +141,12 @@ export function KpiSection({ project }: { project: Project }) {
             </span>
           </div>
         </div>
+        <textarea
+          style={{ ...kpiInput, fontSize: 12, fontWeight: 400, color: "var(--ink-3)", resize: "none", lineHeight: 1.4, minHeight: 32, borderTop: "1px solid var(--border)", marginTop: 2, paddingTop: 8 }}
+          placeholder="Note…"
+          value={project.budgetNote ?? ""}
+          onChange={(e) => set({ budgetNote: e.target.value || undefined })}
+        />
       </div>
 
       {/* Executive update */}

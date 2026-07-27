@@ -157,6 +157,8 @@ export interface Project {
   timelineRisk?: "green" | "amber" | "red";
   budgetRisk?: "green" | "amber" | "red";
   resourceRisk?: "green" | "amber" | "red";
+  timelineNote?: string;
+  budgetNote?: string;
   webUrl?: string;
   meetingAgendaLocationUrl?: string;
   heroImage?: string;
