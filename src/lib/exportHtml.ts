@@ -15,37 +15,66 @@ function mdNotes(s: string): string {
       .replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (_m, a, b) => `<strong>${a ?? b}</strong>`)
       .replace(/\*([^*]+)\*|_([^_]+)_/g, (_m, a, b) => `<em>${a ?? b}</em>`);
 
+  type ListItem = { html: string; children: ListNode[] };
+  type ListNode = { tag: "ul" | "ol"; items: ListItem[] };
+  const renderList = (node: ListNode): string =>
+    `<${node.tag} style="margin:4px 0;padding-left:18px">${node.items
+      .map((it) => `<li>${it.html}${it.children.map(renderList).join("")}</li>`)
+      .join("")}</${node.tag}>`;
+
   const lines = s.split("\n");
   const blocks: string[] = [];
-  let list: string[] = [];
-  let listTag: "ul" | "ol" = "ul";
-  const flushList = () => {
-    if (list.length) blocks.push(`<${listTag} style="margin:4px 0;padding-left:18px">${list.join("")}</${listTag}>`);
-    list = [];
-  };
+  let stack: { indent: number; node: ListNode }[] = [];
+  // Track top-level list nodes so we can splice their rendered HTML into `blocks` once complete.
+  const topListMarkers = new Map<ListNode, number>();
+
   for (const line of lines) {
     const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
-    const o = line.match(/^\s*\d+[.)]\s+(.*)$/);
-    const m = line.match(/^\s*[-*]\s+(.*)$/);
+    const o = line.match(/^\s*(\s*)\d+[.)]\s+(.*)$/);
+    const m = line.match(/^(\s*)[-*]\s+(.*)$/);
+    const listMatch = o ? { indent: (line.match(/^(\s*)/)?.[1] ?? "").length, tag: "ol" as const, text: o[2] }
+      : m ? { indent: m[1].length, tag: "ul" as const, text: m[2] }
+      : null;
+
     if (h) {
-      flushList();
+      stack = [];
       const level = h[1].length;
       const size = level === 1 ? 15 : level === 2 ? 13.5 : 12.5;
       blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 6 : 0}px 0 2px">${inline(h[2])}</strong>`);
-    } else if (o) {
-      if (list.length && listTag !== "ol") flushList();
-      listTag = "ol";
-      list.push(`<li>${inline(o[1])}</li>`);
-    } else if (m) {
-      if (list.length && listTag !== "ul") flushList();
-      listTag = "ul";
-      list.push(`<li>${inline(m[1])}</li>`);
+    } else if (listMatch) {
+      while (stack.length && listMatch.indent < stack[stack.length - 1].indent) stack.pop();
+      const top = stack[stack.length - 1];
+      let node: ListNode;
+      if (!top || listMatch.indent > top.indent) {
+        node = { tag: listMatch.tag, items: [] };
+        if (!top) {
+          blocks.push("");
+          topListMarkers.set(node, blocks.length - 1);
+        } else {
+          top.node.items[top.node.items.length - 1].children.push(node);
+        }
+        stack.push({ indent: listMatch.indent, node });
+      } else if (top.node.tag !== listMatch.tag) {
+        stack.pop();
+        node = { tag: listMatch.tag, items: [] };
+        const parent = stack[stack.length - 1];
+        if (!parent) {
+          blocks.push("");
+          topListMarkers.set(node, blocks.length - 1);
+        } else {
+          parent.node.items[parent.node.items.length - 1].children.push(node);
+        }
+        stack.push({ indent: listMatch.indent, node });
+      } else {
+        node = top.node;
+      }
+      node.items.push({ html: inline(listMatch.text), children: [] });
     } else {
-      flushList();
+      stack = [];
       if (line.trim()) blocks.push(inline(line));
     }
   }
-  flushList();
+  for (const [node, idx] of topListMarkers) blocks[idx] = renderList(node);
   return blocks.join("<br/>").replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
     .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol");
 }
