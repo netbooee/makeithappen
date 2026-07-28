@@ -18,26 +18,36 @@ function mdNotes(s: string): string {
   const lines = s.split("\n");
   const blocks: string[] = [];
   let list: string[] = [];
+  let listTag: "ul" | "ol" = "ul";
   const flushList = () => {
-    if (list.length) blocks.push(`<ul style="margin:4px 0;padding-left:18px">${list.join("")}</ul>`);
+    if (list.length) blocks.push(`<${listTag} style="margin:4px 0;padding-left:18px">${list.join("")}</${listTag}>`);
     list = [];
   };
   for (const line of lines) {
     const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
+    const o = line.match(/^\s*\d+[.)]\s+(.*)$/);
     const m = line.match(/^\s*[-*]\s+(.*)$/);
     if (h) {
       flushList();
       const level = h[1].length;
       const size = level === 1 ? 15 : level === 2 ? 13.5 : 12.5;
       blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 6 : 0}px 0 2px">${inline(h[2])}</strong>`);
-    } else if (m) list.push(`<li>${inline(m[1])}</li>`);
-    else {
+    } else if (o) {
+      if (list.length && listTag !== "ol") flushList();
+      listTag = "ol";
+      list.push(`<li>${inline(o[1])}</li>`);
+    } else if (m) {
+      if (list.length && listTag !== "ul") flushList();
+      listTag = "ul";
+      list.push(`<li>${inline(m[1])}</li>`);
+    } else {
       flushList();
       if (line.trim()) blocks.push(inline(line));
     }
   }
   flushList();
-  return blocks.join("<br/>").replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul");
+  return blocks.join("<br/>").replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
+    .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol");
 }
 
 function parseBudgetNum(val: string | undefined): number | null {
