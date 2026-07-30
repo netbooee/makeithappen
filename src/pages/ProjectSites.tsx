@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { useStore } from "../store/store";
 
 export function ProjectSites() {
@@ -134,12 +134,12 @@ export function ProjectSites() {
                       />
                       <button
                         className="icon-btn"
-                        style={{ color: copiedKey === webServerFolderKey ? "var(--next)" : "var(--ink-4)", flexShrink: 0 }}
-                        onClick={() => copy(webServerFolderKey, p.webServerFolderUrl ?? "")}
+                        style={{ color: "var(--ink-4)", flexShrink: 0 }}
+                        onClick={() => window.open(p.webServerFolderUrl ?? "", "_blank", "noopener,noreferrer")}
                         disabled={!p.webServerFolderUrl}
-                        title={p.webServerFolderUrl ? "Copy URL" : "No URL set"}
+                        title={p.webServerFolderUrl ? "Open Web Server Folder" : "No URL set"}
                       >
-                        {copiedKey === webServerFolderKey ? <Check size={14} /> : <Copy size={14} />}
+                        <ExternalLink size={14} />
                       </button>
                     </div>
                   </td>

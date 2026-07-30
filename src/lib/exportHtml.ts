@@ -1038,14 +1038,15 @@ function csvCell(s: string): string {
   return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
-export function exportStatusUpdatesCsv(rows: { projectTitle: string; update: StatusUpdate }[]): void {
-  const header = ["Date", "Type", "Project", "Update", "Author"];
+export function exportStatusUpdatesCsv(rows: { projectTitle: string; sharepointProjectId?: string; update: StatusUpdate }[]): void {
+  const header = ["Date", "Type", "Project", "SharePoint Project ID", "Update", "Author"];
   const lines = [header.join(",")];
-  for (const { projectTitle, update: u } of rows) {
+  for (const { projectTitle, sharepointProjectId, update: u } of rows) {
     lines.push([
       csvCell(u.when),
       csvCell(u.type ?? "update"),
       csvCell(projectTitle),
+      csvCell(sharepointProjectId ?? ""),
       csvCell(u.text),
       csvCell(u.who),
     ].join(","));

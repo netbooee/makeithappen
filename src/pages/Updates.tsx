@@ -21,6 +21,7 @@ const ALL_TYPES = Object.keys(UPDATE_TYPE_META) as UpdateType[];
 type FlatUpdate = {
   projectId: string;
   projectTitle: string;
+  sharepointProjectId?: string;
   update: StatusUpdate;
   sortIndex: number;
 };
@@ -108,7 +109,7 @@ export function Updates() {
     let idx = 0;
     for (const p of data.projects) {
       for (const u of p.updates) {
-        rows.push({ projectId: p.id, projectTitle: p.title, update: u, sortIndex: idx++ });
+        rows.push({ projectId: p.id, projectTitle: p.title, sharepointProjectId: p.sharepointProjectId, update: u, sortIndex: idx++ });
       }
     }
     return rows
@@ -153,7 +154,7 @@ export function Updates() {
         <button
           className="btn btn-ghost"
           style={{ fontSize: 12.5 }}
-          onClick={() => exportStatusUpdatesCsv(flat.map(({ projectTitle, update }) => ({ projectTitle, update })))}
+          onClick={() => exportStatusUpdatesCsv(flat.map(({ projectTitle, sharepointProjectId, update }) => ({ projectTitle, sharepointProjectId, update })))}
         >
           <Download size={14} /> Export CSV
         </button>
@@ -200,6 +201,7 @@ export function Updates() {
               <SortTh col="when">Date</SortTh>
               <SortTh col="type">Type</SortTh>
               <SortTh col="project">Project</SortTh>
+              <th>SharePoint ID</th>
               <th>Update</th>
               <th>Author</th>
               <th style={{ width: 72 }} />
@@ -208,12 +210,12 @@ export function Updates() {
           <tbody>
             {flat.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--ink-4)" }}>
+                <td colSpan={7} style={{ textAlign: "center", padding: 32, color: "var(--ink-4)" }}>
                   No updates match the current filters.
                 </td>
               </tr>
             )}
-            {flat.map(({ projectId, projectTitle, update: u }) => {
+            {flat.map(({ projectId, projectTitle, sharepointProjectId, update: u }) => {
               const isEditing = editingKey?.projectId === projectId && editingKey?.updateId === u.id;
               return (
                 <tr key={`${projectId}-${u.id}`} style={{ verticalAlign: isEditing ? "top" : "middle" }}>
@@ -234,6 +236,7 @@ export function Updates() {
                       {projectTitle} <ExternalLink size={10} />
                     </button>
                   </td>
+                  <td style={{ whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-4)" }}>{sharepointProjectId || "—"}</td>
                   <td style={{ width: "100%" }}>
                     {isEditing ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

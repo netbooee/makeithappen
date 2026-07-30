@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp,
-  Copy, Download, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  Copy, Download, ExternalLink, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../../components/ui";
@@ -57,7 +57,6 @@ export function ProjectDetail() {
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [spUrlCopied, setSpUrlCopied] = useState(false);
-  const [wsfUrlCopied, setWsfUrlCopied] = useState(false);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | null>(null);
 
   const seed = useMemo(() => {
@@ -159,11 +158,9 @@ export function ProjectDetail() {
     setTimeout(() => setSpUrlCopied(false), 1600);
   };
 
-  const copyWebServerFolderUrl = () => {
+  const openWebServerFolderUrl = () => {
     if (!project.webServerFolderUrl) return;
-    navigator.clipboard.writeText(project.webServerFolderUrl);
-    setWsfUrlCopied(true);
-    setTimeout(() => setWsfUrlCopied(false), 1600);
+    window.open(project.webServerFolderUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -221,11 +218,11 @@ export function ProjectDetail() {
             {project.webServerFolderUrl && (
               <button
                 className="icon-btn"
-                style={{ color: wsfUrlCopied ? "var(--next)" : "var(--ink-4)" }}
-                onClick={copyWebServerFolderUrl}
-                title="Copy Web Server Folder URL"
+                style={{ color: "var(--ink-4)" }}
+                onClick={openWebServerFolderUrl}
+                title="Open Web Server Folder"
               >
-                {wsfUrlCopied ? <Check size={15} /> : <Copy size={15} />}
+                <ExternalLink size={15} />
               </button>
             )}
           </div>
