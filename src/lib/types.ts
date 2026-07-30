@@ -163,6 +163,7 @@ export interface Project {
   meetingAgendaLocationUrl?: string;
   sharepointUrl?: string;
   sharepointProjectId?: string;
+  webServerFolderUrl?: string;
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];

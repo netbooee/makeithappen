@@ -22,7 +22,7 @@ export function ProjectSites() {
         <table className="data-table">
           <thead>
             <tr>
-              {["Project Name", "Project Site URL", "Project Meeting URL", "SharePoint URL", "SharePoint Project ID"].map((label) => (
+              {["Project Name", "Project Site URL", "Project Meeting URL", "SharePoint URL", "SharePoint Project ID", "Web Server Folder"].map((label) => (
                 <th
                   key={label}
                   style={{ padding: "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}
@@ -37,6 +37,7 @@ export function ProjectSites() {
               const siteKey = `${p.id}:site`;
               const meetingKey = `${p.id}:meeting`;
               const sharepointKey = `${p.id}:sharepoint`;
+              const webServerFolderKey = `${p.id}:webServerFolder`;
               return (
                 <tr key={p.id}>
                   <td className="td-primary" style={{ padding: "10px 12px", minWidth: 200 }}>
@@ -120,6 +121,27 @@ export function ProjectSites() {
                       onChange={(e) => updateProject(p.id, { sharepointProjectId: e.target.value })}
                       style={{ width: "100%" }}
                     />
+                  </td>
+                  <td style={{ padding: "10px 12px", minWidth: 240 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="https://…"
+                        value={p.webServerFolderUrl ?? ""}
+                        onChange={(e) => updateProject(p.id, { webServerFolderUrl: e.target.value })}
+                        style={{ width: "100%" }}
+                      />
+                      <button
+                        className="icon-btn"
+                        style={{ color: copiedKey === webServerFolderKey ? "var(--next)" : "var(--ink-4)", flexShrink: 0 }}
+                        onClick={() => copy(webServerFolderKey, p.webServerFolderUrl ?? "")}
+                        disabled={!p.webServerFolderUrl}
+                        title={p.webServerFolderUrl ? "Copy URL" : "No URL set"}
+                      >
+                        {copiedKey === webServerFolderKey ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

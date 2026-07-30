@@ -57,6 +57,7 @@ export function ProjectDetail() {
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [spUrlCopied, setSpUrlCopied] = useState(false);
+  const [wsfUrlCopied, setWsfUrlCopied] = useState(false);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | null>(null);
 
   const seed = useMemo(() => {
@@ -158,6 +159,13 @@ export function ProjectDetail() {
     setTimeout(() => setSpUrlCopied(false), 1600);
   };
 
+  const copyWebServerFolderUrl = () => {
+    if (!project.webServerFolderUrl) return;
+    navigator.clipboard.writeText(project.webServerFolderUrl);
+    setWsfUrlCopied(true);
+    setTimeout(() => setWsfUrlCopied(false), 1600);
+  };
+
   return (
     <div className="page fade" style={{ maxWidth: 1100 }}>
       <button
@@ -208,6 +216,16 @@ export function ProjectDetail() {
                 title="Copy SharePoint URL"
               >
                 {spUrlCopied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
+            )}
+            {project.webServerFolderUrl && (
+              <button
+                className="icon-btn"
+                style={{ color: wsfUrlCopied ? "var(--next)" : "var(--ink-4)" }}
+                onClick={copyWebServerFolderUrl}
+                title="Copy Web Server Folder URL"
+              >
+                {wsfUrlCopied ? <Check size={15} /> : <Copy size={15} />}
               </button>
             )}
           </div>

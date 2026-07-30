@@ -29,6 +29,7 @@ export function ProjectModal({
   const [meetingAgendaLocationUrl, setMeetingAgendaLocationUrl] = useState(initial.meetingAgendaLocationUrl ?? "");
   const [sharepointUrl, setSharepointUrl] = useState(initial.sharepointUrl ?? "");
   const [sharepointProjectId, setSharepointProjectId] = useState(initial.sharepointProjectId ?? "");
+  const [webServerFolderUrl, setWebServerFolderUrl] = useState(initial.webServerFolderUrl ?? "");
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,6 +62,7 @@ export function ProjectModal({
       meetingAgendaLocationUrl: meetingAgendaLocationUrl.trim() || undefined,
       sharepointUrl: sharepointUrl.trim() || undefined,
       sharepointProjectId: sharepointProjectId.trim() || undefined,
+      webServerFolderUrl: webServerFolderUrl.trim() || undefined,
     });
     close();
   };
@@ -188,6 +190,16 @@ export function ProjectModal({
               onChange={(e) => setSharepointProjectId(e.target.value)}
             />
           </div>
+        </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Web Server Folder</div>
+          <input
+            className="input"
+            type="url"
+            placeholder="File location URL where you post HTML files"
+            value={webServerFolderUrl}
+            onChange={(e) => setWebServerFolderUrl(e.target.value)}
+          />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-primary" onClick={submit}>

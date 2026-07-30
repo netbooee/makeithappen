@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink, Link2, Pencil, Plus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Copy, ExternalLink, Link2, Pencil, Plus, X } from "lucide-react";
 import { useStore } from "../../store/store";
 import type { Project, ProjectResource } from "../../lib/types";
 
@@ -12,8 +12,16 @@ export function ResourcesSection({ project }: { project: Project }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editUrl, setEditUrl] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const resources = project.resources ?? [];
+
+  const copyResourceUrl = (r: ProjectResource) => {
+    if (!r.url) return;
+    navigator.clipboard.writeText(r.url);
+    setCopiedId(r.id);
+    setTimeout(() => setCopiedId((k) => (k === r.id ? null : k)), 1600);
+  };
 
   const normalizeUrl = (raw: string) =>
     raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw;
@@ -120,6 +128,14 @@ export function ResourcesSection({ project }: { project: Project }) {
                 {r.label}
               </a>
               <ExternalLink size={11} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
+              <button
+                className="icon-btn"
+                style={{ width: 24, height: 24, color: copiedId === r.id ? "var(--next)" : "var(--ink-4)" }}
+                onClick={() => copyResourceUrl(r)}
+                title="Copy link"
+              >
+                {copiedId === r.id ? <Check size={12} /> : <Copy size={12} />}
+              </button>
               <button className="icon-btn" style={{ width: 24, height: 24, color: "var(--ink-4)" }} onClick={() => startEdit(r)} title="Edit link"><Pencil size={12} /></button>
               <button className="icon-btn" style={{ width: 24, height: 24, color: "var(--ink-4)" }} onClick={() => remove(r.id)}><X size={13} /></button>
             </div>
