@@ -104,8 +104,9 @@ export function ProjectDetail() {
       .map(({ task }) => ({ text: task.text, source: task.context })),
   ];
   const handleGenerateNextActionsSummary = async () => {
-    const latestUpdate = project.updates.length
-      ? project.updates.reduce((a, b) => (a.when > b.when ? a : b))
+    const executiveUpdates = project.updates.filter((u) => u.type === "executive");
+    const latestUpdate = executiveUpdates.length
+      ? executiveUpdates.reduce((a, b) => (a.when > b.when ? a : b))
       : undefined;
     setAiBusy("nextActionsSummary");
     try {

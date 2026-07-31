@@ -268,11 +268,11 @@ export function localNextActionsSummary(items: { text: string; source?: string }
         .join("; ")}.`;
 }
 
-/** Generates a short combined summary of the project's next actions, informed by the latest status update. */
+/** Generates a short summary combining the project's most recent executive update with its next action items. */
 export async function generateNextActionsSummary(
   project: Project,
   items: { text: string; source?: string }[],
-  latestUpdate?: StatusUpdate,
+  latestExecutiveUpdate?: StatusUpdate,
 ): Promise<string> {
   if (!items.length) return "";
   if (!devApiKey && !supabaseConfigured) {
@@ -280,19 +280,19 @@ export async function generateNextActionsSummary(
     return localNextActionsSummary(items);
   }
   const itemLines = items.map((n) => `- "${n.text}"${n.source ? ` (${n.source})` : ""}`).join("\n");
-  const updateLine = latestUpdate
-    ? `[${latestUpdate.type ?? "update"}] ${latestUpdate.when}: ${latestUpdate.text}`
+  const updateLine = latestExecutiveUpdate
+    ? `${latestExecutiveUpdate.when}: ${latestExecutiveUpdate.text}`
     : "None yet.";
-  const system = `You write short, plain-text summaries of a project's next actions for a busy PM. 1-3 sentences max, no headers, no bullet lists, no greeting or sign-off. Output only the summary text.`;
+  const system = `You write short, plain-text summaries for a busy PM that combine an executive status update with a project's next action items. 1-3 sentences max, no headers, no bullet lists, no greeting or sign-off. Output only the summary text.`;
   const prompt = `Project: "${project.title}"
 
-Latest status update:
+Most recent executive update:
 ${updateLine}
 
 Next action items:
 ${itemLines}
 
-Write a short, combined summary of these next actions, informed by the latest status update where relevant. Output only the summary text, no preamble.`;
+Write a short summary that combines the most recent executive update with these next action items. Output only the summary text, no preamble.`;
   try {
     return await callClaude(system, [{ role: "user", content: prompt }]);
   } catch {
