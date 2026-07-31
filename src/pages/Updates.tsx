@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronUp, Download, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { exportStatusUpdatesCsv } from "../lib/exportHtml";
+import { parseTimestamp } from "../components/ui";
 import type { StatusUpdate, UpdateType } from "../lib/types";
 
 type SortCol = "when" | "project" | "type";
@@ -27,9 +28,8 @@ type FlatUpdate = {
 };
 
 function parseWhen(when: string): number {
-  const yr = new Date().getFullYear();
-  const d = new Date(when.replace(/^(\w{3} \d+),/, `$1, ${yr},`));
-  return isNaN(d.getTime()) ? 0 : d.getTime();
+  const t = parseTimestamp(when);
+  return Number.isNaN(t) ? 0 : t;
 }
 
 function UpdateTypeTag({ type }: { type: UpdateType }) {

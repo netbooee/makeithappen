@@ -5,7 +5,7 @@ import {
   Copy, Download, ExternalLink, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
-import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../../components/ui";
+import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
@@ -59,6 +59,8 @@ export function ProjectDetail() {
   const [spUrlCopied, setSpUrlCopied] = useState(false);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | "nextActionsSummary" | null>(null);
   const [nextActionsAiSummary, setNextActionsAiSummary] = useState<string | null>(project?.nextActionsAiSummary ?? null);
+  const [editingSummary, setEditingSummary] = useState(false);
+  const [summaryDraft, setSummaryDraft] = useState("");
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -107,16 +109,33 @@ export function ProjectDetail() {
   const handleGenerateNextActionsSummary = async () => {
     const executiveUpdates = project.updates.filter((u) => u.type === "executive");
     const latestUpdate = executiveUpdates.length
-      ? executiveUpdates.reduce((a, b) => (a.when > b.when ? a : b))
+      ? executiveUpdates.reduce((a, b) => (parseTimestamp(b.when) > parseTimestamp(a.when) ? b : a))
       : undefined;
     setAiBusy("nextActionsSummary");
     try {
       const summary = await generateNextActionsSummary(project, nextActionItems, latestUpdate);
       setNextActionsAiSummary(summary);
       updateProject(project.id, { nextActionsAiSummary: summary });
+      setEditingSummary(false);
     } finally {
       setAiBusy(null);
     }
+  };
+
+  const handleEditSummary = () => {
+    setSummaryDraft(nextActionsAiSummary ?? "");
+    setEditingSummary(true);
+  };
+
+  const handleSaveSummary = () => {
+    const trimmed = summaryDraft.trim();
+    setNextActionsAiSummary(trimmed);
+    updateProject(project.id, { nextActionsAiSummary: trimmed });
+    setEditingSummary(false);
+  };
+
+  const handleCancelEditSummary = () => {
+    setEditingSummary(false);
   };
 
   const toggleOne = (mid: string) => setOpenMap((o) => ({ ...o, [mid]: !o[mid] }));
@@ -317,16 +336,50 @@ export function ProjectDetail() {
               </div>
               {aiBusy === "nextActionsSummary" ? (
                 <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-4)" }}>Generating summary...</div>
+              ) : editingSummary ? (
+                <>
+                  <textarea
+                    value={summaryDraft}
+                    onChange={(e) => setSummaryDraft(e.target.value)}
+                    rows={4}
+                    style={{ width: "100%", fontSize: 13.5, lineHeight: 1.5, fontFamily: "inherit", resize: "vertical" }}
+                  />
+                  <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      onClick={handleSaveSummary}
+                    >
+                      <Check size={13} /> Save
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      onClick={handleCancelEditSummary}
+                    >
+                      <X size={13} /> Cancel
+                    </button>
+                  </div>
+                </>
               ) : nextActionsAiSummary ? (
                 <>
                   <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-1)" }}>{nextActionsAiSummary}</div>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}
-                    onClick={handleGenerateNextActionsSummary}
-                  >
-                    <Sparkles size={13} /> Regenerate
-                  </button>
+                  <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      onClick={handleGenerateNextActionsSummary}
+                    >
+                      <Sparkles size={13} /> Regenerate
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      onClick={handleEditSummary}
+                    >
+                      <Pencil size={13} /> Edit
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>

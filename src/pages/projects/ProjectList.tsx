@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound } from "lucide-react";
 import { useStore } from "../../store/store";
-import { Bar, StatusChip, isOverdue, toDateInputValue } from "../../components/ui";
+import { Bar, StatusChip, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
 
 export function ProjectList() {
@@ -30,12 +30,12 @@ export function ProjectList() {
     else { setSortCol(col); setSortDir("asc"); }
   };
 
-  const statusOrder: Record<string, number> = { "not-started": 0, scheduled: 1, "in-progress": 2, active: 3, "on-hold": 4, completed: 5 };
+  const statusOrder: Record<string, number> = { active: 0, waiting: 1, hold: 2, complete: 3 };
   const riskOrder: Record<string, number> = { green: 0, amber: 1, red: 2 };
 
   const lastActivity = (p: (typeof projects)[number]) =>
     p.updates.reduce((max, u) => {
-      const t = new Date(u.when).getTime();
+      const t = parseTimestamp(u.when);
       return Number.isNaN(t) ? max : Math.max(max, t);
     }, -Infinity);
 
@@ -46,7 +46,7 @@ export function ProjectList() {
     else if (sortCol === "progress") { av = a.progress; bv = b.progress; }
     else if (sortCol === "risk") { av = riskOrder[a.risk ?? ""] ?? 99; bv = riskOrder[b.risk ?? ""] ?? 99; }
     else if (sortCol === "due") {
-      const da = toDateInputValue(a.due) ?? "9999"; const db = toDateInputValue(b.due) ?? "9999";
+      const da = toDateInputValue(a.due) || "9999"; const db = toDateInputValue(b.due) || "9999";
       av = da; bv = db;
     }
     else if (sortCol === "owner") { av = resolveOwner(a.owner).toLowerCase(); bv = resolveOwner(b.owner).toLowerCase(); }
@@ -54,6 +54,12 @@ export function ProjectList() {
     const cmp = av < bv ? -1 : av > bv ? 1 : 0;
     return sortDir === "asc" ? cmp : -cmp;
   }) : projects;
+
+  // Grid view always shows most-recently-updated first; projects with no updates sort last
+  const gridProjects = [...projects].sort((a, b) => {
+    const ta = lastActivity(a), tb = lastActivity(b);
+    return ta < tb ? 1 : ta > tb ? -1 : 0;
+  });
 
   return (
     <div className="page fade">
@@ -85,7 +91,7 @@ export function ProjectList() {
 
       {viewMode === "grid" ? (
         <div className="grid-2">
-          {projects.map((p) => {
+          {gridProjects.map((p) => {
             const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
             const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
             return (

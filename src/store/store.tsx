@@ -319,7 +319,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const p = d.projects.find((x) => x.id === projectId);
           if (!p) return;
           const when = new Date().toLocaleString("en-US", {
-            month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+            month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
           });
           const update: StatusUpdate = { id: "u" + Date.now(), when, who: all.user.initials, text, type };
           p.updates.unshift(update);

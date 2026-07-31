@@ -19,6 +19,27 @@ export function toDateInputValue(str: string | undefined): string {
   return "";
 }
 
+/** Parse an update timestamp like "Jun 16, 9:00 AM" or "Jun 16, 2025, 9:00 AM" into epoch ms.
+ *  Native Date parsing can't be used: without a year Chrome assumes 2001 and Safari/Firefox
+ *  return Invalid Date. A missing year is treated as the current year. Returns NaN if unparseable. */
+export function parseTimestamp(str: string | undefined): number {
+  if (!str) return NaN;
+  const m = str.trim().match(/^([A-Za-z]{3})\s+(\d{1,2})(?:,\s*(\d{4}))?(?:,?\s+(\d{1,2}):(\d{2})\s*(AM|PM)?)?$/i);
+  if (m) {
+    const mo = MONTHS.findIndex((x) => x.toLowerCase() === m[1].toLowerCase());
+    if (mo >= 0) {
+      const yr = m[3] ? +m[3] : new Date().getFullYear();
+      let hr = m[4] ? +m[4] : 0;
+      const min = m[5] ? +m[5] : 0;
+      const ampm = m[6]?.toUpperCase();
+      if (ampm === "PM" && hr < 12) hr += 12;
+      if (ampm === "AM" && hr === 12) hr = 0;
+      return new Date(yr, mo, +m[2], hr, min).getTime();
+    }
+  }
+  return new Date(str).getTime();
+}
+
 function fromDateInputValue(str: string): string {
   if (!str) return "";
   const [y, mo, d] = str.split("-").map(Number);
