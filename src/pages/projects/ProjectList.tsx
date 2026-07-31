@@ -33,11 +33,16 @@ export function ProjectList() {
   const statusOrder: Record<string, number> = { active: 0, waiting: 1, hold: 2, complete: 3 };
   const riskOrder: Record<string, number> = { green: 0, amber: 1, red: 2 };
 
-  const lastActivity = (p: (typeof projects)[number]) =>
-    p.updates.reduce((max, u) => {
+  // Prefer the store-stamped updatedAt (moves on any edit); fall back to the
+  // updates log for projects not touched since updatedAt was introduced.
+  const lastActivity = (p: (typeof projects)[number]) => {
+    const stamped = p.updatedAt ? Date.parse(p.updatedAt) : NaN;
+    if (!Number.isNaN(stamped)) return stamped;
+    return p.updates.reduce((max, u) => {
       const t = parseTimestamp(u.when);
       return Number.isNaN(t) ? max : Math.max(max, t);
     }, -Infinity);
+  };
 
   const sortedProjects = sortCol ? [...projects].sort((a, b) => {
     let av: string | number = 0, bv: string | number = 0;
@@ -191,10 +196,7 @@ export function ProjectList() {
                             {p.title.slice(0, 1).toUpperCase()}
                           </div>
                         )}
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
-                          {p.desc && <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2, fontWeight: 400 }}>{p.desc}</div>}
-                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>

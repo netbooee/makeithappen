@@ -177,6 +177,8 @@ export interface Project {
   milestones: Milestone[];
   updates: StatusUpdate[];
   nextActionsAiSummary?: string;
+  /** ISO timestamp stamped by the store on every mutation that touches this project */
+  updatedAt?: string;
 }
 
 export interface Task {

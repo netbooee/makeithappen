@@ -149,6 +149,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       p.progress = subs.length ? subs.filter((x) => x.done).length / subs.length : 0;
     };
 
+    const touch = (p: Project | undefined) => {
+      if (p) p.updatedAt = new Date().toISOString();
+    };
+
     return {
       workspace,
       setWorkspace,
@@ -221,14 +225,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             m.status = "active";
           }
           recomputeProgress(p);
+          touch(p);
         }),
 
-      addProject: (project) => mutate((d) => d.projects.unshift(project)),
+      addProject: (project) =>
+        mutate((d) => {
+          touch(project);
+          d.projects.unshift(project);
+        }),
 
       updateProject: (id, patch) =>
         mutate((d) => {
           const p = d.projects.find((x) => x.id === id);
-          if (p) Object.assign(p, patch);
+          if (p) { Object.assign(p, patch); touch(p); }
         }),
 
       deleteProject: (id) =>
@@ -242,13 +251,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p) return;
           p.milestones.push(milestone);
           recomputeProgress(p);
+          touch(p);
         }),
 
       updateMilestone: (projectId, milestoneId, patch) =>
         mutate((d) => {
           const p = d.projects.find((x) => x.id === projectId);
           const m = p?.milestones.find((x) => x.id === milestoneId);
-          if (m) Object.assign(m, patch);
+          if (m) { Object.assign(m, patch); touch(p); }
         }),
 
       deleteMilestone: (projectId, milestoneId) =>
@@ -257,6 +267,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p) return;
           p.milestones = p.milestones.filter((x) => x.id !== milestoneId);
           recomputeProgress(p);
+          touch(p);
         }),
 
       updateSubtask: (projectId, milestoneId, subtaskId, patch) =>
@@ -267,6 +278,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p || !s) return;
           Object.assign(s, patch);
           recomputeProgress(p);
+          touch(p);
         }),
 
       deleteSubtask: (projectId, milestoneId, subtaskId) =>
@@ -276,6 +288,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p || !m) return;
           m.subtasks = m.subtasks.filter((x) => x.id !== subtaskId);
           recomputeProgress(p);
+          touch(p);
         }),
 
       moveSubtask: (projectId, fromMilestoneId, subtaskId, toMilestoneId) =>
@@ -289,13 +302,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           from.subtasks = from.subtasks.filter((x) => x.id !== subtaskId);
           to.subtasks.push(s);
           recomputeProgress(p);
+          touch(p);
         }),
 
       updateStatusUpdate: (projectId, updateId, text, type) =>
         mutate((d) => {
           const p = d.projects.find((x) => x.id === projectId);
           const u = p?.updates.find((x) => x.id === updateId);
-          if (u) { u.text = text; if (type !== undefined) u.type = type; }
+          if (u) { u.text = text; if (type !== undefined) u.type = type; touch(p); }
         }),
 
       deleteStatusUpdate: (projectId, updateId) =>
@@ -303,6 +317,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const p = d.projects.find((x) => x.id === projectId);
           if (!p) return;
           p.updates = p.updates.filter((x) => x.id !== updateId);
+          touch(p);
         }),
 
       addSubtask: (projectId, milestoneId, title) =>
@@ -312,6 +327,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p || !m) return;
           m.subtasks.push({ id: "s" + Date.now(), t: title, done: false, next: false, who: all.user.initials });
           recomputeProgress(p);
+          touch(p);
         }),
 
       addUpdate: (projectId, text, type = "update") =>
@@ -323,6 +339,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           });
           const update: StatusUpdate = { id: "u" + Date.now(), when, who: all.user.initials, text, type };
           p.updates.unshift(update);
+          touch(p);
         }),
 
       toggleHabit: (id) =>

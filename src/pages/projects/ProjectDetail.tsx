@@ -332,7 +332,7 @@ export function ProjectDetail() {
           {nextActionItems.length > 0 && (
             <div className="card card-pad" style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.02em" }}>
-                Next Actions Summary
+                Coming up next
               </div>
               {aiBusy === "nextActionsSummary" ? (
                 <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-4)" }}>Generating summary...</div>

@@ -226,7 +226,7 @@ const SEV_STYLE: Record<string, [string, string]> = {
 export function exportProjectHtml(project: Project, contacts: Contact[], feedbackEmail = "", nextActionItems: { text: string; source?: string }[] = [], nextActionsSummary?: string | null): void {
   const summaryText = nextActionsSummary ?? localNextActionsSummary(nextActionItems);
   const nextActionsSummaryHtml = nextActionItems.length > 0 ? `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Next Actions Summary</div>${feedbackPill(project.title, "Next Actions Summary", feedbackEmail)}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Coming up next</div>${feedbackPill(project.title, "Coming up next", feedbackEmail)}</div>
       <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#4A4F58;line-height:1.6;margin-bottom:24px">${esc(summaryText)}</div>` : "";
   const totalSubs = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const doneSubs  = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
