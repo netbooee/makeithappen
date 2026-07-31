@@ -58,7 +58,7 @@ export function ProjectDetail() {
   const [urlCopied, setUrlCopied] = useState(false);
   const [spUrlCopied, setSpUrlCopied] = useState(false);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | "nextActionsSummary" | null>(null);
-  const [nextActionsAiSummary, setNextActionsAiSummary] = useState<string | null>(null);
+  const [nextActionsAiSummary, setNextActionsAiSummary] = useState<string | null>(project?.nextActionsAiSummary ?? null);
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -69,6 +69,7 @@ export function ProjectDetail() {
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(seed);
   useEffect(() => setOpenMap(seed), [seed]);
+  useEffect(() => setNextActionsAiSummary(project?.nextActionsAiSummary ?? null), [project?.id]);
 
   if (!project) {
     return (
@@ -112,6 +113,7 @@ export function ProjectDetail() {
     try {
       const summary = await generateNextActionsSummary(project, nextActionItems, latestUpdate);
       setNextActionsAiSummary(summary);
+      updateProject(project.id, { nextActionsAiSummary: summary });
     } finally {
       setAiBusy(null);
     }
@@ -260,7 +262,7 @@ export function ProjectDetail() {
             <button
               className="btn btn-ghost"
               style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems)}
+              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems, nextActionsAiSummary)}
               title="Download self-contained HTML report"
             >
               <Download size={12} /> Export HTML

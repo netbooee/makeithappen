@@ -33,6 +33,12 @@ export function ProjectList() {
   const statusOrder: Record<string, number> = { "not-started": 0, scheduled: 1, "in-progress": 2, active: 3, "on-hold": 4, completed: 5 };
   const riskOrder: Record<string, number> = { green: 0, amber: 1, red: 2 };
 
+  const lastActivity = (p: (typeof projects)[number]) =>
+    p.updates.reduce((max, u) => {
+      const t = new Date(u.when).getTime();
+      return Number.isNaN(t) ? max : Math.max(max, t);
+    }, -Infinity);
+
   const sortedProjects = sortCol ? [...projects].sort((a, b) => {
     let av: string | number = 0, bv: string | number = 0;
     if (sortCol === "name") { av = a.title.toLowerCase(); bv = b.title.toLowerCase(); }
@@ -44,6 +50,7 @@ export function ProjectList() {
       av = da; bv = db;
     }
     else if (sortCol === "owner") { av = resolveOwner(a.owner).toLowerCase(); bv = resolveOwner(b.owner).toLowerCase(); }
+    else if (sortCol === "activity") { av = lastActivity(a); bv = lastActivity(b); }
     const cmp = av < bv ? -1 : av > bv ? 1 : 0;
     return sortDir === "asc" ? cmp : -cmp;
   }) : projects;
@@ -140,8 +147,8 @@ export function ProjectList() {
           <table className="data-table">
             <thead>
               <tr>
-                {(["name", "status", null, "progress", "risk", "due", "owner"] as const).map((col, i) => {
-                  const labels = ["Name", "Status", "Milestones", "Progress", "Risk", "Due", "Owner"];
+                {(["name", "status", null, "progress", "risk", "due", "activity", "owner"] as const).map((col, i) => {
+                  const labels = ["Name", "Status", "Milestones", "Progress", "Risk", "Due", "Last Changed", "Owner"];
                   const active = col && sortCol === col;
                   return (
                     <th
@@ -213,6 +220,12 @@ export function ProjectList() {
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={12} /> {p.due}</span>
+                    </td>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
+                      {(() => {
+                        const t = lastActivity(p);
+                        return Number.isFinite(t) ? new Date(t).toLocaleDateString() : "—";
+                      })()}
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}><UserRound size={12} /> {resolveOwner(p.owner)}</span>

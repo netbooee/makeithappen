@@ -176,6 +176,7 @@ export interface Project {
   stakeholders?: ProjectStakeholder[];
   milestones: Milestone[];
   updates: StatusUpdate[];
+  nextActionsAiSummary?: string;
 }
 
 export interface Task {
