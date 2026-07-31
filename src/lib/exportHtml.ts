@@ -1,5 +1,6 @@
 import type { Contact, MeetingAgenda, Project, StatusUpdate, SubtaskStatus } from "./types";
 import { toDateInputValue } from "../components/ui";
+import { localNextActionsSummary } from "./claude";
 
 function esc(s: string): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -222,7 +223,10 @@ const SEV_STYLE: Record<string, [string, string]> = {
   critical: ["rgba(239,68,68,.14)",   "#A32D2D"],
 };
 
-export function exportProjectHtml(project: Project, contacts: Contact[], feedbackEmail = ""): void {
+export function exportProjectHtml(project: Project, contacts: Contact[], feedbackEmail = "", nextActionItems: { text: string; source?: string }[] = []): void {
+  const nextActionsSummaryHtml = nextActionItems.length > 0 ? `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Next Actions Summary</div>${feedbackPill(project.title, "Next Actions Summary", feedbackEmail)}</div>
+      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#4A4F58;line-height:1.6;margin-bottom:24px">${esc(localNextActionsSummary(nextActionItems))}</div>` : "";
   const totalSubs = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const doneSubs  = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
   const exportDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -654,6 +658,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
 
   <div style="display:grid;grid-template-columns:1.4fr 1fr">
     <div style="padding:24px 28px;border-right:0.5px solid #E7E9ED">
+      ${nextActionsSummaryHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Milestones</div>${feedbackPill(project.title, "Milestones", feedbackEmail)}</div>
       ${milestonesHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Decisions Log</div>${feedbackPill(project.title, "Decisions Log", feedbackEmail)}</div>

@@ -8,7 +8,7 @@ import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
-import { draftStatusUpdate, suggestStatusUpdateEdits } from "../../lib/claude";
+import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
 import { lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
@@ -57,7 +57,8 @@ export function ProjectDetail() {
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [spUrlCopied, setSpUrlCopied] = useState(false);
-  const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | null>(null);
+  const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | "nextActionsSummary" | null>(null);
+  const [nextActionsAiSummary, setNextActionsAiSummary] = useState<string | null>(null);
 
   const seed = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -93,6 +94,27 @@ export function ProjectDetail() {
   const projectTasks = allTasks.filter(
     ({ task }) => task.project === project.title && !task.milestoneId,
   );
+
+  const nextActionItems = [
+    ...project.milestones.flatMap((m) =>
+      m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title })),
+    ),
+    ...projectTasks
+      .filter(({ task }) => task.next && !task.done)
+      .map(({ task }) => ({ text: task.text, source: task.context })),
+  ];
+  const handleGenerateNextActionsSummary = async () => {
+    const latestUpdate = project.updates.length
+      ? project.updates.reduce((a, b) => (a.when > b.when ? a : b))
+      : undefined;
+    setAiBusy("nextActionsSummary");
+    try {
+      const summary = await generateNextActionsSummary(project, nextActionItems, latestUpdate);
+      setNextActionsAiSummary(summary);
+    } finally {
+      setAiBusy(null);
+    }
+  };
 
   const toggleOne = (mid: string) => setOpenMap((o) => ({ ...o, [mid]: !o[mid] }));
   const toggleAll = () =>
@@ -237,7 +259,7 @@ export function ProjectDetail() {
             <button
               className="btn btn-ghost"
               style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "")}
+              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems)}
               title="Download self-contained HTML report"
             >
               <Download size={12} /> Export HTML
@@ -285,6 +307,40 @@ export function ProjectDetail() {
       <div className="project-cols" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, alignItems: "start" }}>
         {/* LEFT: milestones */}
         <div style={{ minWidth: 0 }}>
+          {nextActionItems.length > 0 && (
+            <div className="card card-pad" style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Next Actions Summary
+              </div>
+              {aiBusy === "nextActionsSummary" ? (
+                <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-4)" }}>Generating summary...</div>
+              ) : nextActionsAiSummary ? (
+                <>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-1)" }}>{nextActionsAiSummary}</div>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}
+                    onClick={handleGenerateNextActionsSummary}
+                  >
+                    <Sparkles size={13} /> Regenerate
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink-4)", marginBottom: 8 }}>
+                    Generate an AI summary of this project's next actions.
+                  </div>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                    onClick={handleGenerateNextActionsSummary}
+                  >
+                    <Sparkles size={13} /> Generate Summary
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           <div className="section-h">
             Milestones / Workstreams
             {tweaks.collapsible && (

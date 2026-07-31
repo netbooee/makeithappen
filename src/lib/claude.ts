@@ -258,6 +258,48 @@ Improve clarity and concision without changing the meaning or adding new facts. 
   }
 }
 
+/* ---------- next actions summary ---------- */
+
+export function localNextActionsSummary(items: { text: string; source?: string }[]): string {
+  return items.length === 1
+    ? `The next action on this project is "${items[0].text}"${items[0].source ? ` (${items[0].source})` : ""}.`
+    : `There are ${items.length} next actions on this project: ${items
+        .map((n) => `"${n.text}"${n.source ? ` (${n.source})` : ""}`)
+        .join("; ")}.`;
+}
+
+/** Generates a short combined summary of the project's next actions, informed by the latest status update. */
+export async function generateNextActionsSummary(
+  project: Project,
+  items: { text: string; source?: string }[],
+  latestUpdate?: StatusUpdate,
+): Promise<string> {
+  if (!items.length) return "";
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return localNextActionsSummary(items);
+  }
+  const itemLines = items.map((n) => `- "${n.text}"${n.source ? ` (${n.source})` : ""}`).join("\n");
+  const updateLine = latestUpdate
+    ? `[${latestUpdate.type ?? "update"}] ${latestUpdate.when}: ${latestUpdate.text}`
+    : "None yet.";
+  const system = `You write short, plain-text summaries of a project's next actions for a busy PM. 1-3 sentences max, no headers, no bullet lists, no greeting or sign-off. Output only the summary text.`;
+  const prompt = `Project: "${project.title}"
+
+Latest status update:
+${updateLine}
+
+Next action items:
+${itemLines}
+
+Write a short, combined summary of these next actions, informed by the latest status update where relevant. Output only the summary text, no preamble.`;
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    return localNextActionsSummary(items);
+  }
+}
+
 /* ---------- assistant chat ---------- */
 
 export function serializeContext(ws: Workspace, data: WorkspaceData, user: User): string {
