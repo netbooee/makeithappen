@@ -46,7 +46,8 @@ function mdNotes(s: string): string {
       stack = [];
       const level = h[1].length;
       const size = level === 1 ? 15 : level === 2 ? 13.5 : 12.5;
-      blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 6 : 0}px 0 2px">${inline(h[2])}</strong>`);
+      // Trailing marker lets the join scrub the <br/> after this block heading (it already breaks the line itself).
+      blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 6 : 0}px 0 2px">${inline(h[2])}</strong><!--/h-->`);
     } else if (listMatch) {
       while (stack.length && listMatch.indent < stack[stack.length - 1].indent) stack.pop();
       const top = stack[stack.length - 1];
@@ -81,7 +82,8 @@ function mdNotes(s: string): string {
     }
   }
   for (const [node, idx] of topListMarkers) blocks[idx] = renderList(node);
-  return blocks.join("<br/>").replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
+  return blocks.join("<br/>").replace(/<!--\/h--><br\/>/g, "").replace(/<!--\/h-->/g, "")
+    .replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
     .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol");
 }
 
