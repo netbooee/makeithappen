@@ -108,18 +108,18 @@ export function ProjectList() {
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
               >
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  {p.heroImage && (
-                    <img
-                      src={p.heroImage}
-                      alt=""
-                      style={{ width: 72, height: 72, borderRadius: 7, objectFit: "cover", flexShrink: 0, alignSelf: "flex-start" }}
-                    />
-                  )}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{p.title}</div>
-                    <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    {p.heroImage && (
+                      <img
+                        src={p.heroImage}
+                        alt=""
+                        style={{ width: 44, height: 44, borderRadius: 7, objectFit: "cover", flexShrink: 0 }}
+                      />
+                    )}
+                    <div style={{ flex: 1, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{p.title}</div>
                   </div>
+                  {p.desc && <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>}
                 </div>
                 <div style={{ display: "flex", gap: 3 }}>
                   {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
