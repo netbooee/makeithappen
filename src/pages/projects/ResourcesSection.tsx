@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, ExternalLink, Link2, Pencil, Plus, X } from "lucide-react";
 import { useStore } from "../../store/store";
+import { safeHref } from "../../lib/safeUrl";
 import type { Project, ProjectResource } from "../../lib/types";
 
 export function ResourcesSection({ project }: { project: Project }) {
@@ -124,7 +125,7 @@ export function ResourcesSection({ project }: { project: Project }) {
                 }}><ChevronDown size={10} /></button>
               </div>
               <Link2 size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-              <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {r.label}
               </a>
               <ExternalLink size={11} style={{ color: "var(--ink-4)", flexShrink: 0 }} />

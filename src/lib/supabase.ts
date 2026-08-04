@@ -73,17 +73,18 @@ export async function clearAnthropicKey(): Promise<void> {
   if (error) console.error("clearAnthropicKey:", error.message);
 }
 
-/** Returns true if the current user has an Anthropic key stored. Key value is never exposed. */
+/** Returns true if the current user has an Anthropic key stored. Uses a head-only
+ * count with a not-null filter so the key value never leaves the server. */
 export async function hasAnthropicKey(): Promise<boolean> {
   if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { data } = await supabase
+  const { count } = await supabase
     .from("user_preferences")
-    .select("anthropic_key")
+    .select("user_id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .maybeSingle();
-  return Boolean((data as { anthropic_key?: string } | null)?.anthropic_key);
+    .not("anthropic_key", "is", null);
+  return (count ?? 0) > 0;
 }
 
 /** Persist milestone-section preferences to user_preferences (upsert keyed by user). */

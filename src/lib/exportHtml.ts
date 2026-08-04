@@ -1,16 +1,21 @@
 import type { Contact, MeetingAgenda, Project, StatusUpdate, SubtaskStatus } from "./types";
 import { toDateInputValue } from "../components/ui";
 import { localNextActionsSummary } from "./claude";
+import { safeHref } from "./safeUrl";
 
 function esc(s: string): string {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /** Renders a small Markdown subset (bold, italics, links, lists) to safe HTML; everything else stays escaped plain text. */
 function mdNotes(s: string): string {
-  const escInline = (t: string) => esc(t).replace(/"/g, "&quot;");
   const inline = (t: string) =>
-    escInline(t)
+    esc(t)
       .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_m, label, url) =>
         `<a href="${url}" target="_blank" style="color:#4F8EF7">${label}</a>`)
       .replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (_m, a, b) => `<strong>${a ?? b}</strong>`)
@@ -491,7 +496,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         ${resources.map((r) => `
           <div style="display:flex;align-items:center;gap:8px;padding:5px 0">
             <span style="font-size:13px;color:#6B7280">↗</span>
-            <a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" style="font-size:12.5px;color:#185FA5;font-weight:500;text-decoration:none">${esc(r.label)}</a>
+            <a href="${esc(safeHref(r.url))}" target="_blank" rel="noopener noreferrer" style="font-size:12.5px;color:#185FA5;font-weight:500;text-decoration:none">${esc(r.label)}</a>
           </div>`).join("")}
       </div>`;
 
@@ -548,7 +553,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
               ${(ag.resources ?? []).map((r) => `
                 <div style="display:flex;align-items:center;gap:6px">
                   <span style="color:#4F8EF7;font-size:11px">🔗</span>
-                  <a href="${esc(r.url)}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none">${esc(r.label)}</a>
+                  <a href="${esc(safeHref(r.url))}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none">${esc(r.label)}</a>
                 </div>`).join("")}
             </div>`;
           return `
@@ -601,7 +606,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
   <div style="padding:28px 32px 24px;border-bottom:0.5px solid #E7E9ED;display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
-        ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
+        ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
         <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;flex:1;color:#1A1D23">${esc(project.title)}</div>
         ${statusBadge(project.status)}
       </div>
@@ -840,7 +845,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
 <div class="page">
 
   <div class="header">
-    ${project.clientLogo ? `<img src="${project.clientLogo}" style="width:34px;height:34px;border-radius:5px;object-fit:contain;background:#F3F4F6;padding:3px;flex-shrink:0" alt="">` : ""}
+    ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:34px;height:34px;border-radius:5px;object-fit:contain;background:#F3F4F6;padding:3px;flex-shrink:0" alt="">` : ""}
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:8px">
         <div style="font-size:16px;font-weight:500;color:#1A1D23;letter-spacing:-0.02em">${esc(project.title)}</div>
@@ -981,7 +986,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
     <div style="min-width:0;flex:1">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
         ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#F3F4F6;padding:4px;flex-shrink:0" alt="">` : ""}
-        <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl && includeProjectLink ? `<a href="${esc(project.webUrl)}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
+        <div style="font-size:22px;font-weight:600;color:#1A1D23;letter-spacing:-0.02em">${project.webUrl && includeProjectLink ? `<a href="${esc(safeHref(project.webUrl))}" target="_blank" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px">${esc(project.title)}<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : esc(project.title)}</div>
       </div>
       <h1 style="font-size:40px;font-weight:600;letter-spacing:-0.03em;color:#1A1D23;line-height:1.05">Agenda</h1>
       <div style="font-size:16px;font-weight:500;color:#374151;margin-top:10px">
@@ -996,7 +1001,7 @@ export function exportAgendaHtml(project: Project, agenda: MeetingAgenda, contac
         ${(agenda.resources ?? []).map((r) => `
           <div style="display:flex;align-items:center;gap:6px">
             <span style="color:#4F8EF7;font-size:11px">🔗</span>
-            <a href="${esc(r.url)}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.label)}</a>
+            <a href="${esc(safeHref(r.url))}" target="_blank" style="font-size:12px;color:#4F8EF7;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.label)}</a>
           </div>`).join("")}
       </div>
     </div>` : ""}

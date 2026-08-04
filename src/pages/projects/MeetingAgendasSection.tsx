@@ -3,6 +3,7 @@ import {
   AlignLeft, Calendar, Check, ChevronDown, ChevronUp, Copy, Download, Link2, Pencil, Plus, Trash2, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
+import { safeHref } from "../../lib/safeUrl";
 import { Avatar, DateInput, toDateInputValue } from "../../components/ui";
 import { exportAgendaHtml, getMeetingAgendaUrl } from "../../lib/exportHtml";
 import type { AgendaAttendee, AgendaItem, MeetingAgenda, Project } from "../../lib/types";
@@ -426,7 +427,7 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
                       {(agenda.resources ?? []).map((r) => (
                         <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <Link2 size={12} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                          <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12.5, color: "var(--accent)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</a>
+                          <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12.5, color: "var(--accent)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</a>
                           <button className="icon-btn" style={{ width: 20, height: 20, color: "var(--ink-4)" }} onClick={() => removeLink(agenda.id, r.id)}><X size={11} /></button>
                         </div>
                       ))}

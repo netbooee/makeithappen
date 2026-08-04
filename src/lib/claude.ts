@@ -1,4 +1,5 @@
 import { fmtDue } from "../components/ui";
+import { safeHref } from "./safeUrl";
 import { supabase, supabaseConfigured } from "./supabase";
 import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
 
@@ -121,7 +122,12 @@ ${user.name.split(" ")[0]}`;
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /** HTML version of the same draft, for pasting into rich-text clients (e.g. Outlook). */
@@ -129,7 +135,7 @@ export function draftStatusEmailHtml(project: Project, update: StatusUpdate, use
   const { ragLabel, timeline, budget, totalSubtasks, doneSubtasks, nameLine } = emailContext(project);
   const statusEmoji = { complete: "✅", active: "➡️", hold: "⏳", waiting: "⏳" } as const;
   const nameLineHtml = project.webUrl
-    ? `<a href="${escapeHtml(project.webUrl)}">${escapeHtml(project.title)}</a>`
+    ? `<a href="${escapeHtml(safeHref(project.webUrl))}">${escapeHtml(project.title)}</a>`
     : escapeHtml(project.title);
   const milestoneRows = project.milestones
     .map(
