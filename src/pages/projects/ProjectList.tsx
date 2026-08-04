@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound } from "lucide-react";
 import { useStore } from "../../store/store";
-import { Bar, StatusChip, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
+import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
 
 export function ProjectList() {
@@ -117,10 +117,7 @@ export function ProjectList() {
                     />
                   )}
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", flex: 1 }}>{p.title}</div>
-                      <StatusChip status={p.status} />
-                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{p.title}</div>
                     <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>
                   </div>
                 </div>
@@ -130,8 +127,8 @@ export function ProjectList() {
                     return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
                   })}
                 </div>
-                <Bar value={p.progress} />
-                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                  <ProgressDial value={p.progress} />
                   {p.risk ? (
                     <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
                       <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.risk === "green" ? "#10B981" : p.risk === "amber" ? "#F59E0B" : "#EF4444", display: "inline-block", flexShrink: 0 }} />
@@ -148,6 +145,7 @@ export function ProjectList() {
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
                     <UserRound size={13} /> {resolveOwner(p.owner)}
                   </span>
+                  <StatusChip status={p.status} />
                 </div>
               </button>
             );

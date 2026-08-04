@@ -166,3 +166,26 @@ export function DueChip({ due, done = false }: { due: string; done?: boolean }) 
 export function Bar({ value }: { value: number }) {
   return <div className="bar"><i style={{ width: `${value * 100}%` }} /></div>;
 }
+
+export function ProgressDial({ value, size = 44 }: { value: number; size?: number }) {
+  const r = 17;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(1, value));
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" role="img" aria-label={`${Math.round(pct * 100)}% complete`} style={{ flexShrink: 0 }}>
+      <circle cx="22" cy="22" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="5" />
+      {pct > 0 && (
+        <circle
+          cx="22" cy="22" r={r} fill="none"
+          stroke="var(--accent)" strokeWidth="5" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
+          transform="rotate(-90 22 22)"
+          style={{ transition: "stroke-dashoffset .5s" }}
+        />
+      )}
+      <text x="22" y="26" textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--ink)">
+        {Math.round(pct * 100)}
+      </text>
+    </svg>
+  );
+}
