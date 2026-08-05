@@ -264,6 +264,34 @@ Improve clarity and concision without changing the meaning or adding new facts. 
   }
 }
 
+/** Suggests corrections/improvements to the notes under a meeting agenda item. */
+export async function suggestAgendaItemDetailEdits(
+  project: Project,
+  agendaTitle: string,
+  itemText: string,
+  currentText: string,
+): Promise<string> {
+  if (!currentText.trim()) return currentText;
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return currentText.trim();
+  }
+  const system = `You lightly edit meeting agenda item notes for clarity, concision, and professionalism. Preserve the author's meaning, facts, and tone — do not invent new information. Plain text, no greeting or sign-off, no headers, no commentary. Output only the corrected text.`;
+  const prompt = `Project: "${project.title}"
+Meeting: "${agendaTitle}"
+Agenda item: "${itemText}"
+
+Here are the draft notes the author typed under this agenda item:
+"${currentText}"
+
+Improve clarity and concision without changing the meaning or adding new facts. Output only the corrected notes text.`;
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    return currentText.trim();
+  }
+}
+
 /* ---------- next actions summary ---------- */
 
 export function localNextActionsSummary(items: { text: string; source?: string }[]): string {

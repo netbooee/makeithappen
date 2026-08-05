@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import {
-  AlignLeft, Calendar, Check, ChevronDown, ChevronUp, Copy, Download, Link2, Pencil, Plus, Trash2, X,
+  AlignLeft, Calendar, Check, ChevronDown, ChevronUp, Copy, Download, Link2, Pencil, Plus, Sparkles, Trash2, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
+import { suggestAgendaItemDetailEdits } from "../../lib/claude";
 import { safeHref } from "../../lib/safeUrl";
 import { Avatar, DateInput, toDateInputValue } from "../../components/ui";
 import { exportAgendaHtml, getMeetingAgendaUrl } from "../../lib/exportHtml";
@@ -40,6 +41,8 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
   const [copiedAgendaId, setCopiedAgendaId] = useState<string | null>(null);
   const [linkInputs, setLinkInputs] = useState<Record<string, { label: string; url: string }>>({});
   const [detailOpen, setDetailOpen] = useState<Set<string>>(new Set());
+  const [detailDrafts, setDetailDrafts] = useState<Record<string, string>>({});
+  const [aiDetailKey, setAiDetailKey] = useState<string | null>(null);
   const [linkExcluded, setLinkExcluded] = useState<Set<string>>(new Set());
 
   const agendas = useMemo(
@@ -152,8 +155,11 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
       ),
     });
 
-  const toggleDetail = (key: string) =>
-    setDetailOpen((prev) => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; });
+  const toggleDetail = (key: string) => {
+    const closing = detailOpen.has(key);
+    setDetailOpen((prev) => { const next = new Set(prev); closing ? next.delete(key) : next.add(key); return next; });
+    if (closing) setDetailDrafts((p) => { if (!(key in p)) return p; const n = { ...p }; delete n[key]; return n; });
+  };
 
   const saveDetail = (agendaId: string, itemId: string, text: string) => {
     const detail = text.trim() || undefined;
@@ -162,6 +168,20 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
         a.id === agendaId ? { ...a, items: a.items.map((i) => i.id === itemId ? { ...i, detail } : i) } : a
       ),
     });
+  };
+
+  const improveDetail = async (agenda: MeetingAgenda, item: AgendaItem) => {
+    const key = `${agenda.id}:${item.id}`;
+    const current = detailDrafts[key] ?? item.detail ?? "";
+    if (!current.trim() || aiDetailKey) return;
+    setAiDetailKey(key);
+    try {
+      const improved = (await suggestAgendaItemDetailEdits(project, agenda.title, item.text, current)).trim();
+      setDetailDrafts((p) => ({ ...p, [key]: improved }));
+      saveDetail(agenda.id, item.id, improved);
+    } finally {
+      setAiDetailKey(null);
+    }
   };
 
   const moveItem = (agendaId: string, itemId: string, dir: -1 | 1) =>
@@ -386,15 +406,26 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
                             <div style={{ fontSize: 12, color: "var(--ink-3)", paddingLeft: 39, lineHeight: 1.45, marginTop: 2 }}>{item.detail}</div>
                           )}
                           {isDetailOpen && (
-                            <textarea
-                              key={detailKey}
-                              autoFocus
-                              defaultValue={item.detail ?? ""}
-                              placeholder="Add notes for this topic…"
-                              onBlur={(e) => saveDetail(agenda.id, item.id, e.target.value)}
-                              rows={3}
-                              style={{ marginLeft: 39, marginTop: 4, fontSize: 12, color: "var(--ink-2)", resize: "vertical", border: "1px solid var(--border)", borderRadius: 5, padding: "5px 8px", background: "transparent", outline: "none", lineHeight: 1.45, fontFamily: "inherit" }}
-                            />
+                            <div style={{ display: "flex", flexDirection: "column", marginLeft: 39, marginTop: 4, gap: 4 }}>
+                              <textarea
+                                key={detailKey}
+                                autoFocus
+                                value={detailDrafts[detailKey] ?? item.detail ?? ""}
+                                onChange={(e) => setDetailDrafts((p) => ({ ...p, [detailKey]: e.target.value }))}
+                                placeholder="Add notes for this topic…"
+                                onBlur={(e) => saveDetail(agenda.id, item.id, e.target.value)}
+                                rows={3}
+                                style={{ fontSize: 12, color: "var(--ink-2)", resize: "vertical", border: "1px solid var(--border)", borderRadius: 5, padding: "5px 8px", background: "transparent", outline: "none", lineHeight: 1.45, fontFamily: "inherit" }}
+                              />
+                              <button
+                                className="btn btn-ghost"
+                                style={{ fontSize: 12, padding: "4px 10px", display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-start" }}
+                                disabled={!!aiDetailKey || !(detailDrafts[detailKey] ?? item.detail ?? "").trim()}
+                                onClick={() => improveDetail(agenda, item)}
+                              >
+                                <Sparkles size={12} /> {aiDetailKey === detailKey ? "Improving…" : "Suggest corrections"}
+                              </button>
+                            </div>
                           )}
                         </div>
                       );
