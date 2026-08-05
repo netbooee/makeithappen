@@ -34,7 +34,41 @@ function mdNotes(s: string): string {
   // Track top-level list nodes so we can splice their rendered HTML into `blocks` once complete.
   const topListMarkers = new Map<ListNode, number>();
 
+  // Table support: buffer consecutive pipe rows; on flush, render a <table> only if
+  // row 2 is a valid |---| separator — otherwise the rows fall back to plain text.
+  const tableBuf: string[] = [];
+  const isTableRow = (l: string) => /^\|.*\|$/.test(l.trim());
+  const splitRow = (l: string) =>
+    l.trim().replace(/\\\|/g, "\u0001").replace(/^\|/, "").replace(/\|$/, "")
+      .split("|").map((c) => c.replace(/\u0001/g, "|").trim());
+  const flushTable = () => {
+    if (!tableBuf.length) return;
+    const rows = tableBuf.splice(0);
+    const sep = rows.length >= 2 ? splitRow(rows[1]) : null;
+    if (sep && sep.every((c) => /^:?-{3,}:?$/.test(c))) {
+      const aligns = sep.map((c) =>
+        c.startsWith(":") && c.endsWith(":") ? "center" : c.endsWith(":") ? "right" : "left");
+      const tr = (cells: string[], th: boolean) =>
+        `<tr>${cells.map((c, i) => {
+          const style = `padding:4px 10px;border:0.5px solid #E7E9ED;text-align:${aligns[i] ?? "left"}`
+            + (th ? ";font-weight:600;color:#6B7280;background:#FAFBFC" : "");
+          return `<${th ? "th" : "td"} style="${style}">${inline(c)}</${th ? "th" : "td"}>`;
+        }).join("")}</tr>`;
+      blocks.push(`<table style="border-collapse:collapse;margin:6px 0;font-size:12.5px;line-height:1.5">`
+        + `<thead>${tr(splitRow(rows[0]), true)}</thead>`
+        + `<tbody>${rows.slice(2).map((r) => tr(splitRow(r), false)).join("")}</tbody></table>`);
+    } else {
+      for (const r of rows) blocks.push(inline(r));
+    }
+  };
+
   for (const line of lines) {
+    if (isTableRow(line)) {
+      stack = [];
+      tableBuf.push(line);
+      continue;
+    }
+    flushTable();
     const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
     const o = line.match(/^\s*(\s*)\d+[.)]\s+(.*)$/);
     const m = line.match(/^(\s*)[-*]\s+(.*)$/);
@@ -81,10 +115,12 @@ function mdNotes(s: string): string {
       if (line.trim()) blocks.push(inline(line));
     }
   }
+  flushTable();
   for (const [node, idx] of topListMarkers) blocks[idx] = renderList(node);
   return blocks.join("<br/>").replace(/<!--\/h--><br\/>/g, "").replace(/<!--\/h-->/g, "")
     .replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
-    .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol");
+    .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol")
+    .replace(/<\/table><br\/>/g, "</table>").replace(/<br\/><table/g, "<table");
 }
 
 function parseBudgetNum(val: string | undefined): number | null {
