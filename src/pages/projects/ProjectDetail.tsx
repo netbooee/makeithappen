@@ -9,8 +9,8 @@ import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInpu
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
-import type { ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
-import { lastNameOf } from "../../lib/types";
+import type { Contact, ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
+import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddMilestone } from "./AddMilestone";
@@ -34,7 +34,7 @@ export function ProjectDetail() {
   const {
     data, tweaks, all,
     addUpdate, updateProject, deleteProject, updateStatusUpdate, deleteStatusUpdate,
-    toggleTask,
+    toggleTask, addContact,
   } = useStore();
   const project = data.projects.find((p) => p.id === id);
 
@@ -51,8 +51,12 @@ export function ProjectDetail() {
   const [teamOpen, setTeamOpen] = useState(false);
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
+  const [memberMode, setMemberMode] = useState<"existing" | "new">("existing");
   const [newMemberId, setNewMemberId] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
+  const [newContactName, setNewContactName] = useState("");
+  const [newContactCompany, setNewContactCompany] = useState("");
+  const [newContactLinkedin, setNewContactLinkedin] = useState("");
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
@@ -136,6 +140,48 @@ export function ProjectDetail() {
 
   const handleCancelEditSummary = () => {
     setEditingSummary(false);
+  };
+
+  const resetMemberForm = () => {
+    setNewMemberId(""); setNewMemberRole("");
+    setNewContactName(""); setNewContactCompany(""); setNewContactLinkedin("");
+    setMemberMode("existing");
+    setAddingMember(false);
+  };
+
+  const addExistingMember = () => {
+    if (!newMemberId) return;
+    updateProject(project.id, {
+      members: [...(project.members ?? []), { contactId: newMemberId, role: newMemberRole.trim() } as ProjectMember],
+    });
+    resetMemberForm();
+  };
+
+  const createAndAddMember = () => {
+    const name = newContactName.trim();
+    if (!name) return;
+    const contact: Contact = {
+      id: "c" + Date.now(),
+      name,
+      company: newContactCompany.trim(),
+      role: "",
+      rel: "Colleague",
+      email: "",
+      phone: "",
+      color: CONTACT_COLORS[Math.floor(Math.random() * CONTACT_COLORS.length)],
+      lastNote: "",
+      lastDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      followUp: false,
+      remember: "",
+      e6w: false,
+      touchpoints: [],
+      linkedin: newContactLinkedin.trim(),
+    };
+    addContact(contact);
+    updateProject(project.id, {
+      members: [...(project.members ?? []), { contactId: contact.id, role: newMemberRole.trim() } as ProjectMember],
+    });
+    resetMemberForm();
   };
 
   const toggleOne = (mid: string) => setOpenMap((o) => ({ ...o, [mid]: !o[mid] }));
@@ -520,52 +566,104 @@ export function ProjectDetail() {
               })}
               {addingMember ? (
                 <div className="task-row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <select
-                    className="input"
-                    style={{ flex: 1, minWidth: 160, fontSize: 13 }}
-                    value={newMemberId}
-                    onChange={(e) => setNewMemberId(e.target.value)}
-                  >
-                    <option value="">Pick a contact…</option>
-                    {data.contacts
-                      .filter((c) => !(project.members ?? []).some((m) => m.contactId === c.id))
-                      .slice()
-                      .sort((a, b) => lastNameOf(a.name).localeCompare(lastNameOf(b.name)))
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}{c.company ? ` — ${c.company}` : ""}
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    className="input"
-                    style={{ flex: 1, minWidth: 120, fontSize: 13 }}
-                    placeholder="Project role (optional)"
-                    value={newMemberRole}
-                    onChange={(e) => setNewMemberRole(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newMemberId) {
-                        updateProject(project.id, {
-                          members: [...(project.members ?? []), { contactId: newMemberId, role: newMemberRole.trim() } as ProjectMember],
-                        });
-                        setNewMemberId(""); setNewMemberRole(""); setAddingMember(false);
-                      }
-                    }}
-                  />
-                  <button
-                    className="btn btn-primary"
-                    style={{ padding: "5px 11px", fontSize: 12 }}
-                    onClick={() => {
-                      if (!newMemberId) return;
-                      updateProject(project.id, {
-                        members: [...(project.members ?? []), { contactId: newMemberId, role: newMemberRole.trim() } as ProjectMember],
-                      });
-                      setNewMemberId(""); setNewMemberRole(""); setAddingMember(false);
-                    }}
-                  >
-                    Add
-                  </button>
-                  <button className="btn btn-ghost" style={{ padding: "5px 11px", fontSize: 12 }} onClick={() => setAddingMember(false)}>Cancel</button>
+                  <div style={{ width: "100%", display: "flex", gap: 6 }}>
+                    <button
+                      className={memberMode === "existing" ? "btn btn-primary" : "btn btn-ghost"}
+                      style={{ padding: "4px 10px", fontSize: 12 }}
+                      onClick={() => setMemberMode("existing")}
+                    >
+                      From contacts
+                    </button>
+                    <button
+                      className={memberMode === "new" ? "btn btn-primary" : "btn btn-ghost"}
+                      style={{ padding: "4px 10px", fontSize: 12 }}
+                      onClick={() => setMemberMode("new")}
+                    >
+                      New contact
+                    </button>
+                  </div>
+                  {memberMode === "existing" ? (
+                    <>
+                      <select
+                        className="input"
+                        style={{ flex: 1, minWidth: 160, fontSize: 13 }}
+                        value={newMemberId}
+                        onChange={(e) => setNewMemberId(e.target.value)}
+                      >
+                        <option value="">Pick a contact…</option>
+                        {data.contacts
+                          .filter((c) => !(project.members ?? []).some((m) => m.contactId === c.id))
+                          .slice()
+                          .sort((a, b) => lastNameOf(a.name).localeCompare(lastNameOf(b.name)))
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}{c.company ? ` — ${c.company}` : ""}
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        className="input"
+                        style={{ flex: 1, minWidth: 120, fontSize: 13 }}
+                        placeholder="Project role (optional)"
+                        value={newMemberRole}
+                        onChange={(e) => setNewMemberRole(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addExistingMember()}
+                      />
+                      <button
+                        className="btn btn-primary"
+                        style={{ padding: "5px 11px", fontSize: 12 }}
+                        onClick={addExistingMember}
+                      >
+                        Add
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        className="input"
+                        style={{ flex: 1, minWidth: 140, fontSize: 13 }}
+                        placeholder="Name"
+                        autoFocus
+                        value={newContactName}
+                        onChange={(e) => setNewContactName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && createAndAddMember()}
+                      />
+                      <input
+                        className="input"
+                        style={{ flex: 1, minWidth: 120, fontSize: 13 }}
+                        placeholder="Company (optional)"
+                        value={newContactCompany}
+                        onChange={(e) => setNewContactCompany(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && createAndAddMember()}
+                      />
+                      <input
+                        className="input"
+                        style={{ flex: 1, minWidth: 160, fontSize: 13 }}
+                        placeholder="LinkedIn profile URL (optional)"
+                        type="url"
+                        value={newContactLinkedin}
+                        onChange={(e) => setNewContactLinkedin(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && createAndAddMember()}
+                      />
+                      <input
+                        className="input"
+                        style={{ flex: 1, minWidth: 120, fontSize: 13 }}
+                        placeholder="Project role (optional)"
+                        value={newMemberRole}
+                        onChange={(e) => setNewMemberRole(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && createAndAddMember()}
+                      />
+                      <button
+                        className="btn btn-primary"
+                        style={{ padding: "5px 11px", fontSize: 12 }}
+                        disabled={!newContactName.trim()}
+                        onClick={createAndAddMember}
+                      >
+                        Create & add
+                      </button>
+                    </>
+                  )}
+                  <button className="btn btn-ghost" style={{ padding: "5px 11px", fontSize: 12 }} onClick={resetMemberForm}>Cancel</button>
                 </div>
               ) : (
                 <button

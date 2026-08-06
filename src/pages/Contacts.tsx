@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, ChevronUp, ChevronDown, LayoutGrid, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronUp, ChevronDown, LayoutGrid, Linkedin, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput } from "../components/ui";
 import type { Contact, ContactTouch, Relationship } from "../lib/types";
+import { CONTACT_COLORS } from "../lib/types";
 
 const RELS: Relationship[] = ["Colleague", "Client", "Vendor", "Friend", "Family", "Other"];
-const COLORS = ["#4F6BED", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#0EA5E9"];
+const COLORS = CONTACT_COLORS;
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function initials(name: string) {
@@ -346,6 +347,7 @@ export function ContactDetail() {
   const [editCompany, setEditCompany] = useState(contact?.company ?? "");
   const [editEmail, setEditEmail] = useState(contact?.email ?? "");
   const [editPhone, setEditPhone] = useState(contact?.phone ?? "");
+  const [editLinkedin, setEditLinkedin] = useState(contact?.linkedin ?? "");
   const [editColor, setEditColor] = useState(contact?.color ?? COLORS[0]);
 
   const saveEdit = () => {
@@ -355,6 +357,7 @@ export function ContactDetail() {
       company: editCompany.trim(),
       email: editEmail.trim(),
       phone: editPhone.trim(),
+      linkedin: editLinkedin.trim(),
       color: editColor,
     });
     setEditing(false);
@@ -423,6 +426,7 @@ export function ContactDetail() {
               <input className="input" style={{ flex: 1 }} placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
               <input className="input" style={{ flex: 1 }} placeholder="Phone" type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
             </div>
+            <input className="input" placeholder="LinkedIn profile URL" type="url" value={editLinkedin} onChange={(e) => setEditLinkedin(e.target.value)} />
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn btn-primary" onClick={saveEdit}>Save</button>
               <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
@@ -438,7 +442,7 @@ export function ContactDetail() {
                   {[contact.role, contact.company].filter(Boolean).join(" · ")}
                 </div>
               </div>
-              <button className="icon-btn" style={{ color: "var(--ink-4)" }} onClick={() => { setEditName(contact.name); setEditRole(contact.role); setEditCompany(contact.company); setEditEmail(contact.email); setEditPhone(contact.phone); setEditColor(contact.color); setEditing(true); }} title="Edit contact">
+              <button className="icon-btn" style={{ color: "var(--ink-4)" }} onClick={() => { setEditName(contact.name); setEditRole(contact.role); setEditCompany(contact.company); setEditEmail(contact.email); setEditPhone(contact.phone); setEditLinkedin(contact.linkedin ?? ""); setEditColor(contact.color); setEditing(true); }} title="Edit contact">
                 <Pencil size={15} />
               </button>
             </div>
@@ -453,6 +457,11 @@ export function ContactDetail() {
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Phone size={13} /> {contact.phone}
                 </span>
+              )}
+              {contact.linkedin && (
+                <a href={contact.linkedin} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Linkedin size={13} /> LinkedIn
+                </a>
               )}
             </div>
           </>

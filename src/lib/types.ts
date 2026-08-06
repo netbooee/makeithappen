@@ -233,7 +233,10 @@ export interface Contact {
   remember: string;
   e6w?: boolean;
   touchpoints?: ContactTouch[];
+  linkedin?: string; // LinkedIn profile URL
 }
+
+export const CONTACT_COLORS = ["#4F6BED", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#0EA5E9"];
 
 export interface NextAction {
   id: string;
