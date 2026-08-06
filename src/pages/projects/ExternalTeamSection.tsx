@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import type { ExternalTeamMember, Project } from "../../lib/types";
 
@@ -56,22 +56,19 @@ export function ExternalTeamSection({ project }: { project: Project }) {
   };
 
   return (
-    <div style={{ marginTop: 20 }}>
-      <button
-        className="section-h"
-        style={{ width: "100%", cursor: "pointer", display: "flex", alignItems: "center" }}
+    <div className="card rail-card" style={{ marginTop: 12 }}>
+      <div
+        className={"rail-head" + (open ? " is-open" : "")}
         onClick={() => setOpen((v) => !v)}
       >
-        External Team
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          {team.length > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-4)" }}>{team.length}</span>
-          )}
-          <ChevronDown size={13} style={{ color: "var(--ink-4)", transition: "transform 0.18s", transform: open ? "rotate(0deg)" : "rotate(-90deg)" }} />
-        </span>
-      </button>
+        <ChevronRight size={13} className="ic" />
+        <h3>External Team</h3>
+        {team.length > 0 && (
+          <span className="count">{team.length}</span>
+        )}
+      </div>
       {open && (
-        <div className="card" style={{ padding: "6px 10px 8px" }}>
+        <div className="rail-body">
           {adding && (
             <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: "1px solid var(--border)" }}>
               <input className="input" autoFocus placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />

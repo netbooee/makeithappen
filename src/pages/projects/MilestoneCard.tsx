@@ -325,7 +325,7 @@ export function MilestoneCard({
         {collapsible ? (
           <button
             onClick={onToggle}
-            style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, textAlign: "left", cursor: "pointer", minWidth: 0 }}
+            style={{ flex: 1, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, textAlign: "left", cursor: "pointer", minWidth: 0 }}
           >
             <ChevronRight
               size={14}
@@ -333,7 +333,7 @@ export function MilestoneCard({
             />
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
             <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
               {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
             </div>
             {showCount && !shown && (
@@ -346,10 +346,10 @@ export function MilestoneCard({
             <StatusChip status={m.status} />
           </button>
         ) : (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, minWidth: 0 }}>
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
             <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
               {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
             </div>
             {m.start && <span style={{ fontSize: 11.5, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{m.start} →</span>}

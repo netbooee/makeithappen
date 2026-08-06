@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronDown, ChevronUp, Copy, ExternalLink, Link2, Pencil, Plus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ChevronUp, Copy, ExternalLink, Link2, Pencil, Plus, X } from "lucide-react";
 import { useStore } from "../../store/store";
 import { safeHref } from "../../lib/safeUrl";
 import type { Project, ProjectResource } from "../../lib/types";
@@ -60,20 +60,25 @@ export function ResourcesSection({ project }: { project: Project }) {
   };
 
   return (
-    <div style={{ marginTop: 20 }}>
-      <div className="section-h" style={{ marginTop: 0, cursor: "pointer" }} onClick={() => setOpen((v) => !v)}>
-        <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: open ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
-        Resources
-        {open && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
-            style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-          >
-            <Plus size={12} /> Add link
-          </button>
-        )}
+    <div className="card rail-card" style={{ marginTop: 12 }}>
+      <div className={"rail-head" + (open ? " is-open" : "")} onClick={() => setOpen((v) => !v)}>
+        <ChevronRight size={13} className="ic" />
+        <h3>Resources</h3>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          {open && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
+              style={{ color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <Plus size={12} /> Add link
+            </button>
+          )}
+          {resources.length > 0 && (
+            <span className="count" style={{ marginLeft: 0 }}>{resources.length}</span>
+          )}
+        </span>
       </div>
-      {open && <div className="card" style={{ padding: "6px 10px 8px" }}>
+      {open && <div className="rail-body">
         {adding && (
           <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
             <input

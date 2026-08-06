@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp,
@@ -28,6 +28,14 @@ import { ProjectModal } from "./ProjectModal";
 
 /* ================= Project detail ================= */
 
+// Mirrors the (module-private) severity matrix in RiskTracker.tsx
+const RISK_SEVERITY: Record<string, Record<string, string>> = {
+  low:    { low: "low",    medium: "low",    high: "medium" },
+  medium: { low: "low",    medium: "medium", high: "high" },
+  high:   { low: "medium", medium: "high",   high: "critical" },
+};
+const RISK_SEV_ORDER = ["low", "medium", "high", "critical"];
+
 export function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -48,8 +56,12 @@ export function ProjectDetail() {
   const [updateType, setUpdateType] = useState<UpdateType>("update");
   const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [teamOpen, setTeamOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(true);
   const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [openRegister, setOpenRegister] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [pendingJump, setPendingJump] = useState<string | null>(null);
+  const jumpbarRef = useRef<HTMLDivElement | null>(null);
   const [addingMember, setAddingMember] = useState(false);
   const [memberMode, setMemberMode] = useState<"existing" | "new">("existing");
   const [newMemberId, setNewMemberId] = useState("");
@@ -77,6 +89,48 @@ export function ProjectDetail() {
   useEffect(() => setOpenMap(seed), [seed]);
   useEffect(() => setNextActionsAiSummary(project?.nextActionsAiSummary ?? null), [project?.id]);
 
+  // Jumpbar: measured scroll inside the app's `.scroll` container (the page scrolls there, not on window)
+  const doScroll = (secId: string) => {
+    const sc = jumpbarRef.current?.closest(".scroll");
+    const el = document.getElementById(secId);
+    if (!sc || !el) return;
+    const barH = jumpbarRef.current?.offsetHeight ?? 0;
+    const y = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - barH - 14;
+    sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  };
+
+  const jumpTo = (secId: string) => {
+    if (secId === "overview") { doScroll("sec-overview"); return; }
+    setOpenRegister(secId);
+    setPendingJump(secId);
+  };
+
+  // Registers render their body only when open — scroll after the open register has rendered
+  useEffect(() => {
+    if (!pendingJump) return;
+    doScroll(`sec-${pendingJump}`);
+    setPendingJump(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingJump]);
+
+  useEffect(() => {
+    const sc = document.querySelector(".scroll");
+    if (!sc) return;
+    const ids = ["overview", "decisions", "issues", "risks", "tasks", "agendas"];
+    const syncActive = () => {
+      const barH = jumpbarRef.current?.offsetHeight ?? 0;
+      const line = sc.getBoundingClientRect().top + barH + 24;
+      let current = "overview";
+      for (const secId of ids) {
+        const el = document.getElementById(`sec-${secId}`);
+        if (el && el.getBoundingClientRect().top <= line) current = secId;
+      }
+      setActiveSection(current);
+    };
+    sc.addEventListener("scroll", syncActive, { passive: true });
+    return () => sc.removeEventListener("scroll", syncActive);
+  }, []);
+
   if (!project) {
     return (
       <div className="page fade">
@@ -101,6 +155,46 @@ export function ProjectDetail() {
   const projectTasks = allTasks.filter(
     ({ task }) => task.project === project.title && !task.milestoneId,
   );
+
+  // Registers & records: counts and summary lines for the accordion heads
+  const decisionsList = project.decisions ?? [];
+  const issuesList = project.issues ?? [];
+  const openIssues = issuesList.filter((i) => i.status !== "resolved").length;
+  const critIssues = issuesList.filter((i) => i.status !== "resolved" && i.severity === "critical").length;
+  const issueParts: string[] = [];
+  if (critIssues > 0) issueParts.push(`${critIssues} critical`);
+  if (openIssues > 0) issueParts.push(`${openIssues} open`);
+  else if (issuesList.length > 0) issueParts.push("resolved");
+  const issueSummary = issueParts.length ? issueParts.join(" · ") : "No issues logged";
+
+  const risksList = project.risks ?? [];
+  const openRisks = risksList.filter((r) => r.status === "open");
+  const topRiskSev = openRisks.reduce((top, r) => {
+    const sev = RISK_SEVERITY[r.probability]?.[r.impact] ?? "low";
+    return RISK_SEV_ORDER.indexOf(sev) > RISK_SEV_ORDER.indexOf(top) ? sev : top;
+  }, "low");
+  const riskSummary = openRisks.length
+    ? `${openRisks.length} ${topRiskSev} risk${openRisks.length > 1 ? "s" : ""} open`
+    : risksList.length
+      ? "All risks mitigated or closed"
+      : "No risks logged";
+
+  const registers: { id: string; label: string; sub: string; chip: string; amber?: boolean }[] = [
+    { id: "decisions", label: "Decisions", sub: "Log of what was decided, when, and by whom", chip: String(decisionsList.length) },
+    { id: "issues", label: "Issues", sub: issueSummary, chip: String(issuesList.length), amber: openIssues > 0 },
+    { id: "risks", label: "Risks", sub: riskSummary, chip: openRisks.length > 0 ? `${openRisks.length} open` : String(risksList.length), amber: openRisks.length > 0 },
+    { id: "tasks", label: "Project Tasks", sub: "Loose tasks tagged to this project", chip: String(projectTasks.length) },
+    { id: "agendas", label: "Meeting Agendas", sub: "Meeting agendas, notes & exports", chip: String((project.agendas ?? []).length) },
+  ];
+
+  const jumpItems: { id: string; label: string; n?: number }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "decisions", label: "Decisions", n: decisionsList.length },
+    { id: "issues", label: "Issues", n: openIssues },
+    { id: "risks", label: "Risks", n: openRisks.length },
+    { id: "tasks", label: "Tasks", n: projectTasks.length },
+    { id: "agendas", label: "Agendas", n: (project.agendas ?? []).length },
+  ];
 
   const nextActionItems = [
     ...project.milestones.flatMap((m) =>
@@ -370,6 +464,20 @@ export function ProjectDetail() {
         })()}
       </div>
 
+      <div className="jumpbar" ref={jumpbarRef}>
+        {jumpItems.map((j) => (
+          <button
+            key={j.id}
+            className={`jump${activeSection === j.id ? " active" : ""}`}
+            onClick={() => jumpTo(j.id)}
+          >
+            {j.label}
+            {j.n !== undefined && <span className={`n${j.n === 0 ? " zero" : ""}`}>{j.n}</span>}
+          </button>
+        ))}
+      </div>
+
+      <section id="sec-overview">
       <KpiSection project={project} />
 
       <div className="project-cols" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, alignItems: "start" }}>
@@ -478,15 +586,143 @@ export function ProjectDetail() {
           </div>
         </div>
 
-        {/* RIGHT: team + status updates */}
+        {/* RIGHT: status updates + stakeholders + team + resources */}
         <div style={{ minWidth: 0 }}>
+          <div className="card rail-card">
+          <div className={"rail-head" + (updatesOpen ? " is-open" : "")} onClick={() => setUpdatesOpen((v) => !v)}>
+            <ChevronRight size={13} className="ic" />
+            <h3>Status Updates</h3>
+            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+              {updatesOpen && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
+                  style={{ color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
+                >
+                  <Plus size={12} /> Add update
+                </button>
+              )}
+              {project.updates.length > 0 && (
+                <span className="count" style={{ marginLeft: 0 }}>{project.updates.length}</span>
+              )}
+            </span>
+          </div>
+          {updatesOpen && <div className="rail-body" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 10 }}>
+            {adding && (
+              <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <textarea
+                  className="input"
+                  rows={3}
+                  autoFocus
+                  placeholder="What's the latest on this project?"
+                  value={updateText}
+                  onChange={(e) => setUpdateText(e.target.value)}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
+                    disabled={!!aiBusy}
+                    onClick={handleDraftFresh}
+                  >
+                    <Sparkles size={12} /> {aiBusy === "draft" ? "Drafting…" : "Draft with AI"}
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
+                    disabled={!!aiBusy || !updateText.trim()}
+                    onClick={handleSuggestEdits}
+                  >
+                    <Sparkles size={12} /> {aiBusy === "suggest" ? "Improving…" : "Suggest corrections"}
+                  </button>
+                </div>
+                <UpdateTypePicker value={updateType} onChange={setUpdateType} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={submitUpdate}>
+                    Post update
+                  </button>
+                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setUpdateType("update"); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {(showAllUpdates ? project.updates : project.updates.slice(0, 3)).map((u) => (
+              <div key={u.id} className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <UpdateTypeTag type={u.type ?? "update"} />
+                  <span style={{ fontSize: 11.5, color: "var(--ink-4)", marginLeft: "auto" }}>{u.when}</span>
+                  <button
+                    className="icon-btn"
+                    style={{ color: "var(--ink-4)" }}
+                    onClick={() => startEditUpdate(u)}
+                    title="Edit update"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    className="icon-btn"
+                    style={{ color: "var(--ink-4)" }}
+                    onClick={() => deleteStatusUpdate(project.id, u.id)}
+                    title="Delete update"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                {editingUpdateId === u.id ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      autoFocus
+                      value={editUpdateText}
+                      onChange={(e) => setEditUpdateText(e.target.value)}
+                    />
+                    <UpdateTypePicker value={editUpdateType} onChange={setEditUpdateType} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEditUpdate}>
+                        Save
+                      </button>
+                      <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingUpdateId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>{u.text}</div>
+                )}
+                <button
+                  className="btn btn-soft"
+                  style={{ alignSelf: "flex-start", fontSize: 12, padding: "5px 10px" }}
+                  onClick={() => setDraftFor(u)}
+                >
+                  <Sparkles size={13} /> Draft email
+                </button>
+              </div>
+            ))}
+            {project.updates.length > 3 && (
+              <button
+                className="btn btn-ghost"
+                style={{ alignSelf: "flex-start", fontSize: 12, padding: "5px 10px" }}
+                onClick={() => setShowAllUpdates((v) => !v)}
+              >
+                {showAllUpdates ? "Show less" : `Show ${project.updates.length - 3} older`}
+              </button>
+            )}
+          </div>}
+          </div>
+
+          <StakeholderSection project={project} />
+
           {/* Team */}
-          <div style={{ marginBottom: 20 }}>
-            <div className="section-h" style={{ cursor: "pointer", userSelect: "none" }} onClick={() => setTeamOpen((v) => !v)}>
-              Internal Team
-              <ChevronRight size={13} style={{ marginLeft: "auto", color: "var(--ink-4)", transition: "transform .18s", transform: teamOpen ? "rotate(90deg)" : "none" }} />
+          <div className="card rail-card" style={{ marginTop: 12 }}>
+            <div className={"rail-head" + (teamOpen ? " is-open" : "")} onClick={() => setTeamOpen((v) => !v)}>
+              <ChevronRight size={13} className="ic" />
+              <h3>Internal Team</h3>
+              {(project.members ?? []).length > 0 && (
+                <span className="count">{(project.members ?? []).length}</span>
+              )}
             </div>
-            {teamOpen && <div className="card" style={{ padding: "6px 10px 8px" }}>
+            {teamOpen && <div className="rail-body">
               {(project.members ?? []).map((mem, idx, arr) => {
                 const contact = data.contacts.find((c) => c.id === mem.contactId);
                 if (!contact) return null;
@@ -682,172 +918,78 @@ export function ProjectDetail() {
 
           <ExternalTeamSection project={project} />
 
-          <StakeholderSection project={project} />
-
           <ResourcesSection project={project} />
-
-          <div className="section-h" style={{ marginTop: 20, cursor: "pointer" }} onClick={() => setUpdatesOpen((v) => !v)}>
-            <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: updatesOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
-            Status Updates
-            {updatesOpen && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setAdding((v) => !v); }}
-                style={{ marginLeft: "auto", color: "var(--accent-ink)", fontSize: 12, fontWeight: 550, display: "flex", alignItems: "center", gap: 5 }}
-              >
-                <Plus size={12} /> Add update
-              </button>
-            )}
-          </div>
-          {updatesOpen && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {adding && (
-              <div className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <textarea
-                  className="input"
-                  rows={3}
-                  autoFocus
-                  placeholder="What's the latest on this project?"
-                  value={updateText}
-                  onChange={(e) => setUpdateText(e.target.value)}
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
-                    disabled={!!aiBusy}
-                    onClick={handleDraftFresh}
-                  >
-                    <Sparkles size={12} /> {aiBusy === "draft" ? "Drafting…" : "Draft with AI"}
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
-                    disabled={!!aiBusy || !updateText.trim()}
-                    onClick={handleSuggestEdits}
-                  >
-                    <Sparkles size={12} /> {aiBusy === "suggest" ? "Improving…" : "Suggest corrections"}
-                  </button>
-                </div>
-                <UpdateTypePicker value={updateType} onChange={setUpdateType} />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={submitUpdate}>
-                    Post update
-                  </button>
-                  <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setUpdateType("update"); }}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-            {(showAllUpdates ? project.updates : project.updates.slice(0, 3)).map((u) => (
-              <div key={u.id} className="card card-pad" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <UpdateTypeTag type={u.type ?? "update"} />
-                  <span style={{ fontSize: 11.5, color: "var(--ink-4)", marginLeft: "auto" }}>{u.when}</span>
-                  <button
-                    className="icon-btn"
-                    style={{ color: "var(--ink-4)" }}
-                    onClick={() => startEditUpdate(u)}
-                    title="Edit update"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    style={{ color: "var(--ink-4)" }}
-                    onClick={() => deleteStatusUpdate(project.id, u.id)}
-                    title="Delete update"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-                {editingUpdateId === u.id ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <textarea
-                      className="input"
-                      rows={3}
-                      autoFocus
-                      value={editUpdateText}
-                      onChange={(e) => setEditUpdateText(e.target.value)}
-                    />
-                    <UpdateTypePicker value={editUpdateType} onChange={setEditUpdateType} />
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEditUpdate}>
-                        Save
-                      </button>
-                      <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingUpdateId(null)}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>{u.text}</div>
-                )}
-                <button
-                  className="btn btn-soft"
-                  style={{ alignSelf: "flex-start", fontSize: 12, padding: "5px 10px" }}
-                  onClick={() => setDraftFor(u)}
-                >
-                  <Sparkles size={13} /> Draft email
-                </button>
-              </div>
-            ))}
-            {project.updates.length > 3 && (
-              <button
-                className="btn btn-ghost"
-                style={{ alignSelf: "flex-start", fontSize: 12, padding: "5px 10px" }}
-                onClick={() => setShowAllUpdates((v) => !v)}
-              >
-                {showAllUpdates ? "Show less" : `Show ${project.updates.length - 3} older`}
-              </button>
-            )}
-          </div>}
         </div>
       </div>
+      </section>
 
-      <DecisionsTracker project={project} />
-      <IssueTracker project={project} />
-      <RiskTracker project={project} />
-
-      {/* Project tasks (from the task lists, tagged to this project) */}
+      {/* Registers & records accordion */}
       <div style={{ marginTop: 28 }}>
-        <div className="section-h">
-          Project Tasks
-          <span style={{ fontWeight: 400, color: "var(--ink-4)", marginLeft: 6 }}>
-            — {projectTasks.filter(({ task }) => !task.done).length} open
-          </span>
-        </div>
-        <div className="card" style={{ padding: "6px 10px 8px" }}>
-          {projectTasks.length === 0 && (
-            <div style={{ padding: "8px 4px", fontSize: 13, color: "var(--ink-4)" }}>
-              No tasks yet. Add one below or tag this project on any task.
-            </div>
-          )}
-          {projectTasks.map(({ task: t, list }) => (
-            <div key={t.id} className="task-row">
-              <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
+        <div className="section-h">Registers &amp; records</div>
+        <div className="card rg-card">
+          {registers.map((r) => (
+            <section key={r.id} id={`sec-${r.id}`} className="rg-row">
               <button
-                style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
-                className={t.done ? "strike" : ""}
-                onClick={() => setEditingTaskId(t.id)}
-                title="Edit task"
+                className={`rg-head${openRegister === r.id ? " is-open" : ""}`}
+                onClick={() => setOpenRegister((v) => (v === r.id ? null : r.id))}
               >
-                {t.text}
+                <ChevronRight size={14} className="ic" />
+                <b>{r.label}</b>
+                <span className="rg-sub">{r.sub}</span>
+                <span className={`chip${r.amber ? " status-hold" : ""}`} style={{ marginLeft: "auto" }}>{r.chip}</span>
               </button>
-              <StateTag task={t} />
-              <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
-              <span className="chip context">{t.context}</span>
-              {t.due && (
-                <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>
-                  {fmtDue(t.due)}
-                </span>
+              {openRegister === r.id && (
+                <div className="rg-body">
+                  {r.id === "decisions" && <DecisionsTracker project={project} />}
+                  {r.id === "issues" && <IssueTracker project={project} />}
+                  {r.id === "risks" && <RiskTracker project={project} />}
+                  {r.id === "tasks" && (
+                    /* Project tasks (from the task lists, tagged to this project) */
+                    <div style={{ marginTop: 28 }}>
+                      <div className="section-h">
+                        Project Tasks
+                        <span style={{ fontWeight: 400, color: "var(--ink-4)", marginLeft: 6 }}>
+                          — {projectTasks.filter(({ task }) => !task.done).length} open
+                        </span>
+                      </div>
+                      <div className="card" style={{ padding: "6px 10px 8px" }}>
+                        {projectTasks.length === 0 && (
+                          <div style={{ padding: "8px 4px", fontSize: 13, color: "var(--ink-4)" }}>
+                            No tasks yet. Add one below or tag this project on any task.
+                          </div>
+                        )}
+                        {projectTasks.map(({ task: t, list }) => (
+                          <div key={t.id} className="task-row">
+                            <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
+                            <button
+                              style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
+                              className={t.done ? "done-t" : ""}
+                              onClick={() => setEditingTaskId(t.id)}
+                              title="Edit task"
+                            >
+                              {t.text}
+                            </button>
+                            <StateTag task={t} />
+                            <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
+                            <span className="chip context">{t.context}</span>
+                            {t.due && (
+                              <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>
+                                {fmtDue(t.due)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                        <AddProjectTaskRow projectTitle={project.title} />
+                      </div>
+                    </div>
+                  )}
+                  {r.id === "agendas" && <MeetingAgendasSection project={project} />}
+                </div>
               )}
-            </div>
+            </section>
           ))}
-          <AddProjectTaskRow projectTitle={project.title} />
         </div>
       </div>
-
-      <MeetingAgendasSection project={project} />
 
       {draftFor && <DraftEmailPanel project={project} update={draftFor} close={() => setDraftFor(null)} />}
       {editingTaskId && <TaskEditPanel taskId={editingTaskId} close={() => setEditingTaskId(null)} />}
