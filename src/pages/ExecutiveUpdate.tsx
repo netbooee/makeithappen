@@ -1,9 +1,10 @@
-import { useMemo } from "react";
-import { ArrowRight, Check, ChevronDown, ChevronUp, Download, Star } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown, ChevronUp, Download, Pencil, Sparkles } from "lucide-react";
 import { useStore } from "../store/store";
 import { parseTimestamp } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
+import { generateExecStatement, localExecStatement } from "../lib/claude";
 
 /* ================= Executive update ================= */
 
@@ -19,7 +20,12 @@ const CHIP: Record<string, [string, string, string]> = {
 export interface ExecEntry {
   project: Project;
   execUpdate: StatusUpdate | null;
-  comingUp: string | null;
+  /** Next-action item texts pulled from milestone subtasks and the task lists. */
+  nextItems: { text: string; source?: string }[];
+  /** The single fused "where it stands + what's next" paragraph shown on the card. */
+  statement: string;
+  /** True when the statement was written by AI (or edited by hand) and stored on the project. */
+  statementIsStored: boolean;
 }
 
 export function latestExecUpdate(project: Project): StatusUpdate | null {
@@ -43,28 +49,24 @@ export function formatBudgetShort(val?: string): string | null {
   return `$${n}`;
 }
 
-function InsetBlock({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ background: "var(--surface-3)", borderRadius: 8, padding: "9px 11px", marginTop: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "var(--ink-4)", marginBottom: 3 }}>
-        {icon}
-        {label}
-      </div>
-      <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink-1)", whiteSpace: "pre-wrap" }}>{children}</div>
-    </div>
-  );
+/** Provenance line under the statement — shared by the live card and the HTML export. */
+export function execMetaLine(entry: ExecEntry): string {
+  const { execUpdate, nextItems } = entry;
+  const parts = [
+    execUpdate ? `Update ${shortDate(execUpdate.when)} · ${execUpdate.who}` : "No executive update yet",
+  ];
+  if (nextItems.length > 0) {
+    parts.push(`${nextItems.length} next action${nextItems.length === 1 ? "" : "s"}`);
+  }
+  return parts.join(" · ");
 }
 
 export function ExecutiveUpdate() {
-  const { data, setExecUpdateOrder } = useStore();
+  const { data, setExecUpdateOrder, updateProject } = useStore();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
 
   const entries = useMemo<ExecEntry[]>(() => {
     const taskPool = [...data.todayTasks, ...data.upcoming, ...data.someday];
@@ -72,17 +74,24 @@ export function ExecutiveUpdate() {
       .map((project) => {
         const execUpdate = latestExecUpdate(project);
         const nextItems = [
-          ...project.milestones.flatMap((m) => m.subtasks.filter((s) => s.next && !s.done).map((s) => s.t)),
-          ...taskPool.filter((t) => t.project === project.title && t.next && !t.done).map((t) => t.text),
+          ...project.milestones.flatMap((m) =>
+            m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title })),
+          ),
+          ...taskPool
+            .filter((t) => t.project === project.title && t.next && !t.done)
+            .map((t) => ({ text: t.text, source: t.context })),
         ];
-        const comingUp = project.nextActionsAiSummary?.trim()
-          ? project.nextActionsAiSummary.trim()
-          : nextItems.length > 0
-            ? nextItems.map((t) => `• ${t}`).join("\n")
-            : null;
-        return { project, execUpdate, comingUp };
+        const stored = project.execStatement?.trim();
+        const statement =
+          stored ||
+          localExecStatement(
+            execUpdate?.text ?? null,
+            nextItems,
+            project.nextActionsAiSummary?.trim() || null,
+          );
+        return { project, execUpdate, nextItems, statement, statementIsStored: Boolean(stored) };
       })
-      .filter((e) => e.execUpdate || e.comingUp);
+      .filter((e) => e.statement.length > 0);
 
     const order = data.execUpdateOrder ?? [];
     const byId = new Map(raw.map((e) => [e.project.id, e]));
@@ -106,6 +115,50 @@ export function ExecutiveUpdate() {
     setExecUpdateOrder(ids);
   };
 
+  const regenerate = async (entry: ExecEntry) => {
+    const { project, execUpdate, nextItems } = entry;
+    setBusy(project.id);
+    try {
+      const text = await generateExecStatement(
+        project,
+        nextItems,
+        execUpdate,
+        project.nextActionsAiSummary?.trim() || null,
+      );
+      if (text.trim()) {
+        updateProject(project.id, {
+          execStatement: text.trim(),
+          execStatementAt: new Date().toLocaleString(),
+        });
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const regenerateAll = async () => {
+    setBulk({ done: 0, total: entries.length });
+    for (let i = 0; i < entries.length; i++) {
+      await regenerate(entries[i]);
+      setBulk({ done: i + 1, total: entries.length });
+    }
+    setBulk(null);
+  };
+
+  const startEdit = (entry: ExecEntry) => {
+    setEditing(entry.project.id);
+    setDraft(entry.statement);
+  };
+
+  const saveEdit = (project: Project) => {
+    const text = draft.trim();
+    updateProject(project.id, {
+      execStatement: text || undefined,
+      execStatementAt: text ? new Date().toLocaleString() : undefined,
+    });
+    setEditing(null);
+  };
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
@@ -115,18 +168,28 @@ export function ExecutiveUpdate() {
             {entries.length} project{entries.length === 1 ? "" : "s"} with executive updates or upcoming work
           </div>
         </div>
-        <button
-          className="btn btn-ghost"
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}
-          onClick={() => exportExecUpdateHtml(entries)}
-        >
-          <Download size={13} /> Export HTML
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <button
+            className="btn btn-ghost"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            disabled={bulk !== null || entries.length === 0}
+            onClick={regenerateAll}
+          >
+            <Sparkles size={13} /> {bulk ? `Writing ${bulk.done}/${bulk.total}…` : "AI update all"}
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            onClick={() => exportExecUpdateHtml(entries)}
+          >
+            <Download size={13} /> Export HTML
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {entries.map((entry, idx) => {
-          const { project, execUpdate, comingUp } = entry;
+          const { project, statement, statementIsStored } = entry;
           const chip = CHIP[project.status] ?? CHIP.active;
           const doneMs = project.milestones.filter((m) => m.status === "complete");
           const upcomingMs = project.milestones.filter((m) => m.status !== "complete");
@@ -139,6 +202,8 @@ export function ExecutiveUpdate() {
           ]
             .filter(Boolean)
             .join(" · ");
+          const isEditing = editing === project.id;
+          const isBusy = busy === project.id;
           return (
             <div
               key={project.id}
@@ -205,26 +270,87 @@ export function ExecutiveUpdate() {
                     </div>
                   )}
 
-                  {execUpdate ? (
-                    <InsetBlock
-                      icon={<Star size={13} />}
-                      label={`Executive update · ${shortDate(execUpdate.when)} · ${execUpdate.who}`}
-                    >
-                      {execUpdate.text}
-                    </InsetBlock>
-                  ) : (
-                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-4)", marginTop: 10 }}>
-                      No executive update yet
-                    </div>
-                  )}
-
-                  {comingUp && (
-                    <div style={{ marginTop: execUpdate ? 8 : 8 }}>
-                      <InsetBlock icon={<ArrowRight size={13} />} label="Coming up next">
-                        {comingUp}
-                      </InsetBlock>
-                    </div>
-                  )}
+                  <div style={{ borderTop: "0.5px solid var(--border)", marginTop: 10, paddingTop: 10 }}>
+                    {isEditing ? (
+                      <>
+                        <textarea
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          rows={4}
+                          autoFocus
+                          style={{
+                            width: "100%",
+                            fontSize: 13.5,
+                            lineHeight: 1.62,
+                            color: "var(--ink-1)",
+                            padding: "8px 10px",
+                            borderRadius: 8,
+                            border: "0.5px solid var(--border)",
+                            background: "var(--surface-3)",
+                            resize: "vertical",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                          <button className="btn btn-ghost" onClick={() => saveEdit(project)}>
+                            Save
+                          </button>
+                          <button className="btn btn-ghost" onClick={() => setEditing(null)}>
+                            Cancel
+                          </button>
+                          <span style={{ fontSize: 11, color: "var(--ink-4)", alignSelf: "center" }}>
+                            Clear the text to fall back to the auto-composed statement.
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            fontSize: 13.5,
+                            lineHeight: 1.62,
+                            color: "var(--ink-1)",
+                            whiteSpace: "pre-wrap",
+                            opacity: isBusy ? 0.5 : 1,
+                          }}
+                        >
+                          {statement}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            flexWrap: "wrap",
+                            marginTop: 7,
+                            fontSize: 11,
+                            color: "var(--ink-4)",
+                          }}
+                        >
+                          {statementIsStored && <Sparkles size={11} />}
+                          <span>{execMetaLine(entry)}</span>
+                          <span style={{ flex: 1 }} />
+                          <button
+                            className="btn btn-ghost"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
+                            disabled={isBusy || bulk !== null}
+                            onClick={() => regenerate(entry)}
+                          >
+                            <Sparkles size={11} />
+                            {isBusy ? "Writing…" : statementIsStored ? "Regenerate" : "AI update"}
+                          </button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
+                            disabled={isBusy || bulk !== null}
+                            onClick={() => startEdit(entry)}
+                          >
+                            <Pencil size={11} /> Edit
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>

@@ -1,5 +1,5 @@
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
-import { formatBudgetShort, shortDate } from "../pages/ExecutiveUpdate";
+import { execMetaLine, formatBudgetShort } from "../pages/ExecutiveUpdate";
 
 /* ================= Executive update HTML export ================= */
 
@@ -24,15 +24,8 @@ function pill(html: string, style: string): string {
   return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;${style}">${html}</span>`;
 }
 
-function insetBlock(label: string, body: string): string {
-  return `<div style="background:#F9FAFB;border:0.5px solid #F0F1F3;border-radius:8px;padding:9px 11px;margin-top:10px">
-    <div style="font-size:11px;font-weight:500;color:#8A909B;margin-bottom:3px">${label}</div>
-    <div style="font-size:13px;line-height:1.55;color:#3A3F49;white-space:pre-wrap">${body}</div>
-  </div>`;
-}
-
 function cardHtml(entry: ExecEntry): string {
-  const { project, execUpdate, comingUp } = entry;
+  const { project, statement } = entry;
   const chip = CHIP[project.status] ?? CHIP.active;
   const budget = formatBudgetShort(project.budget);
   const subline = [
@@ -53,14 +46,10 @@ function cardHtml(entry: ExecEntry): string {
     ),
   ];
 
-  const execHtml = execUpdate
-    ? insetBlock(
-        `★ Executive update · ${esc(shortDate(execUpdate.when))} · ${esc(execUpdate.who)}`,
-        esc(execUpdate.text),
-      )
-    : `<div style="font-size:12px;font-style:italic;color:#8A909B;margin-top:10px">No executive update yet</div>`;
-
-  const comingHtml = comingUp ? insetBlock("→ Coming up next", esc(comingUp)) : "";
+  const statementHtml = `<div style="border-top:0.5px solid #E2E5EA;margin-top:10px;padding-top:10px">
+    <div style="font-size:13.5px;line-height:1.62;color:#3A3F49;white-space:pre-wrap">${esc(statement)}</div>
+    <div style="font-size:11px;color:#8A909B;margin-top:7px">${esc(execMetaLine(entry))}</div>
+  </div>`;
 
   const titleHtml = project.webUrl
     ? `<a href="${esc(project.webUrl)}" style="color:#1A1D23;text-decoration:underline;text-underline-offset:2px">${esc(project.title)}</a>`
@@ -73,8 +62,7 @@ function cardHtml(entry: ExecEntry): string {
     </div>
     <div style="font-size:12px;color:#8A909B;margin-top:3px">${esc(subline)}</div>
     ${pills.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${pills.join("")}</div>` : ""}
-    ${execHtml}
-    ${comingHtml}
+    ${statementHtml}
   </div>`;
 }
 

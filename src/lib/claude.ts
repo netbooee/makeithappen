@@ -334,6 +334,79 @@ Write a short summary that combines the most recent executive update with these 
   }
 }
 
+/* ---------- executive statement (exec update + what's next, fused) ---------- */
+
+/** Deterministic fusion used before AI runs, and as the offline fallback. */
+export function localExecStatement(
+  execUpdateText: string | null,
+  items: { text: string; source?: string }[],
+  nextSummary?: string | null,
+): string {
+  const parts: string[] = [];
+  const base = execUpdateText?.trim();
+  if (base) parts.push(/[.!?]$/.test(base) ? base : `${base}.`);
+  const next = nextSummary?.trim();
+  if (next) {
+    parts.push(/[.!?]$/.test(next) ? next : `${next}.`);
+  } else if (items.length) {
+    const list = items.map((n) => n.text.trim().replace(/[.;]$/, ""));
+    const tail =
+      list.length === 1
+        ? list[0]
+        : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+    parts.push(`Next up: ${tail}.`);
+  }
+  return parts.join(" ");
+}
+
+/**
+ * Fuses the latest executive update and the project's next actions into one
+ * short paragraph — the single statement shown per project on the Executive
+ * update page.
+ */
+export async function generateExecStatement(
+  project: Project,
+  items: { text: string; source?: string }[],
+  latestExecutiveUpdate?: StatusUpdate | null,
+  nextSummary?: string | null,
+): Promise<string> {
+  const fallback = localExecStatement(latestExecutiveUpdate?.text ?? null, items, nextSummary);
+  if (!fallback) return "";
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return fallback;
+  }
+
+  const ctx = emailContext(project);
+  const itemLines = items.length
+    ? items.map((n) => `- "${n.text}"${n.source ? ` (${n.source})` : ""}`).join("\n")
+    : "None flagged.";
+  const updateLine = latestExecutiveUpdate
+    ? `${latestExecutiveUpdate.when} (${latestExecutiveUpdate.who}): ${latestExecutiveUpdate.text}`
+    : "None yet.";
+
+  const system = `You write the single-paragraph project statement an executive reads in a weekly portfolio roll-up. Fuse the status update and the upcoming work into one continuous narrative: where the project stands, then what happens next, in that order. 2-4 sentences, plain text, one paragraph. No headers, bullets, labels, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, or due date — those already appear beside your text. Output only the paragraph.`;
+
+  const prompt = `Project: "${project.title}"
+Status: ${project.status} · ${ctx.ragLabel} · ${ctx.timeline}
+Progress: ${Math.round(project.progress * 100)}% (${ctx.doneSubtasks}/${ctx.totalSubtasks} subtasks done)
+
+Most recent executive update:
+${updateLine}
+
+Next actions:
+${itemLines}
+
+Write the fused statement. Output only the paragraph.`;
+
+  try {
+    const out = (await callClaude(system, [{ role: "user", content: prompt }])).trim();
+    return out || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 /* ---------- assistant chat ---------- */
 
 export function serializeContext(ws: Workspace, data: WorkspaceData, user: User): string {
