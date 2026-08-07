@@ -1,5 +1,9 @@
 # MakeItHappen — working agreements
 
+## Keep FILEMAP.md current
+
+`FILEMAP.md` at the repo root is the file-by-file map of `src/`. When you add a new file under `src/`, add its row to `FILEMAP.md` in the same change. When a file's responsibility changes materially (it takes over a section, splits, or is deleted), update or remove its row. Don't let it drift — it's the lookup used to write scoped briefs.
+
 ## Risk-based testing (don't browser-verify everything)
 
 Browser verification (starting the dev server, clicking through, screenshotting) is slow. Reserve it for changes where it's actually the only way to catch a bug. Match verification effort to risk:
