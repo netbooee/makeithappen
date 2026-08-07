@@ -58,9 +58,11 @@ export function StakeholderSection({ project }: { project: Project }) {
   const [adding, setAdding] = useState(false);
   const [addName, setAddName] = useState("");
   const [addRole, setAddRole] = useState("");
+  const [addNotes, setAddNotes] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   const list = project.stakeholders ?? [];
 
@@ -71,9 +73,10 @@ export function StakeholderSection({ project }: { project: Project }) {
       name: addName.trim(),
       role: addRole.trim() || undefined,
       satisfaction: "neutral",
+      notes: addNotes.trim() || undefined,
     };
     updateProject(project.id, { stakeholders: [...list, entry] });
-    setAddName(""); setAddRole(""); setAdding(false);
+    setAddName(""); setAddRole(""); setAddNotes(""); setAdding(false);
   };
 
   const remove = (id: string) =>
@@ -83,14 +86,16 @@ export function StakeholderSection({ project }: { project: Project }) {
     updateProject(project.id, { stakeholders: list.map((s) => s.id === id ? { ...s, satisfaction: sat } : s) });
 
   const startEdit = (s: ProjectStakeholder) => {
-    setEditingId(s.id); setEditName(s.name); setEditRole(s.role ?? "");
+    setEditingId(s.id); setEditName(s.name); setEditRole(s.role ?? ""); setEditNotes(s.notes ?? "");
   };
 
   const saveEdit = () => {
     if (!editName.trim() || !editingId) return;
     updateProject(project.id, {
       stakeholders: list.map((s) =>
-        s.id === editingId ? { ...s, name: editName.trim(), role: editRole.trim() || undefined } : s
+        s.id === editingId
+          ? { ...s, name: editName.trim(), role: editRole.trim() || undefined, notes: editNotes.trim() || undefined }
+          : s
       ),
     });
     setEditingId(null);
@@ -114,9 +119,10 @@ export function StakeholderSection({ project }: { project: Project }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: "1px solid var(--border)" }}>
               <input className="input" autoFocus placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
               <input className="input" placeholder="Role (optional)" value={addRole} onChange={(e) => setAddRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
+              <textarea className="input" placeholder="Notes (optional)" value={addNotes} onChange={(e) => setAddNotes(e.target.value)} rows={2} style={{ fontSize: 13, resize: "vertical" }} />
               <div style={{ display: "flex", gap: 7 }}>
                 <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={add}>Add</button>
-                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setAddName(""); setAddRole(""); }}>Cancel</button>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setAddName(""); setAddRole(""); setAddNotes(""); }}>Cancel</button>
               </div>
             </div>
           )}
@@ -128,6 +134,7 @@ export function StakeholderSection({ project }: { project: Project }) {
               <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: i < list.length - 1 ? "1px solid var(--border)" : undefined }}>
                 <input className="input" autoFocus placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
                 <input className="input" placeholder="Role (optional)" value={editRole} onChange={(e) => setEditRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+                <textarea className="input" placeholder="Notes (optional)" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} style={{ fontSize: 13, resize: "vertical" }} />
                 <div style={{ display: "flex", gap: 7 }}>
                   <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEdit}>Save</button>
                   <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
@@ -156,6 +163,7 @@ export function StakeholderSection({ project }: { project: Project }) {
                   <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => remove(s.id)}><Trash2 size={12} /></button>
                 </div>
                 {s.role && <div style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{s.role}</div>}
+                {s.notes && <div style={{ fontSize: 11.5, color: "var(--ink-3)", whiteSpace: "pre-wrap", marginTop: 2 }}>{s.notes}</div>}
               </div>
             )
           )}

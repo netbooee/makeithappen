@@ -57,6 +57,7 @@ export interface Store {
   updateContact: (id: string, patch: Partial<Contact>) => void;
   addContact: (contact: Contact) => void;
   addContacts: (contacts: Contact[]) => void;
+  setExecUpdateOrder: (order: string[]) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
   updateUser: (patch: Partial<import("../lib/types").User>) => void;
@@ -412,6 +413,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteHabit: (id) =>
         mutate((d) => {
           d.habits = d.habits.filter((x) => x.id !== id);
+        }),
+
+      setExecUpdateOrder: (order) =>
+        mutate((d) => {
+          d.execUpdateOrder = order;
         }),
 
       resetDemoData: () => {

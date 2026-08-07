@@ -17,11 +17,13 @@ const NAV = [
   { id: "habits", label: "Habits", icon: Flame, path: "/habits" },
   { id: "project-sites", label: "Project Sites", icon: Link2, path: "/project-sites" },
   { id: "assistant", label: "AI Assistant", icon: Sparkles, path: "/assistant" },
+  { id: "executive-update", label: "Executive Update", icon: Flag, path: "/executive-update" },
 ];
 
 const CRUMB: Record<string, string> = {
   projects: "Projects", tasks: "Tasks", contacts: "Contacts",
   updates: "Status Updates", habits: "Habits", "project-sites": "Project Sites", assistant: "AI Assistant",
+  "executive-update": "Executive Update",
 };
 
 export function Shell() {

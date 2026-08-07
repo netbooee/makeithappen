@@ -56,7 +56,7 @@ export function ProjectDetail() {
   const [updateType, setUpdateType] = useState<UpdateType>("update");
   const [editUpdateType, setEditUpdateType] = useState<UpdateType>("update");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [teamOpen, setTeamOpen] = useState(true);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [openRegister, setOpenRegister] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("overview");

@@ -137,6 +137,7 @@ export interface ProjectStakeholder {
   name: string;
   role?: string;
   satisfaction: StakeholderSatisfaction;
+  notes?: string;
 }
 
 export interface Project {
@@ -263,6 +264,7 @@ export interface WorkspaceData {
   habits: Habit[];
   projects: Project[];
   contacts: Contact[];
+  execUpdateOrder?: string[];
 }
 
 export interface Tweaks {

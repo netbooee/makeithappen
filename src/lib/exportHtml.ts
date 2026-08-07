@@ -523,6 +523,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
             </span>
           </div>
           ${s.role ? `<div style="font-size:11px;color:#6B7280">${esc(s.role)}</div>` : ""}
+          ${s.notes ? `<div style="font-size:11px;color:#4B5563;white-space:pre-wrap;margin-top:2px">${esc(s.notes)}</div>` : ""}
         </div>`;
       }).join("");
 
@@ -705,23 +706,43 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
       ${nextActionsSummaryHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Milestones</div>${feedbackPill(project.title, "Milestones", feedbackEmail)}</div>
       ${milestonesHtml}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Decisions Log</div>${feedbackPill(project.title, "Decisions Log", feedbackEmail)}</div>
-      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${decisionsHtml}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Issue Tracker</div>${feedbackPill(project.title, "Issue Tracker", feedbackEmail)}</div>
-      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${issuesHtml}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Risk register</div>${feedbackPill(project.title, "Risk register", feedbackEmail)}</div>
-      <div style="border:0.5px solid #E7E9ED;border-radius:8px;padding:8px 12px">${risksHtml}</div>
+      <details style="margin-top:24px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+        <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+          <span class="ms-chev">▶</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Decisions Log</span>
+          <div style="margin-left:auto">${feedbackPill(project.title, "Decisions Log", feedbackEmail)}</div>
+        </summary>
+        <div style="padding:8px 12px">${decisionsHtml}</div>
+      </details>
+      <details style="margin-top:24px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+        <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+          <span class="ms-chev">▶</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Issue Tracker</span>
+          <div style="margin-left:auto">${feedbackPill(project.title, "Issue Tracker", feedbackEmail)}</div>
+        </summary>
+        <div style="padding:8px 12px">${issuesHtml}</div>
+      </details>
+      <details style="margin-top:24px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+        <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+          <span class="ms-chev">▶</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Risk register</span>
+          <div style="margin-left:auto">${feedbackPill(project.title, "Risk register", feedbackEmail)}</div>
+        </summary>
+        <div style="padding:8px 12px">${risksHtml}</div>
+      </details>
     </div>
     <div style="padding:24px 24px">
       <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
         <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
           <span class="ms-chev">▶</span>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Internal Team</span>
-          <div style="margin-left:auto">${feedbackPill(project.title, "Internal Team", feedbackEmail)}</div>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Status updates</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            ${project.updates.length > 0 ? `<span style="font-size:10px;color:#6B7280">${project.updates.length}</span>` : ""}
+            ${feedbackPill(project.title, "Status updates", feedbackEmail)}
+          </div>
         </summary>
-        <div style="padding:4px 12px 4px">${teamHtml}</div>
+        <div style="padding:8px 12px">${updatesHtml}</div>
       </details>
-      ${extTeamHtml}
       <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
         <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
           <span class="ms-chev">▶</span>
@@ -733,10 +754,17 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         </summary>
         <div style="padding:4px 12px 4px">${stakeholdersHtml}</div>
       </details>
+      <details style="margin-bottom:20px;border:0.5px solid #E7E9ED;border-radius:8px;overflow:hidden">
+        <summary class="ms-summary" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EEF0F3;cursor:pointer;list-style:none;user-select:none">
+          <span class="ms-chev">▶</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Internal Team</span>
+          <div style="margin-left:auto">${feedbackPill(project.title, "Internal Team", feedbackEmail)}</div>
+        </summary>
+        <div style="padding:4px 12px 4px">${teamHtml}</div>
+      </details>
+      ${extTeamHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Resources</div>${feedbackPill(project.title, "Resources", feedbackEmail)}</div>
       <div style="margin-bottom:20px">${resourcesHtml}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B7280">Status updates</div>${feedbackPill(project.title, "Status updates", feedbackEmail)}</div>
-      ${updatesHtml}
     </div>
   </div>
 

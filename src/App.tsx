@@ -12,6 +12,7 @@ import { HabitDetail, HabitList } from "./pages/Habits";
 import { Assistant } from "./pages/Assistant";
 import { Updates } from "./pages/Updates";
 import { ProjectSites } from "./pages/ProjectSites";
+import { ExecutiveUpdate } from "./pages/ExecutiveUpdate";
 import { Login } from "./pages/Login";
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/updates" element={<Updates />} />
             <Route path="/project-sites" element={<ProjectSites />} />
             <Route path="/assistant" element={<Assistant />} />
+            <Route path="/executive-update" element={<ExecutiveUpdate />} />
             <Route path="*" element={<Navigate to="/projects" replace />} />
           </Route>
         </Routes>
