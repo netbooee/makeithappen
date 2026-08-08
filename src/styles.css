@@ -392,6 +392,18 @@ textarea.input { resize: vertical; line-height: 1.6; }
 .modal-center { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-start; justify-content: center; padding: max(5vh, 40px) 20px 40px; overflow-y: auto; }
 .modal-card { position: relative; width: 440px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); animation: fadeUp .22s ease both; }
 
+/* ---------- pop-up card (task editors) ---------- */
+@keyframes popIn { from { opacity: 0; transform: translateY(10px) scale(.975); } to { opacity: 1; transform: none; } }
+.overlay-center { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 28px 20px; }
+.popup-card {
+  position: relative; width: 520px; max-width: 100%; max-height: min(86vh, 780px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); overflow: hidden;
+  display: flex; flex-direction: column; animation: popIn .2s cubic-bezier(.2,.7,.3,1) both;
+}
+.popup-card-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.popup-card-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
 /* ---------- Today dashboard ---------- */
 .spotlight-card { border-left: 3px solid var(--next); }
 .habit-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
@@ -567,6 +579,8 @@ section[id]{scroll-margin-top:60px}
   .bottom-nav button.active { color: var(--accent-ink); }
   .bottom-nav button svg { width: 19px; height: 19px; }
   .side-panel { width: 100vw; }
+  .overlay-center { padding: 16px; }
+  .popup-card { max-height: calc(100dvh - 32px); }
   .tweaks-panel { right: 12px; left: 12px; bottom: 76px; width: auto; }
   .chat-wrap { padding: 0 14px; }
   .bubble { max-width: 88%; }

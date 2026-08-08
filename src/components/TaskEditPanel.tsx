@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
@@ -25,6 +26,11 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
 
   useEffect(() => { if (!task) close(); }, [task, close]);
   useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
   if (!task) return null;
 
   const set = (patch: Partial<Task>) => updateTask(task!.id, patch);
@@ -35,11 +41,11 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
     else set({ state: "waiting", to: undefined, next: false });
   };
 
-  return (
-    <div className="overlay">
+  return createPortal(
+    <div className="overlay-center" role="dialog" aria-modal="true" aria-label="Edit task">
       <div className="overlay-bg" onClick={close} />
-      <div className="side-panel">
-        <div className="side-panel-head">
+      <div className="popup-card">
+        <div className="popup-card-head">
           <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent-soft)", color: "var(--accent)", display: "grid", placeItems: "center" }}>
             <ListTodo size={15} />
           </div>
@@ -50,7 +56,7 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           <button className="icon-btn" onClick={close}><X /></button>
         </div>
 
-        <div className="side-panel-body" ref={bodyRef}>
+        <div className="popup-card-body" ref={bodyRef}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">Task</label>
             <input className="input" value={task.text} onChange={(e) => set({ text: e.target.value })} style={{ fontWeight: 500 }} />
@@ -193,6 +199,7 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
