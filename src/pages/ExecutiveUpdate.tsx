@@ -4,7 +4,7 @@ import { useStore } from "../store/store";
 import { parseTimestamp } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
-import { generateExecStatement, localExecStatement } from "../lib/claude";
+import { generateExecNarrative, localExecNext, localExecSince } from "../lib/claude";
 
 /* ================= Executive update ================= */
 
@@ -22,8 +22,10 @@ export interface ExecEntry {
   execUpdate: StatusUpdate | null;
   /** Next-action item texts pulled from milestone subtasks and the task lists. */
   nextItems: { text: string; source?: string }[];
-  /** The single fused "where it stands + what's next" paragraph shown on the card. */
+  /** The forward-looking "coming next" paragraph shown on the card. */
   statement: string;
+  /** One-sentence recap of the latest executive update, shown under the paragraph. Empty when there is none. */
+  sinceLine: string;
   /** True when the statement was written by AI (or edited by hand) and stored on the project. */
   statementIsStored: boolean;
 }
@@ -52,12 +54,13 @@ export function formatBudgetShort(val?: string): string | null {
 /** Provenance line under the statement — shared by the live card and the HTML export. */
 export function execMetaLine(entry: ExecEntry): string {
   const { execUpdate, nextItems } = entry;
-  const parts = [
-    execUpdate ? `Update ${shortDate(execUpdate.when)} · ${execUpdate.who}` : "No executive update yet",
-  ];
+  const parts: string[] = [];
   if (nextItems.length > 0) {
     parts.push(`${nextItems.length} next action${nextItems.length === 1 ? "" : "s"}`);
   }
+  parts.push(
+    execUpdate ? `Update ${shortDate(execUpdate.when)} · ${execUpdate.who}` : "No executive update yet",
+  );
   return parts.join(" · ");
 }
 
@@ -83,15 +86,19 @@ export function ExecutiveUpdate() {
         ];
         const stored = project.execStatement?.trim();
         const statement =
-          stored ||
-          localExecStatement(
-            execUpdate?.text ?? null,
-            nextItems,
-            project.nextActionsAiSummary?.trim() || null,
-          );
-        return { project, execUpdate, nextItems, statement, statementIsStored: Boolean(stored) };
+          stored || localExecNext(nextItems, project.nextActionsAiSummary?.trim() || null);
+        const sinceLine =
+          project.execSince?.trim() || localExecSince(execUpdate?.text ?? null);
+        return {
+          project,
+          execUpdate,
+          nextItems,
+          statement,
+          sinceLine,
+          statementIsStored: Boolean(stored),
+        };
       })
-      .filter((e) => e.statement.length > 0);
+      .filter((e) => e.statement.length > 0 || e.sinceLine.length > 0);
 
     const order = data.execUpdateOrder ?? [];
     const byId = new Map(raw.map((e) => [e.project.id, e]));
@@ -119,15 +126,18 @@ export function ExecutiveUpdate() {
     const { project, execUpdate, nextItems } = entry;
     setBusy(project.id);
     try {
-      const text = await generateExecStatement(
+      const narrative = await generateExecNarrative(
         project,
         nextItems,
         execUpdate,
         project.nextActionsAiSummary?.trim() || null,
       );
-      if (text.trim()) {
+      const statement = narrative.statement.trim();
+      const since = narrative.since.trim();
+      if (statement || since) {
         updateProject(project.id, {
-          execStatement: text.trim(),
+          execStatement: statement || undefined,
+          execSince: since || undefined,
           execStatementAt: new Date().toLocaleString(),
         });
       }
@@ -189,7 +199,7 @@ export function ExecutiveUpdate() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {entries.map((entry, idx) => {
-          const { project, statement, statementIsStored } = entry;
+          const { project, statement, sinceLine, statementIsStored } = entry;
           const chip = CHIP[project.status] ?? CHIP.active;
           const doneMs = project.milestones.filter((m) => m.status === "complete");
           const upcomingMs = project.milestones.filter((m) => m.status !== "complete");
@@ -305,6 +315,9 @@ export function ExecutiveUpdate() {
                       </>
                     ) : (
                       <>
+                        <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 5 }}>
+                          Coming next
+                        </div>
                         <div
                           style={{
                             fontSize: 13.5,
@@ -316,6 +329,20 @@ export function ExecutiveUpdate() {
                         >
                           {statement}
                         </div>
+                        {sinceLine && (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              lineHeight: 1.55,
+                              color: "var(--ink-4)",
+                              fontStyle: "italic",
+                              marginTop: 8,
+                              opacity: isBusy ? 0.5 : 1,
+                            }}
+                          >
+                            Since last update: {sinceLine}
+                          </div>
+                        )}
                         <div
                           style={{
                             display: "flex",

@@ -334,44 +334,65 @@ Write a short summary that combines the most recent executive update with these 
   }
 }
 
-/* ---------- executive statement (exec update + what's next, fused) ---------- */
+/* ---------- executive narrative (forward-looking statement + since-line) ---------- */
 
-/** Deterministic fusion used before AI runs, and as the offline fallback. */
-export function localExecStatement(
-  execUpdateText: string | null,
+/** The two pieces of prose shown per project on the Executive update page. */
+export interface ExecNarrative {
+  /** Forward-looking "Coming next" paragraph. */
+  statement: string;
+  /** One-sentence recap of the latest executive update, without the "Since last update:" prefix. */
+  since: string;
+}
+
+/** Deterministic forward-looking paragraph used before AI runs, and as the offline fallback. */
+export function localExecNext(
   items: { text: string; source?: string }[],
   nextSummary?: string | null,
 ): string {
-  const parts: string[] = [];
-  const base = execUpdateText?.trim();
-  if (base) parts.push(/[.!?]$/.test(base) ? base : `${base}.`);
   const next = nextSummary?.trim();
-  if (next) {
-    parts.push(/[.!?]$/.test(next) ? next : `${next}.`);
-  } else if (items.length) {
-    const list = items.map((n) => n.text.trim().replace(/[.;]$/, ""));
-    const tail =
-      list.length === 1
-        ? list[0]
-        : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-    parts.push(`Next up: ${tail}.`);
-  }
-  return parts.join(" ");
+  if (next) return /[.!?]$/.test(next) ? next : `${next}.`;
+  if (!items.length) return "";
+  const list = items.map((n) => n.text.trim().replace(/[.;]$/, ""));
+  const tail =
+    list.length === 1 ? list[0] : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+  return `Next up: ${tail}.`;
+}
+
+/** Deterministic one-sentence compression of the latest executive update. */
+export function localExecSince(execUpdateText: string | null): string {
+  const base = execUpdateText?.trim().replace(/\s+/g, " ");
+  if (!base) return "";
+  const first = base.match(/^.*?[.!?](?=\s|$)/)?.[0]?.trim() ?? base;
+  return /[.!?]$/.test(first) ? first : `${first}.`;
+}
+
+function parseExecNarrative(out: string): ExecNarrative {
+  const clean = (s?: string) => (s ?? "").replace(/\s+/g, " ").trim();
+  const statement = clean(out.match(/NEXT:\s*([\s\S]*?)(?=\n\s*SINCE:|$)/i)?.[1]);
+  let since = clean(out.match(/SINCE:\s*([\s\S]*)$/i)?.[1]).replace(
+    /^since last update:\s*/i,
+    "",
+  );
+  if (/^(none|n\/a|-)\.?$/i.test(since)) since = "";
+  return { statement, since };
 }
 
 /**
- * Fuses the latest executive update and the project's next actions into one
- * short paragraph — the single statement shown per project on the Executive
- * update page.
+ * Writes the two pieces of prose shown per project on the Executive update
+ * page: a forward-looking "coming next" paragraph, and a one-sentence recap of
+ * the latest executive update that sits beneath it.
  */
-export async function generateExecStatement(
+export async function generateExecNarrative(
   project: Project,
   items: { text: string; source?: string }[],
   latestExecutiveUpdate?: StatusUpdate | null,
   nextSummary?: string | null,
-): Promise<string> {
-  const fallback = localExecStatement(latestExecutiveUpdate?.text ?? null, items, nextSummary);
-  if (!fallback) return "";
+): Promise<ExecNarrative> {
+  const fallback: ExecNarrative = {
+    statement: localExecNext(items, nextSummary),
+    since: localExecSince(latestExecutiveUpdate?.text ?? null),
+  };
+  if (!fallback.statement && !fallback.since) return fallback;
   if (!devApiKey && !supabaseConfigured) {
     await new Promise((r) => setTimeout(r, 900));
     return fallback;
@@ -384,12 +405,23 @@ export async function generateExecStatement(
   const updateLine = latestExecutiveUpdate
     ? `${latestExecutiveUpdate.when} (${latestExecutiveUpdate.who}): ${latestExecutiveUpdate.text}`
     : "None yet.";
+  const milestoneLines = project.milestones
+    .map((m) => `- [${m.status}] "${m.title}" due ${m.due}`)
+    .join("\n");
 
-  const system = `You write the single-paragraph project statement an executive reads in a weekly portfolio roll-up. Fuse the status update and the upcoming work into one continuous narrative: where the project stands, then what happens next, in that order. 2-4 sentences, plain text, one paragraph. No headers, bullets, labels, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, or due date — those already appear beside your text. Output only the paragraph.`;
+  const system = `You write the per-project prose an executive reads in a weekly portfolio roll-up. Output exactly two lines, in this order and with these exact labels:
+
+NEXT: a forward-looking paragraph, 2-4 sentences, about what happens next — the upcoming milestones and the next actions standing in the way of them. Look forward only; do not recap what has already happened.
+SINCE: exactly one sentence compressing the most recent executive update into what changed since it was written. Write "SINCE: none" if there is no executive update. Do not start it with "Since last update".
+
+Plain text only. No headers, bullets, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, or due date — those already appear beside your text.`;
 
   const prompt = `Project: "${project.title}"
 Status: ${project.status} · ${ctx.ragLabel} · ${ctx.timeline}
 Progress: ${Math.round(project.progress * 100)}% (${ctx.doneSubtasks}/${ctx.totalSubtasks} subtasks done)
+
+Milestones:
+${milestoneLines || "None."}
 
 Most recent executive update:
 ${updateLine}
@@ -397,11 +429,15 @@ ${updateLine}
 Next actions:
 ${itemLines}
 
-Write the fused statement. Output only the paragraph.`;
+Write the NEXT and SINCE lines. Output only those two lines.`;
 
   try {
     const out = (await callClaude(system, [{ role: "user", content: prompt }])).trim();
-    return out || fallback;
+    const parsed = parseExecNarrative(out);
+    return {
+      statement: parsed.statement || fallback.statement,
+      since: latestExecutiveUpdate ? parsed.since || fallback.since : "",
+    };
   } catch {
     return fallback;
   }

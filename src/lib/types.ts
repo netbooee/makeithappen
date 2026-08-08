@@ -178,8 +178,10 @@ export interface Project {
   milestones: Milestone[];
   updates: StatusUpdate[];
   nextActionsAiSummary?: string;
-  /** Single fused "where it stands + what's next" paragraph shown on the Executive update page */
+  /** Forward-looking "coming next" paragraph shown on the Executive update page */
   execStatement?: string;
+  /** One-sentence recap of the latest executive update, shown under the paragraph */
+  execSince?: string;
   /** Store timestamp of when execStatement was last generated or edited */
   execStatementAt?: string;
   /** ISO timestamp stamped by the store on every mutation that touches this project */

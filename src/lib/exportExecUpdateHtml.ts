@@ -25,7 +25,7 @@ function pill(html: string, style: string): string {
 }
 
 function cardHtml(entry: ExecEntry): string {
-  const { project, statement } = entry;
+  const { project, statement, sinceLine } = entry;
   const chip = CHIP[project.status] ?? CHIP.active;
   const budget = formatBudgetShort(project.budget);
   const subline = [
@@ -46,8 +46,14 @@ function cardHtml(entry: ExecEntry): string {
     ),
   ];
 
+  const sinceHtml = sinceLine
+    ? `<div style="font-size:12px;line-height:1.55;color:#8A909B;font-style:italic;margin-top:8px">Since last update: ${esc(sinceLine)}</div>`
+    : "";
+
   const statementHtml = `<div style="border-top:0.5px solid #E2E5EA;margin-top:10px;padding-top:10px">
+    <div style="font-size:11px;color:#8A909B;margin-bottom:5px">Coming next</div>
     <div style="font-size:13.5px;line-height:1.62;color:#3A3F49;white-space:pre-wrap">${esc(statement)}</div>
+    ${sinceHtml}
     <div style="font-size:11px;color:#8A909B;margin-top:7px">${esc(execMetaLine(entry))}</div>
   </div>`;
 
