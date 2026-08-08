@@ -17,6 +17,17 @@ const CHIP: Record<string, [string, string, string]> = {
   complete: ["#E1F5EE", "#085041", "Complete"],
 };
 
+/** Short status word shown under each milestone on the timeline rail. */
+export const MS_LABEL: Record<string, string> = {
+  complete: "complete",
+  active: "in flight",
+  hold: "on hold",
+  waiting: "waiting",
+};
+
+/** Marker colour for complete / in-flight milestones on the rail. */
+export const MS_ACCENT = "#0E9F6E";
+
 export interface ExecEntry {
   project: Project;
   execUpdate: StatusUpdate | null;
@@ -201,8 +212,7 @@ export function ExecutiveUpdate() {
         {entries.map((entry, idx) => {
           const { project, statement, sinceLine, statementIsStored } = entry;
           const chip = CHIP[project.status] ?? CHIP.active;
-          const doneMs = project.milestones.filter((m) => m.status === "complete");
-          const upcomingMs = project.milestones.filter((m) => m.status !== "complete");
+          const milestones = project.milestones;
           const budget = formatBudgetShort(project.budget);
           const subline = [
             project.owner,
@@ -241,46 +251,88 @@ export function ExecutiveUpdate() {
                   </div>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 3 }}>{subline}</div>
 
-                  {(doneMs.length > 0 || upcomingMs.length > 0) && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
-                      {doneMs.map((m) => (
-                        <span
-                          key={m.id}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            fontSize: 11,
-                            fontWeight: 500,
-                            padding: "2px 8px",
-                            borderRadius: 20,
-                            background: "#E1F5EE",
-                            color: "#085041",
-                          }}
-                        >
-                          <Check size={11} /> {m.title}
-                        </span>
-                      ))}
-                      {upcomingMs.map((m) => (
-                        <span
-                          key={m.id}
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 500,
-                            padding: "2px 8px",
-                            borderRadius: 20,
-                            border: "0.5px solid var(--border)",
-                            color: "var(--ink-3)",
-                          }}
-                        >
-                          {m.title}
-                          {m.due ? ` · ${m.due}` : ""}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: milestones.length ? "176px minmax(0, 1fr)" : "minmax(0, 1fr)",
+                      gap: 18,
+                      borderTop: "0.5px solid var(--border)",
+                      marginTop: 10,
+                      paddingTop: 12,
+                    }}
+                  >
+                    {milestones.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 8 }}>Milestones</div>
+                        {milestones.map((m, i) => {
+                          const isDone = m.status === "complete";
+                          const isActive = m.status === "active";
+                          const isLast = i === milestones.length - 1;
+                          return (
+                            <div key={m.id} style={{ display: "flex", gap: 8 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  paddingTop: 3,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 13,
+                                    height: 13,
+                                    borderRadius: "50%",
+                                    flexShrink: 0,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    background: isDone ? MS_ACCENT : "transparent",
+                                    border: isDone
+                                      ? "none"
+                                      : isActive
+                                        ? `3px solid ${MS_ACCENT}`
+                                        : "1px solid var(--border)",
+                                    color: "#fff",
+                                  }}
+                                >
+                                  {isDone && <Check size={9} strokeWidth={3} />}
+                                </span>
+                                {!isLast && (
+                                  <span
+                                    style={{ flex: 1, width: 1, background: "var(--border)", marginTop: 2 }}
+                                  />
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0, paddingBottom: isLast ? 0 : 10 }}>
+                                <div
+                                  style={{
+                                    fontSize: 12.5,
+                                    lineHeight: 1.35,
+                                    color: isDone ? "var(--ink-4)" : "var(--ink)",
+                                    fontWeight: isActive ? 500 : 400,
+                                    textDecoration: isDone ? "line-through" : "none",
+                                  }}
+                                >
+                                  {m.title}
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 1 }}>
+                                  {[m.due, MS_LABEL[m.status]].filter(Boolean).join(" · ")}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
-                  <div style={{ borderTop: "0.5px solid var(--border)", marginTop: 10, paddingTop: 10 }}>
+                  <div
+                    style={{
+                      minWidth: 0,
+                      borderLeft: milestones.length ? "0.5px solid var(--border)" : undefined,
+                      paddingLeft: milestones.length ? 18 : 0,
+                    }}
+                  >
                     {isEditing ? (
                       <>
                         <textarea
@@ -377,6 +429,7 @@ export function ExecutiveUpdate() {
                         </div>
                       </>
                     )}
+                  </div>
                   </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
-import { execMetaLine, formatBudgetShort } from "../pages/ExecutiveUpdate";
+import { execMetaLine, formatBudgetShort, MS_ACCENT, MS_LABEL } from "../pages/ExecutiveUpdate";
 
 /* ================= Executive update HTML export ================= */
 
@@ -37,24 +37,58 @@ function cardHtml(entry: ExecEntry): string {
     .filter(Boolean)
     .join(" · ");
 
-  const doneMs = project.milestones.filter((m) => m.status === "complete");
-  const upcomingMs = project.milestones.filter((m) => m.status !== "complete");
-  const pills = [
-    ...doneMs.map((m) => pill(`✓ ${esc(m.title)}`, "background:#E1F5EE;color:#085041")),
-    ...upcomingMs.map((m) =>
-      pill(esc(m.title + (m.due ? ` · ${m.due}` : "")), "border:0.5px solid #E2E5EA;color:#5A6070"),
-    ),
-  ];
+  const milestones = project.milestones;
+  const railHtml = milestones
+    .map((m, i) => {
+      const isDone = m.status === "complete";
+      const isActive = m.status === "active";
+      const isLast = i === milestones.length - 1;
+      const marker = isDone
+        ? `background:${MS_ACCENT};color:#fff`
+        : isActive
+          ? `border:3px solid ${MS_ACCENT}`
+          : "border:1px solid #E2E5EA";
+      const connector = isLast
+        ? ""
+        : `<span style="flex:1;width:1px;background:#E2E5EA;margin-top:2px"></span>`;
+      const sub = [m.due, MS_LABEL[m.status]].filter(Boolean).join(" · ");
+      return `<div style="display:flex;gap:8px">
+      <div style="display:flex;flex-direction:column;align-items:center;padding-top:3px">
+        <span style="width:13px;height:13px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:8px;line-height:1;${marker}">${isDone ? "✓" : ""}</span>
+        ${connector}
+      </div>
+      <div style="min-width:0;padding-bottom:${isLast ? 0 : 10}px">
+        <div style="font-size:12.5px;line-height:1.35;color:${isDone ? "#8A909B" : "#1A1D23"};${isDone ? "text-decoration:line-through;" : ""}${isActive ? "font-weight:500;" : ""}">${esc(m.title)}</div>
+        <div style="font-size:11px;color:#8A909B;margin-top:1px">${esc(sub)}</div>
+      </div>
+    </div>`;
+    })
+    .join("");
 
   const sinceHtml = sinceLine
     ? `<div style="font-size:12px;line-height:1.55;color:#8A909B;font-style:italic;margin-top:8px">Since last update: ${esc(sinceLine)}</div>`
     : "";
 
-  const statementHtml = `<div style="border-top:0.5px solid #E2E5EA;margin-top:10px;padding-top:10px">
-    <div style="font-size:11px;color:#8A909B;margin-bottom:5px">Coming next</div>
-    <div style="font-size:13.5px;line-height:1.62;color:#3A3F49;white-space:pre-wrap">${esc(statement)}</div>
-    ${sinceHtml}
-    <div style="font-size:11px;color:#8A909B;margin-top:7px">${esc(execMetaLine(entry))}</div>
+  const statementInner = `<div style="font-size:11px;color:#8A909B;margin-bottom:5px">Coming next</div>
+      <div style="font-size:13.5px;line-height:1.62;color:#3A3F49;white-space:pre-wrap">${esc(statement)}</div>
+      ${sinceHtml}
+      <div style="font-size:11px;color:#8A909B;margin-top:7px">${esc(execMetaLine(entry))}</div>`;
+
+  // Two-cell table rather than CSS grid — the export gets pasted into mail clients.
+  const bodyHtml = milestones.length
+    ? `<table style="width:100%;border-collapse:collapse;margin-top:10px;border-top:0.5px solid #E2E5EA">
+    <tr>
+      <td width="176" valign="top" style="width:176px;padding:12px 0 0">
+        <div style="font-size:11px;color:#8A909B;margin-bottom:8px">Milestones</div>
+        ${railHtml}
+      </td>
+      <td valign="top" style="padding:12px 0 0 18px;border-left:0.5px solid #E2E5EA">
+        ${statementInner}
+      </td>
+    </tr>
+  </table>`
+    : `<div style="border-top:0.5px solid #E2E5EA;margin-top:10px;padding-top:12px">
+    ${statementInner}
   </div>`;
 
   const titleHtml = project.webUrl
@@ -67,8 +101,7 @@ function cardHtml(entry: ExecEntry): string {
       ${pill(chip[2], `background:${chip[0]};color:${chip[1]}`)}
     </div>
     <div style="font-size:12px;color:#8A909B;margin-top:3px">${esc(subline)}</div>
-    ${pills.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${pills.join("")}</div>` : ""}
-    ${statementHtml}
+    ${bodyHtml}
   </div>`;
 }
 
