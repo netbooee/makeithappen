@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Project Detail — jump-nav layout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;550;600;650;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="ia-mock.css" />
+</head>
+<body data-workspace="work">
+<div class="scroll"><div class="page" id="page"></div></div>
+<div class="why" id="why"></div>
+<script src="ia-partials.js"></script>
+<script>
+const SECTIONS = [{ id: 'overview', label: 'Overview' }].concat(REGISTERS);
+REGISTERS.find(r => r.id === 'decisions').sub = 'Log of what was decided, when, and by whom';
+REGISTERS.find(r => r.id === 'issues').sub = '1 critical · resolved';
+REGISTERS.find(r => r.id === 'risks').sub = '1 medium risk open';
+REGISTERS.find(r => r.id === 'tasks').sub = 'Loose tasks tagged to this project';
+REGISTERS.find(r => r.id === 'agendas').sub = 'Meeting agendas, notes & exports';
+
+function jumpBar() {
+  return '<nav class="jumpbar">' + SECTIONS.map(s =>
+    '<button class="jump' + (s.id === 'overview' ? ' active' : '') + '" data-jump="' + s.id + '">' + s.label +
+    (s.count === undefined ? '' : '<span class="n' + (s.count === 0 ? ' zero' : '') + '">' + s.count + '</span>') + '</button>').join('') + '</nav>';
+}
+function registerGroup() {
+  const rows = REGISTERS.map(r =>
+    '<div class="rg-row" id="sec-' + r.id + '"><button class="rg-head" data-acc data-solo="rg">' + ic('chev') +
+    '<b>' + r.label + '</b><span class="rg-sub">' + r.sub + '</span>' +
+    '<span class="chip' + (r.id === 'risks' || r.id === 'issues' ? ' status-hold' : '') + '">' + r.badge + '</span></button>' +
+    '<div class="rg-body" data-accbody>' + r.body() + '</div></div>').join('');
+  return '<div class="reg-group"><div class="section-h">Registers &amp; records</div><div class="card rg-card">' + rows + '</div></div>';
+}
+function layout() {
+  return projectHeader() + jumpBar() +
+    '<section id="sec-overview">' + kpiRow() +
+    '<div class="body-grid"><div class="col">' + comingUpNext() + '<div>' + milestones() + '</div></div>' +
+    '<div class="col">' + peopleRail({ teamOpen: true }) + '</div></div></section>' +
+    registerGroup();
+}
+const WHY = { tag: 'Recommended layout', h: 'One page, shortcut row, registers folded',
+  p: 'Risk, Timeline, Budget and the Executive update stay exactly where they were along the top. A row of <b>shortcuts</b> sits under the header — clicking one jumps to that section and opens it, so nothing moves into tabs and nothing changes screens. The five registers collapse into a single <b>Registers &amp; records</b> group at the bottom where only one is open at a time, which is what removes the endless scroll.',
+  keep: ['<b>Header + progress dial</b> — unchanged', '<b>Risk / Timeline / Budget / Executive update</b> — unchanged, full-width row at the top', '<b>Coming up next</b> — top of the left column', '<b>Milestones / Workstreams</b> — the bulk of the left column, collapsed by default'],
+  move: ['<b>Shortcut row</b> — Overview, Decisions, Issues, Risks, Tasks, Agendas with live counts; scrolls, never navigates', '<b>Decisions, Issues, Risks, Tasks, Agendas</b> → one single-open accordion group, all collapsed by default', '<b>Team, External team, Stakeholders, Resources, Status updates</b> → right-rail accordions; only Internal team open by default', '<b>Completed tasks</b> — light gray, no strike-through'] };
+function renderWhy() {
+  document.getElementById('why').innerHTML = '<div class="why-card"><div class="why-tag">' + WHY.tag + '</div><h2>' + WHY.h + '</h2><p>' + WHY.p + '</p>' +
+    '<div class="why-list"><div><h4>Stays put</h4><ul>' + WHY.keep.map(x => '<li>' + x + '</li>').join('') + '</ul></div>' +
+    '<div><h4>Grouped / folded</h4><ul>' + WHY.move.map(x => '<li>' + x + '</li>').join('') + '</ul></div></div></div>';
+}
+const barH = () => document.querySelector('.jumpbar').offsetHeight;
+function jumpTo(id) {
+  const el = document.getElementById('sec-' + id);
+  if (!el) return;
+  if (id !== 'overview') {
+    const head = el.querySelector('.rg-head');
+    if (head && !head.classList.contains('is-open')) head.click();
+  }
+  const y = el.getBoundingClientRect().top + window.scrollY - barH() - 14;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+document.addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]');
+  if (j) { jumpTo(j.dataset.jump); return; }
+  const all = e.target.closest('[data-toggleall]');
+  if (all) {
+    const heads = [...document.querySelectorAll('.ms-head')];
+    const anyOpen = heads.some(h => h.classList.contains('is-open'));
+    heads.forEach(h => { h.classList.toggle('is-open', !anyOpen); h.nextElementSibling.classList.toggle('is-open', !anyOpen); });
+    return;
+  }
+  const acc = e.target.closest('[data-acc]');
+  if (acc) {
+    if (e.target.closest('.icon-btn')) return;
+    const body = acc.nextElementSibling, willOpen = !acc.classList.contains('is-open');
+    if (acc.dataset.solo && willOpen) {
+      acc.closest('.rg-card').querySelectorAll('[data-acc]').forEach(h => { h.classList.remove('is-open'); h.nextElementSibling.classList.remove('is-open'); });
+    }
+    acc.classList.toggle('is-open', willOpen);
+    if (body) body.classList.toggle('is-open', willOpen);
+  }
+});
+/* highlight the shortcut for whatever section is under the bar */
+function syncActive() {
+  const line = barH() + 24;
+  let cur = 'overview';
+  SECTIONS.forEach(s => { const el = document.getElementById('sec-' + s.id); if (el && el.getBoundingClientRect().top <= line) cur = s.id; });
+  document.querySelectorAll('[data-jump]').forEach(b => b.classList.toggle('active', b.dataset.jump === cur));
+}
+document.getElementById('page').innerHTML = layout();
+renderWhy();
+addEventListener('scroll', syncActive, { passive: true });
+syncActive();
+</script>
+</body>
+</html>

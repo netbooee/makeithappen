@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Project Detail — IA options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;550;600;650;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+a{color:var(--accent-ink);text-decoration:none}a:hover{color:var(--accent);text-decoration:underline}
+html,body{height:auto}
+.ic{display:inline-grid;place-items:center;flex-shrink:0}.ic svg{width:100%;height:100%;display:block}
+.icon-btn svg{width:15px;height:15px}.icon-btn.sm{width:22px;height:22px;border-radius:5px}.icon-btn.sm svg{width:13px;height:13px}
+.btn-xs{padding:5px 10px;font-size:12.5px;gap:6px}.btn-xs svg{width:13px;height:13px}
+/* ---- study chrome ---- */
+.study{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.study-in{max-width:1040px;margin:0 auto;padding:11px 40px;display:flex;align-items:center;gap:18px}
+.study-lbl{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-4);white-space:nowrap}
+.opt-switch{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.opt-btn{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:550;color:var(--ink-3);transition:all .16s}
+.opt-btn.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.study-note{font-size:12.5px;color:var(--ink-3);margin-left:auto;text-align:right;max-width:520px;line-height:1.4}
+.study-note b{color:var(--ink-2);font-weight:600}
+/* ---- page shell ---- */
+.scroll{height:auto;overflow:visible}
+.page{padding:28px 40px 90px}
+.backlink{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-3);margin-bottom:14px}
+.backlink .ic{transform:rotate(180deg)}
+.backlink:hover{color:var(--ink)}
+/* ---- project header ---- */
+.ph{margin-bottom:18px}
+.ph-main{display:flex;align-items:flex-start;gap:24px}
+.ph-left{flex:1;min-width:0}
+.ph-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ph-title h1{font-size:23px;font-weight:650;letter-spacing:-.02em}
+.ph-mark{width:26px;height:26px;border-radius:6px;background:#E5484D;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ph-tools{display:flex;gap:2px;margin-left:2px}
+.ph-desc{font-size:13px;color:var(--ink-3);line-height:1.5;margin:8px 0 0;max-width:660px;text-wrap:pretty}
+.ph-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:13px}
+.dial{position:relative;width:72px;height:72px;flex-shrink:0}
+.dial svg{width:100%;height:100%}
+.dial-t{position:absolute;inset:0;display:grid;place-items:center;align-content:center}
+.dial-t b{font-size:14px;font-weight:650;line-height:1}
+.dial-t small{font-size:9.5px;color:var(--ink-3)}
+/* ---- KPIs ---- */
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
+.kpi{padding:15px 16px;display:flex;flex-direction:column;gap:8px}
+.kpi-wide{grid-column:span 3}
+.kpi-l{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+.kpi-v-link{font-size:13px;font-weight:600;color:var(--next-ink);line-height:1.35;cursor:pointer}
+.risk-dots{display:flex;gap:6px}
+.rd{width:13px;height:13px;border-radius:50%;border:2px solid}
+.risk-rows{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.risk-row{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
+.rl{display:inline-flex;gap:3px}.rl i{width:8px;height:8px;border-radius:50%;display:block}
+.kpi-pair{display:flex;flex-direction:column;gap:1px}
+.kpi-pair small{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4)}
+.kpi-pair b{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.kpi-note{font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:auto;padding-top:4px;border-top:1px solid var(--border)}
+.kpi-body{font-size:12.5px;color:var(--ink-2);line-height:1.55;text-wrap:pretty}
+.kpi-foot{display:flex;align-items:center;margin-top:2px}
+.kpi-foot small{font-size:11px;color:var(--ink-4)}
+.kpi-foot a{margin-left:auto;font-size:12px;font-weight:550;cursor:pointer}
+/* ---- tabs (Option A) ---- */
+.tabbar{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--border);margin:4px 0 20px;position:sticky;top:var(--study-h,56px);background:var(--bg);z-index:20;padding-top:4px}
+.tab{display:flex;align-items:center;gap:7px;padding:9px 14px 11px;font-size:13.5px;font-weight:550;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .14s}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--accent-ink);border-bottom-color:var(--accent)}
+.tab .n{font-size:11px;font-weight:600;background:var(--surface-2);border:1px solid var(--border);color:var(--ink-3);border-radius:20px;padding:0 6px;min-width:19px;text-align:center}
+.tab.active .n{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.tab .n.zero{opacity:.55}
+/* ---- two-column body ---- */
+.body-grid{display:grid;grid-template-columns:3fr 2fr;gap:18px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cun p{font-size:13px;color:var(--ink-2);line-height:1.55;text-wrap:pretty}
+.cun-btns{display:flex;gap:8px;margin-top:2px}
+/* ---- milestones ---- */
+.ms-stack{display:flex;flex-direction:column;gap:10px}
+.ms{overflow:hidden}
+.ms-head{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:11px 13px;background:var(--surface-2);border-bottom:1px solid transparent;transition:border-color .18s,background .15s;flex-wrap:wrap}
+.ms-head>.ic:first-child,.ms-head>.dot{flex-shrink:0}
+.ms-head:hover{background:#EFF1F4}
+.ms-head>.ic:first-child{color:var(--ink-4);transition:transform .18s ease}
+.ms-head.is-open{border-bottom-color:var(--border)}
+.ms-head.is-open>.ic:first-child{transform:rotate(90deg)}
+.ms-t{font-size:13.5px;font-weight:600;flex:1 1 auto;min-width:120px;line-height:1.3;text-wrap:pretty}
+.ms-meta{display:flex;align-items:center;gap:9px;margin-left:auto;flex-shrink:0}
+.ms-span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-4);padding:5px 8px 3px}
+.ms-head .chip{flex-shrink:0}
+.ms-head.is-open .ms-count{display:none}
+.ms-body{display:none;padding:5px 9px 7px}
+.ms-body.is-open{display:block}
+.task-row{display:flex;align-items:center;gap:10px;padding:6px 7px;border-radius:7px;flex-wrap:wrap}
+.task-row>.check,.task-row>.state-mark{flex-shrink:0}
+.task-row:hover{background:var(--surface-2)}
+.task-t{flex:1 1 auto;min-width:110px;font-size:12.5px;line-height:1.35;text-wrap:pretty}
+.task-meta{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
+.mini-av{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:600;color:#fff;flex-shrink:0}
+.mini-av.lg{width:26px;height:26px;font-size:10.5px}
+.ms-add{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-3);padding:7px 8px;width:100%}
+.ms-add:hover{color:var(--accent-ink)}
+.ms-add.block{border:1px dashed var(--border-strong);border-radius:var(--radius);justify-content:center;background:var(--surface);color:var(--ink-3);padding:10px}
+.ms-more{font-size:12px;color:var(--ink-3);padding:5px 8px;text-align:left}
+.ms-more:hover{color:var(--accent-ink);text-decoration:underline}
+.ml-a{margin-left:auto}
+/* ---- rail ---- */
+.rail-card{overflow:hidden}
+.rail-head{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:11px 14px;background:var(--surface-2);border-bottom:1px solid transparent}
+.rail-head:hover{background:#EFF1F4}
+.rail-head h3{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.rail-head .count{margin-left:auto;font-size:11.5px;color:var(--ink-4);font-weight:550}
+.rail-head>.ic:first-child{color:var(--ink-4);transition:transform .18s ease}
+.rail-head.is-open{border-bottom-color:var(--border)}
+.rail-head.is-open>.ic:first-child{transform:rotate(90deg)}
+.rail-body{display:none;padding:4px 8px 6px}
+.rail-body.is-open{display:block}
+.p-row{display:flex;align-items:center;gap:9px;padding:6px 6px;border-radius:7px}
+.p-row:hover{background:var(--surface-2)}
+.p-n{flex:1;min-width:0;font-size:12.5px;font-weight:550;line-height:1.25;overflow:hidden}
+.p-n small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+.upd{padding:7px 6px;border-radius:7px}
+.upd b{font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.03em}
+.upd p{font-size:12.5px;color:var(--ink-2);line-height:1.45;margin-top:2px}
+/* facts strip (Option B) */
+.facts-body{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;padding:12px 14px}
+.fact{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-3);padding:3px 0}
+.fact b{font-size:12.5px;color:var(--ink);font-weight:600}
+.fact-risk{grid-column:span 2;border-top:1px solid var(--border);margin-top:5px;padding-top:7px}
+.facts-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-top:1px solid var(--border);font-size:12px;font-weight:550;color:var(--accent-ink);background:var(--surface-2)}
+.facts-more:hover{background:#EFF1F4}
+.exec{gap:8px;display:flex;flex-direction:column}
+/* ---- registers ---- */
+.reg-wrap{display:flex;flex-direction:column;gap:12px}
+.reg-filters{display:flex;align-items:center;gap:8px;padding:0 0 10px}
+.sel{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink-2);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px}
+.sel svg{width:12px;height:12px;color:var(--ink-4)}
+.reg-filters .head-action{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:550;color:var(--accent-ink)}
+table.reg{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+table.reg th{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+table.reg th.th-s{color:var(--accent-ink)}
+table.reg td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--ink-2);vertical-align:top}
+table.reg tr:last-child td{border-bottom:none}
+table.reg td b{display:block;font-size:13px;font-weight:550;color:var(--ink);line-height:1.4;text-wrap:pretty}
+table.reg td em{display:block;font-style:normal;font-size:11.5px;color:var(--ink-3);line-height:1.45;margin-top:3px;text-wrap:pretty}
+td.nw{white-space:nowrap}
+table.reg td.td-a{width:62px;text-align:right;vertical-align:top}
+.acts{display:flex;gap:2px;justify-content:flex-end}
+table.reg th:last-child{width:62px}
+.chip.sev-crit{background:#FDECEC;color:#B4282D;border-color:transparent}
+.chip.sev-med{background:#FBF3E3;color:#97650B;border-color:transparent}
+.chip.sev-open{background:#FDECEC;color:#B4282D;border-color:transparent}
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px}
+.empty p{font-size:12.5px;color:var(--ink-3)}
+.ag-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:10px}
+.ag-head{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:11px 13px;background:var(--surface-2)}
+.ag-head:hover{background:#EFF1F4}
+.ag-head>.ic:first-child{color:var(--ink-4);transition:transform .18s}
+.ag-head.is-open>.ic:first-child{transform:rotate(90deg)}
+.ag-head b{font-size:13px;font-weight:600;flex:1}
+.ag-meta{font-size:11.5px;color:var(--ink-4)}
+.ag-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
+.ag-body.is-open{display:block}
+.ag-item{padding:7px 0;border-bottom:1px solid var(--border)}
+.ag-item b{font-size:12.5px;font-weight:600}
+.ag-item p{font-size:12px;color:var(--ink-3);margin-top:2px}
+.ag-foot{display:flex;gap:8px;padding-top:11px}
+/* ---- Option B: registers accordion ---- */
+.reg-group{margin-top:22px}
+.rg-card{overflow:hidden}
+.rg-row+.rg-row{border-top:1px solid var(--border)}
+.rg-head{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 16px;background:var(--surface)}
+.rg-head:hover{background:var(--surface-2)}
+.rg-head.is-open{background:var(--surface-2)}
+.rg-head>.ic:first-child{color:var(--ink-4);transition:transform .18s}
+.rg-head.is-open>.ic:first-child{transform:rotate(90deg)}
+.rg-head b{font-size:13.5px;font-weight:600}
+.rg-sub{font-size:12px;color:var(--ink-3);flex:1}
+.rg-body{display:none;padding:14px 16px 18px;background:var(--surface-2);border-top:1px solid var(--border)}
+.rg-body.is-open{display:block}
+.rg-body table.reg{box-shadow:none}
+/* rationale block */
+.why{max-width:1040px;margin:0 auto;padding:0 40px 60px}
+.why-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:22px 24px}
+.why-card h2{font-size:15px;font-weight:650;letter-spacing:-.01em;margin-bottom:4px}
+.why-card .why-tag{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:9px}
+.why-card p{font-size:13px;color:var(--ink-2);line-height:1.6;max-width:78ch;text-wrap:pretty}
+.why-list{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:16px}
+.why-list h4{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);margin-bottom:6px}
+.why-list ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+.why-list li{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding-left:14px;position:relative}
+.why-list li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--border-strong)}
+.why-list li b{font-weight:600;color:var(--ink)}
+</style>
+</head>
+<body data-workspace="work">
+<div class="study">
+  <div class="study-in">
+    <span class="study-lbl">Layout option</span>
+    <div class="opt-switch" id="optSwitch">
+      <button class="opt-btn active" data-opt="a">A · Overview + register tabs</button>
+      <button class="opt-btn" data-opt="b">B · One page, registers folded</button>
+    </div>
+    <div class="study-note" id="studyNote"></div>
+  </div>
+</div>
+<div class="scroll"><div class="page" id="page"></div></div>
+<div class="why" id="why"></div>
+<script src="ia-partials.js"></script>
+<script>
+const NOTES = {
+  a: '<b>Recommended.</b> Milestones own the default view; the five registers become peer tabs with live counts.',
+  b: 'No new navigation — everything stays on one page, with the registers folded into a single accordion.'
+};
+/* ---------- Option A: Overview + register tabs ---------- */
+function layoutA(tab) {
+  const tabs = [{ id: 'overview', label: 'Overview' }].concat(REGISTERS);
+  const bar = '<div class="tabbar">' + tabs.map(t =>
+    '<button class="tab' + (t.id === tab ? ' active' : '') + '" data-tab="' + t.id + '">' + t.label +
+    (t.count === undefined ? '' : '<span class="n' + (t.count === 0 ? ' zero' : '') + '">' + t.count + '</span>') + '</button>').join('') + '</div>';
+  let body;
+  if (tab === 'overview') {
+    body = kpiRow() + '<div class="body-grid"><div class="col">' + comingUpNext() + '<div>' + milestones() + '</div></div>' +
+      '<div class="col">' + peopleRail({ teamOpen: true }) + '</div></div>';
+  } else {
+    const r = REGISTERS.find(x => x.id === tab);
+    body = '<div class="reg-wrap">' + r.body() + '</div>';
+  }
+  return projectHeader() + bar + body;
+}
+/* ---------- Option B: single page, registers folded ---------- */
+function layoutB() {
+  const rows = REGISTERS.map(r =>
+    '<div class="rg-row"><button class="rg-head" data-acc data-solo="rg">' + ic('chev') +
+    '<b>' + r.label + '</b><span class="rg-sub">' + r.sub + '</span>' +
+    '<span class="chip' + (r.count === 0 ? '' : r.id === 'risks' || r.id === 'issues' ? ' status-hold' : '') + '">' + r.badge + '</span></button>' +
+    '<div class="rg-body" data-accbody hidden>' + r.body() + '</div></div>').join('');
+  return projectHeader() +
+    '<div class="body-grid"><div class="col">' + comingUpNext() + '<div>' + milestones() + '</div></div>' +
+    '<div class="col">' + kpiStrip() + execUpdate() + peopleRail({ teamOpen: true }) + '</div></div>' +
+    '<div class="reg-group"><div class="section-h">Registers &amp; records</div><div class="card rg-card">' + rows + '</div></div>';
+}
+REGISTERS.find(r => r.id === 'decisions').sub = 'Log of what was decided, when, and by whom';
+REGISTERS.find(r => r.id === 'issues').sub = '1 critical · resolved';
+REGISTERS.find(r => r.id === 'risks').sub = '1 medium risk open';
+REGISTERS.find(r => r.id === 'tasks').sub = 'Loose tasks tagged to this project';
+REGISTERS.find(r => r.id === 'agendas').sub = 'Meeting agendas, notes & exports';
+
+const WHY = {
+  a: { tag: 'Option A — recommended', h: 'Overview + register tabs',
+    p: 'The page splits into one <b>Overview</b> tab that holds everything you look at every day — header, KPIs, “Coming up next”, milestones, and the people/context rail — and five sibling tabs for the registers. Each tab carries a live count, so nothing feels buried: you can see there is 1 open risk without opening it. The default view ends roughly at the fold of the current page, and milestones are the tallest thing on it.',
+    keep: ['<b>Header + progress dial</b> — unchanged, always visible above the tabs', '<b>KPI row</b> — stays on Overview, directly under the header', '<b>Coming up next</b> — top of the left column, first thing under the KPIs', '<b>Milestones / Workstreams</b> — the bulk of the left column, collapsed by default'],
+    move: ['<b>Decisions, Issues, Risks, Tasks, Agendas</b> → five tabs with counts', '<b>Team, External team, Stakeholders, Resources, Status updates</b> → right rail accordions; only Internal team is open by default', '<b>Registers get full width</b> when their tab is open — tables stop being squeezed'] },
+  b: { tag: 'Option B', h: 'One page, registers folded',
+    p: 'Nothing moves off the page and no tabs are introduced. Instead the KPI row is compressed into a compact <b>Project facts</b> block in the right rail so the milestones column starts near the top, and the five registers collapse into a single <b>Registers &amp; records</b> accordion at the bottom where only one opens at a time. Scroll length drops sharply while the mental model stays “one project, one page”.',
+    keep: ['<b>Header + progress dial</b> — unchanged', '<b>Coming up next</b> — top of the left column', '<b>Milestones / Workstreams</b> — left column, collapsed by default, now starts ~200px higher', '<b>Executive update</b> — kept as its own rail card, since it is read prose not a metric'],
+    move: ['<b>Timeline / Budget / Risk KPIs</b> → one compact “Project facts” rail card with a link to detail', '<b>Decisions, Issues, Risks, Tasks, Agendas</b> → one single-open accordion group, each row showing a count/severity summary', '<b>Rail sections</b> → all collapsed except Internal team'] }
+};
+function renderWhy(opt) {
+  const w = WHY[opt];
+  document.getElementById('why').innerHTML = '<div class="why-card"><div class="why-tag">' + w.tag + '</div><h2>' + w.h + '</h2><p>' + w.p + '</p>' +
+    '<div class="why-list"><div><h4>Stays primary</h4><ul>' + w.keep.map(x => '<li>' + x + '</li>').join('') + '</ul></div>' +
+    '<div><h4>Demoted / grouped</h4><ul>' + w.move.map(x => '<li>' + x + '</li>').join('') + '</ul></div></div></div>';
+}
+function syncStudyH() {
+  const h = document.querySelector('.study').offsetHeight;
+  document.documentElement.style.setProperty('--study-h', h + 'px');
+}
+new ResizeObserver(syncStudyH).observe(document.querySelector('.study'));
+if (document.fonts) document.fonts.ready.then(syncStudyH);
+let OPT = 'a', TAB = 'overview';
+function render() {
+  document.getElementById('page').innerHTML = OPT === 'a' ? layoutA(TAB) : layoutB();
+  document.getElementById('studyNote').innerHTML = NOTES[OPT];
+  renderWhy(OPT);
+  syncStudyH();
+  window.scrollTo(0, 0);
+}
+document.getElementById('optSwitch').addEventListener('click', e => {
+  const b = e.target.closest('.opt-btn'); if (!b) return;
+  OPT = b.dataset.opt; TAB = 'overview';
+  document.querySelectorAll('.opt-btn').forEach(x => x.classList.toggle('active', x === b));
+  render();
+});
+document.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (tab) { TAB = tab.dataset.tab; render(); return; }
+  const all = e.target.closest('[data-toggleall]');
+  if (all) {
+    const heads = [...all.closest('.page').querySelectorAll('.ms-head')];
+    const anyOpen = heads.some(h => h.classList.contains('is-open'));
+    heads.forEach(h => { h.classList.toggle('is-open', !anyOpen); h.nextElementSibling.classList.toggle('is-open', !anyOpen); });
+    return;
+  }
+  const acc = e.target.closest('[data-acc]');
+  if (acc) {
+    if (e.target.closest('.icon-btn')) return;
+    const body = acc.nextElementSibling, willOpen = !acc.classList.contains('is-open');
+    if (acc.dataset.solo && willOpen) {
+      acc.closest('.rg-card').querySelectorAll('[data-acc]').forEach(h => { h.classList.remove('is-open'); h.nextElementSibling.classList.remove('is-open'); });
+    }
+    acc.classList.toggle('is-open', willOpen);
+    if (body) body.classList.toggle('is-open', willOpen);
+  }
+});
+render();
+</script>
+</body>
+</html>
