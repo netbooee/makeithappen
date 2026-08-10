@@ -227,7 +227,7 @@ export function ExecutiveUpdate() {
           return (
             <div
               key={project.id}
-              className="card"
+              className="card exec-card"
               style={{ borderRadius: 10, padding: "14px 16px" }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -251,16 +251,7 @@ export function ExecutiveUpdate() {
                   </div>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 3 }}>{subline}</div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: milestones.length ? "176px minmax(0, 1fr)" : "minmax(0, 1fr)",
-                      gap: 18,
-                      borderTop: "0.5px solid var(--border)",
-                      marginTop: 10,
-                      paddingTop: 12,
-                    }}
-                  >
+                  <div className={milestones.length ? "exec-body has-rail" : "exec-body"}>
                     {milestones.length > 0 && (
                       <div>
                         <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 8 }}>Milestones</div>
@@ -326,13 +317,7 @@ export function ExecutiveUpdate() {
                       </div>
                     )}
 
-                  <div
-                    style={{
-                      minWidth: 0,
-                      borderLeft: milestones.length ? "0.5px solid var(--border)" : undefined,
-                      paddingLeft: milestones.length ? 18 : 0,
-                    }}
-                  >
+                  <div className="exec-statement">
                     {isEditing ? (
                       <>
                         <textarea

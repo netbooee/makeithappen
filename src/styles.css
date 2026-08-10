@@ -528,6 +528,36 @@ section[id]{scroll-margin-top:60px}
 .rail-head.is-open>.ic:first-child{transform:rotate(90deg)}
 .rail-body{padding:6px 12px 8px}
 
+/* ---------- Executive update card ---------- */
+/* Container query, not a media query: the card's width depends on the sidebar
+   width too, so it has to reflow on its own size rather than the viewport's. */
+.exec-card { container-type: inline-size; }
+
+.exec-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  border-top: 0.5px solid var(--border);
+  margin-top: 10px;
+  padding-top: 12px;
+}
+.exec-body.has-rail { grid-template-columns: 176px minmax(0, 1fr); }
+.exec-statement { min-width: 0; }
+.exec-body.has-rail > .exec-statement {
+  border-left: 0.5px solid var(--border);
+  padding-left: 18px;
+}
+
+@container (max-width: 560px) {
+  .exec-body.has-rail { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .exec-body.has-rail > .exec-statement {
+    border-left: none;
+    padding-left: 0;
+    border-top: 0.5px solid var(--border);
+    padding-top: 12px;
+  }
+}
+
 /* ---------- Mobile ---------- */
 .bottom-nav { display: none; }
 .mobile-top { display: none; }
