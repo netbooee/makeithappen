@@ -11,8 +11,8 @@ export function ProjectList() {
   const projects = data.projects;
   const [adding, setAdding] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "table">(() => (localStorage.getItem("projects-view") as "grid" | "table") ?? "grid");
-  const [sortCol, setSortCol] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortCol, setSortCol] = useState<string | null>("activity");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const resolveOwner = (owner: string) => {
     if (owner.includes(" ")) return owner;
