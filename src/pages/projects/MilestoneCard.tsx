@@ -4,6 +4,7 @@ import { useStore } from "../../store/store";
 import { Avatar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue } from "../../components/ui";
 import { SubtaskEditPanel } from "../../components/SubtaskEditPanel";
 import type { Milestone, Project, Status, Subtask } from "../../lib/types";
+import { assigneeAvatar, projectContactPool } from "../../lib/projectContacts";
 
 function AddSubtaskRow({ projectId, milestoneId }: { projectId: string; milestoneId: string }) {
   const { addSubtask } = useStore();
@@ -51,7 +52,9 @@ function AddSubtaskRow({ projectId, milestoneId }: { projectId: string; mileston
 /* ================= Subtask row (click-to-edit + delete) ================= */
 
 function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; milestoneId: string; s: Subtask }) {
-  const { toggleSubtask, deleteSubtask, updateSubtask } = useStore();
+  const { data, toggleSubtask, deleteSubtask, updateSubtask } = useStore();
+  const pool = projectContactPool(data.projects.find((p) => p.id === projectId), data.contacts);
+  const avatar = assigneeAvatar(pool, s.assignee, s.who);
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(s.t);
@@ -171,8 +174,12 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                 style={{ width: 56, fontSize: 11, padding: "2px 4px" }}
               />
             ) : (
-              <span onClick={() => setEditingWho(true)} style={{ cursor: "pointer" }} title="Click to edit assignee">
-                <Avatar who={s.who} size={20} color="var(--ink-3)" />
+              <span
+                onClick={() => setEditingWho(true)}
+                style={{ cursor: "pointer" }}
+                title={avatar.title ? `${avatar.title} — click to edit assignee` : "Click to edit assignee"}
+              >
+                <Avatar who={avatar.ini} size={20} color={avatar.color ?? "var(--ink-3)"} />
               </span>
             )}
             <button

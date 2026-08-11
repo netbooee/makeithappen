@@ -8,6 +8,15 @@ export type Status = "active" | "waiting" | "hold" | "complete";
 export type TaskFlow = "delegated" | "waiting";
 export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "completed";
 
+/** Which per-project roster an officially entered contact lives on. */
+export type ContactKind = "internal" | "external" | "stakeholder";
+
+/** Reference to a contact entered on a project (member, external team member, or stakeholder). */
+export interface ProjectContactRef {
+  kind: ContactKind;
+  id: string;
+}
+
 export interface User {
   name: string;
   email: string;
@@ -24,6 +33,7 @@ export interface Subtask {
   to?: string;
   waitFor?: string;
   who: string;
+  assignee?: ProjectContactRef;
   due?: string;
   reminder?: string;
   notes?: string;
@@ -62,10 +72,7 @@ export interface ExternalTeamMember {
   company: string;
 }
 
-export interface AgendaAttendee {
-  kind: "internal" | "external" | "stakeholder";
-  id: string;
-}
+export type AgendaAttendee = ProjectContactRef;
 
 export interface AgendaItem {
   id: string;
@@ -200,6 +207,7 @@ export interface Task {
   project: string | null;
   milestoneId?: string;
   who?: string;
+  assignee?: ProjectContactRef;
   due?: string;
   reminder?: string;
   notes?: string;

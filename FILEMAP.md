@@ -79,3 +79,4 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
 | `src/lib/constants.ts` | Context lists per workspace |
+| `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution |

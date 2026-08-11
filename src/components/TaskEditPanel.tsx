@@ -4,6 +4,7 @@ import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
 import type { Task, TaskGroup } from "../lib/types";
+import { contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
 
 const GROUPS: { key: TaskGroup; label: string }[] = [
   { key: "today", label: "Today" },
@@ -34,6 +35,8 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
   if (!task) return null;
 
   const set = (patch: Partial<Task>) => updateTask(task!.id, patch);
+  const taskProject = task.project ? data.projects.find((p) => p.title === task!.project) : null;
+  const contactPool = projectContactPool(taskProject, data.contacts);
   const flow = task.state ?? "normal";
   const setFlow = (f: "normal" | "delegated" | "waiting") => {
     if (f === "normal") set({ state: undefined, to: undefined, waitFor: undefined });
@@ -123,6 +126,18 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
                 value={task.who ?? ""}
                 onChange={(e) => set({ who: e.target.value || undefined })}
               />
+              <select
+                className="input"
+                value={contactRefValue(task.assignee)}
+                onChange={(e) => set({ assignee: parseContactRef(e.target.value) })}
+              >
+                <option value="">— No project contact —</option>
+                {contactPool.map((p) => (
+                  <option key={contactRefValue(p)} value={contactRefValue(p)}>
+                    {contactLabel(p)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="field-label">Due</label>

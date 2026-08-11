@@ -8,7 +8,7 @@ import { safeHref } from "../../lib/safeUrl";
 import { Avatar, DateInput, toDateInputValue } from "../../components/ui";
 import { exportAgendaHtml, getMeetingAgendaUrl } from "../../lib/exportHtml";
 import type { AgendaAttendee, AgendaItem, MeetingAgenda, Project } from "../../lib/types";
-import { lastNameOf } from "../../lib/types";
+import { contactLabel, contactRefValue, findProjectContact, parseContactRef, projectContactPool } from "../../lib/projectContacts";
 
 function fmtAgendaDate(str: string): string {
   if (!str) return "";
@@ -56,28 +56,12 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
     [project.agendas],
   );
 
-  type AttInfo = { att: AgendaAttendee; name: string; ini: string; color?: string };
-  const pool = useMemo<AttInfo[]>(() => {
-    const out: AttInfo[] = [];
-    for (const mem of project.members ?? []) {
-      const c = data.contacts.find((x) => x.id === mem.contactId);
-      if (!c) continue;
-      const ini = c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-      out.push({ att: { kind: "internal", id: mem.contactId }, name: c.name, ini, color: c.color });
-    }
-    for (const ext of project.externalTeam ?? []) {
-      const ini = ext.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-      out.push({ att: { kind: "external", id: ext.id }, name: ext.name, ini });
-    }
-    for (const sh of project.stakeholders ?? []) {
-      const ini = sh.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-      out.push({ att: { kind: "stakeholder", id: sh.id }, name: sh.name, ini });
-    }
-    return out.sort((a, b) => lastNameOf(a.name).localeCompare(lastNameOf(b.name)));
-  }, [project.members, project.externalTeam, project.stakeholders, data.contacts]);
+  const pool = useMemo(
+    () => projectContactPool(project, data.contacts),
+    [project.members, project.externalTeam, project.stakeholders, data.contacts],
+  );
 
-  const resolve = (att: AgendaAttendee) =>
-    pool.find((p) => p.att.kind === att.kind && p.att.id === att.id);
+  const resolve = (att: AgendaAttendee) => findProjectContact(pool, att);
 
   const toggleCheck = (aId: string, iId: string) => {
     const key = `${aId}:${iId}`;
@@ -212,7 +196,7 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
   };
 
   const attendeeRow = (attendees: AgendaAttendee[], setAtts: (v: AgendaAttendee[]) => void) => {
-    const available = pool.filter((p) => !attendees.some((a) => a.kind === p.att.kind && a.id === p.att.id));
+    const available = pool.filter((p) => !attendees.some((a) => a.kind === p.kind && a.id === p.id));
     return (
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
         {attendees.map((att) => {
@@ -232,15 +216,13 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
             style={{ fontSize: 11.5, padding: "2px 6px", width: "auto" }}
             value=""
             onChange={(e) => {
-              const [kind, id] = e.target.value.split(":");
-              if (kind && id) setAtts([...attendees, { kind: kind as "internal" | "external" | "stakeholder", id }]);
+              const ref = parseContactRef(e.target.value);
+              if (ref) setAtts([...attendees, ref]);
             }}
           >
             <option value="">+ Add attendee</option>
             {available.map((p) => (
-              <option key={`${p.att.kind}:${p.att.id}`} value={`${p.att.kind}:${p.att.id}`}>
-                {p.name}{p.att.kind === "external" ? " (ext)" : p.att.kind === "stakeholder" ? " (stakeholder)" : ""}
-              </option>
+              <option key={contactRefValue(p)} value={contactRefValue(p)}>{contactLabel(p)}</option>
             ))}
           </select>
         )}

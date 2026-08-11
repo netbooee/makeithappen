@@ -6,6 +6,7 @@ import { Avatar, DateInput, StateTag, TaskMarker, fmtDue, isOverdue, toDateInput
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import type { Subtask, Task, TaskGroup } from "../lib/types";
+import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
 type TaskSortCol = "text" | "group" | "project" | "milestone" | "due" | "done";
 type SortDir = "asc" | "desc";
@@ -36,6 +37,13 @@ export function Tasks() {
   const [tFilterGroup, setTFilterGroup] = useState("all");
   const [tFilterProject, setTFilterProject] = useState("all");
   const [tFilterMilestone, setTFilterMilestone] = useState("all");
+
+  const taskAvatar = (t: Task) => {
+    const proj = t.project ? data.projects.find((p) => p.title === t.project) : null;
+    return assigneeAvatar(projectContactPool(proj, data.contacts), t.assignee, t.who);
+  };
+  const subtaskAvatar = (projectId: string, s: Subtask) =>
+    assigneeAvatar(projectContactPool(data.projects.find((p) => p.id === projectId), data.contacts), s.assignee, s.who);
 
   const changeView = (v: "list" | "table") => { setView(v); localStorage.setItem("mih_tasks_view", v); };
   const toggleSort = (col: TaskSortCol) => {
@@ -403,7 +411,7 @@ export function Tasks() {
                             {t.text}
                           </button>
                           <StateTag task={t} />
-                          {t.who && <Avatar who={t.who} size={20} color="var(--ink-3)" />}
+                          {(() => { const a = taskAvatar(t); return a.ini ? <Avatar who={a.ini} size={20} color={a.color ?? "var(--ink-3)"} /> : null; })()}
                         </div>
                       </td>
                       <td>
@@ -450,7 +458,7 @@ export function Tasks() {
                             {subtask.t}
                           </button>
                           <StateTag task={subtask} />
-                          {subtask.who && <Avatar who={subtask.who} size={20} color="var(--ink-3)" />}
+                          {(() => { const a = subtaskAvatar(projectId, subtask); return a.ini ? <Avatar who={a.ini} size={20} color={a.color ?? "var(--ink-3)"} /> : null; })()}
                         </div>
                       </td>
                       <td>
@@ -504,7 +512,7 @@ export function Tasks() {
                     {t.text}
                   </button>
                   <StateTag task={t} />
-                  {t.who && <Avatar who={t.who} size={20} color="var(--ink-3)" />}
+                  {(() => { const a = taskAvatar(t); return a.ini ? <Avatar who={a.ini} size={20} color={a.color ?? "var(--ink-3)"} /> : null; })()}
                   {t.project && (
                     <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(t.project)}>
                       {t.project}
@@ -533,7 +541,7 @@ export function Tasks() {
                     {subtask.t}
                   </button>
                   <StateTag task={subtask} />
-                  {subtask.who && <Avatar who={subtask.who} size={20} color="var(--ink-3)" />}
+                  {(() => { const a = subtaskAvatar(projectId, subtask); return a.ini ? <Avatar who={a.ini} size={20} color={a.color ?? "var(--ink-3)"} /> : null; })()}
                   <button className="chip" style={{ cursor: "pointer" }} onClick={() => goToProject(projectTitle)}>
                     {projectTitle}
                   </button>

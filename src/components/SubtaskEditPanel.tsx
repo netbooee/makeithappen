@@ -4,6 +4,7 @@ import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
 import type { Subtask, SubtaskStatus } from "../lib/types";
+import { contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
 
 export function SubtaskEditPanel({
   projectId,
@@ -22,6 +23,7 @@ export function SubtaskEditPanel({
   const proj = data.projects.find((p) => p.id === projectId);
   const mile = proj?.milestones.find((m) => m.id === milestoneId);
   const subtask = mile?.subtasks.find((s) => s.id === subtaskId);
+  const contactPool = projectContactPool(proj, data.contacts);
 
   useEffect(() => { if (!subtask) close(); }, [subtask, close]);
   useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
@@ -92,6 +94,18 @@ export function SubtaskEditPanel({
                 value={subtask.who}
                 onChange={(e) => set({ who: e.target.value })}
               />
+              <select
+                className="input"
+                value={contactRefValue(subtask.assignee)}
+                onChange={(e) => set({ assignee: parseContactRef(e.target.value) })}
+              >
+                <option value="">— No project contact —</option>
+                {contactPool.map((p) => (
+                  <option key={contactRefValue(p)} value={contactRefValue(p)}>
+                    {contactLabel(p)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
               <label className="field-label">Due</label>
