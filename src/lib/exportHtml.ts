@@ -499,33 +499,15 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     </details>`;
 
   // ── Stakeholders ────────────────────────────────────────────────────────────
-  const SAT_ORDER: Record<string, number> = { dissatisfied: 0, neutral: 1, satisfied: 2, delighted: 3 };
-  const stakeholders = [...(project.stakeholders ?? [])].sort((a, b) =>
-    (SAT_ORDER[a.satisfaction] ?? 1) - (SAT_ORDER[b.satisfaction] ?? 1)
-  );
-  const SAT_META: Record<string, { icon: string; label: string; color: string; bg: string }> = {
-    dissatisfied: { icon: "😟", label: "Dissatisfied", color: "#A32D2D", bg: "#FCEBEB" },
-    neutral:  { icon: "😐", label: "Neutral",  color: "#5F5E5A", bg: "#F1EFE8" },
-    satisfied:{ icon: "🙂", label: "Satisfied", color: "#3B6D11", bg: "#EAF3DE" },
-    delighted:{ icon: "😄", label: "Delighted",color: "#085041", bg: "#E1F5EE" },
-  };
+  const stakeholders = project.stakeholders ?? [];
   const stakeholdersHtml = stakeholders.length === 0
     ? `<div style="font-size:12.5px;color:#6B7280;padding:6px 0">No stakeholders added.</div>`
-    : stakeholders.map((s) => {
-        const sat = SAT_META[s.satisfaction] ?? SAT_META.neutral;
-        return `
+    : stakeholders.map((s) => `
         <div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:0.5px solid #F3F4F6">
-          <div style="display:flex;align-items:center;gap:6px;min-width:0">
-            <div style="font-size:12.5px;font-weight:500;color:#374151;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
-            <span style="display:inline-flex;align-items:center;gap:4px;border:1.5px solid ${sat.color};border-radius:20px;background:${sat.bg};padding:2px 8px 2px 5px;flex-shrink:0">
-              <span style="font-size:12px;line-height:1">${sat.icon}</span>
-              <span style="font-size:11px;font-weight:500;color:${sat.color}">${sat.label}</span>
-            </span>
-          </div>
+          <div style="font-size:12.5px;font-weight:500;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
           ${s.role ? `<div style="font-size:11px;color:#6B7280">${esc(s.role)}</div>` : ""}
           ${s.notes ? `<div style="font-size:11px;color:#4B5563;white-space:pre-wrap;margin-top:2px">${esc(s.notes)}</div>` : ""}
-        </div>`;
-      }).join("");
+        </div>`).join("");
 
   // ── Resources ───────────────────────────────────────────────────────────────
   const resources = project.resources ?? [];
