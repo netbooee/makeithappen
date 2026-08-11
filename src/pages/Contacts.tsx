@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, ChevronUp, ChevronDown, LayoutGrid, Linkedin, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, ChevronUp, ChevronDown, Circle, LayoutGrid, Linkedin, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput } from "../components/ui";
-import type { Contact, ContactTouch, Relationship } from "../lib/types";
+import type { Contact, ContactTouch, ProjectContactRef, Relationship } from "../lib/types";
 import { CONTACT_COLORS } from "../lib/types";
 
 const RELS: Relationship[] = ["Colleague", "Client", "Vendor", "Friend", "Family", "Other"];
@@ -332,6 +332,19 @@ export function ContactList() {
 
 /* ====================== ContactDetail ====================== */
 
+type AssignedChip = { label: string; bg: string; color: string };
+type AssignedRow = { key: string; text: string; due?: string; done: boolean; note?: string; chip: AssignedChip | null };
+
+function assignedChip(t: { done: boolean; state?: string; next?: boolean; taskStatus?: string }): AssignedChip | null {
+  if (t.done) return null;
+  if (t.taskStatus === "in-progress") return { label: "In progress", bg: "#FEF3C7", color: "#B45309" };
+  if (t.state === "waiting") return { label: "Waiting", bg: "#DBEAFE", color: "#1D4ED8" };
+  if (t.state === "delegated") return { label: "Delegated", bg: "var(--surface-2)", color: "var(--ink-3)" };
+  if (t.next) return { label: "Next", bg: "var(--accent-soft)", color: "var(--accent-ink)" };
+  if (t.taskStatus === "scheduled") return { label: "Scheduled", bg: "var(--surface-2)", color: "var(--ink-3)" };
+  return null;
+}
+
 export function ContactDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -382,6 +395,47 @@ export function ContactDetail() {
     addTouchpoint(contact.id, touch);
     setTouchNote("");
   };
+
+  const isMine = (a?: ProjectContactRef) => a?.kind === "internal" && a.id === contact.id;
+  const assignedGroups = (() => {
+    const groups = new Map<string, AssignedRow[]>();
+    const push = (project: string, row: AssignedRow) => {
+      if (!groups.has(project)) groups.set(project, []);
+      groups.get(project)!.push(row);
+    };
+    for (const list of [data.todayTasks, data.upcoming, data.someday]) {
+      for (const t of list) {
+        if (!isMine(t.assignee)) continue;
+        push(t.project ?? "No project", {
+          key: "t" + t.id,
+          text: t.text,
+          due: t.due,
+          done: t.done,
+          chip: assignedChip({ done: t.done, state: t.state, next: t.next }),
+        });
+      }
+    }
+    for (const p of data.projects) {
+      for (const m of p.milestones) {
+        for (const s of m.subtasks) {
+          if (!isMine(s.assignee)) continue;
+          push(p.title, {
+            key: "s" + s.id,
+            text: s.t,
+            due: s.due,
+            done: s.done,
+            note: m.title + " · milestone task",
+            chip: assignedChip({ done: s.done, state: s.state, next: s.next, taskStatus: s.taskStatus }),
+          });
+        }
+      }
+    }
+    return [...groups.entries()].sort((a, b) =>
+      a[0] === "No project" ? 1 : b[0] === "No project" ? -1 : a[0].localeCompare(b[0]),
+    );
+  })();
+  const assignedTotal = assignedGroups.reduce((n, [, rows]) => n + rows.length, 0);
+  const assignedDone = assignedGroups.reduce((n, [, rows]) => n + rows.filter((r) => r.done).length, 0);
 
   const badge = getE6WBadge(contact);
   const nextDate = contact.e6w ? nextE6WDate(contact) : null;
@@ -573,6 +627,60 @@ export function ContactDetail() {
                 </div>
               );
             })
+          )}
+        </div>
+
+        {/* Assigned tasks */}
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+            <div className="field-label">Assigned tasks</div>
+            {assignedTotal > 0 && (
+              <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
+                {assignedTotal - assignedDone} open · {assignedDone} done
+              </span>
+            )}
+          </div>
+          {assignedTotal === 0 ? (
+            <div style={{ fontSize: 13, color: "var(--ink-4)", padding: "4px 0" }}>No tasks assigned yet.</div>
+          ) : (
+            assignedGroups.map(([project, rows]) => (
+              <div key={project} style={{ marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--accent)", padding: "6px 0 2px" }}>
+                  {project}
+                </div>
+                {rows.map((r) => {
+                  const d = r.due ? parseLocalDate(r.due) : null;
+                  return (
+                    <div
+                      key={r.key}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)" }}
+                    >
+                      {r.done ? (
+                        <CheckCircle2 size={15} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                      ) : (
+                        <Circle size={15} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: r.done ? "var(--ink-4)" : "var(--ink-2)", textDecoration: r.done ? "line-through" : "none" }}>
+                          {r.text}
+                        </div>
+                        {r.note && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 1 }}>{r.note}</div>}
+                      </div>
+                      {r.chip && (
+                        <span style={{ fontSize: 10.5, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: r.chip.bg, color: r.chip.color, whiteSpace: "nowrap" }}>
+                          {r.chip.label}
+                        </span>
+                      )}
+                      {r.due && (
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+                          {d ? formatShort(d) : r.due}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
 
