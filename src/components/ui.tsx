@@ -1,4 +1,4 @@
-import { Calendar, Check, Hourglass, UserRound } from "lucide-react";
+import { Calendar, Check, ChevronDown, ChevronUp, Hourglass, UserRound } from "lucide-react";
 import { Fragment, type CSSProperties } from "react";
 import type { Status, Subtask, SubtaskStatus, Task } from "../lib/types";
 
@@ -66,24 +66,69 @@ export function isOverdue(due: string | undefined, done = false): boolean {
 export function DateInput({
   value,
   onChange,
+  onStep,
   style,
   className = "input",
   returnRaw = false,
+  showMonthStep = false,
 }: {
   value: string | undefined;
   onChange: (val: string) => void;
+  onStep?: (val: string) => void;
   style?: CSSProperties;
   className?: string;
   returnRaw?: boolean;
+  showMonthStep?: boolean;
 }) {
-  return (
+  const format = (iso: string) => (iso ? (returnRaw ? iso : fromDateInputValue(iso)) : "");
+  const emit = (iso: string) => onChange(format(iso));
+
+  const stepMonth = (delta: number) => {
+    const base = toDateInputValue(value) || toDateInputValue(new Date().toISOString().slice(0, 10));
+    const [y, mo, d] = base.split("-").map(Number);
+    const total = (mo - 1) + delta;
+    const newYear = y + Math.floor(total / 12);
+    const newMonth = ((total % 12) + 12) % 12;
+    const maxDay = new Date(newYear, newMonth + 1, 0).getDate();
+    const day = Math.min(d, maxDay);
+    const iso = `${newYear}-${String(newMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    (onStep ?? onChange)(format(iso));
+  };
+
+  const input = (
     <input
       type="date"
       className={className}
       value={toDateInputValue(value)}
-      onChange={(e) => onChange(e.target.value ? (returnRaw ? e.target.value : fromDateInputValue(e.target.value)) : "")}
+      onChange={(e) => emit(e.target.value)}
       style={style}
     />
+  );
+
+  if (!showMonthStep) return input;
+
+  return (
+    <span style={{ display: "inline-flex", alignItems: "stretch", gap: 2 }}>
+      {input}
+      <span style={{ display: "inline-flex", flexDirection: "column", justifyContent: "center" }}>
+        <button
+          type="button"
+          onClick={() => stepMonth(1)}
+          title="Next month"
+          style={{ lineHeight: 0, padding: "0 2px", border: "none", background: "none", cursor: "pointer", color: "var(--ink-3)" }}
+        >
+          <ChevronUp size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={() => stepMonth(-1)}
+          title="Previous month"
+          style={{ lineHeight: 0, padding: "0 2px", border: "none", background: "none", cursor: "pointer", color: "var(--ink-3)" }}
+        >
+          <ChevronDown size={11} />
+        </button>
+      </span>
+    </span>
   );
 }
 

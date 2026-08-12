@@ -153,6 +153,10 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                   updateSubtask(projectId, milestoneId, s.id, { due: v || undefined });
                   setEditingDue(false);
                 }}
+                onStep={(v) => {
+                  updateSubtask(projectId, milestoneId, s.id, { due: v || undefined });
+                }}
+                showMonthStep
                 style={{ width: 118, fontSize: 11, padding: "2px 4px" }}
               />
             ) : (
