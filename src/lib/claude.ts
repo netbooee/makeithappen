@@ -1,7 +1,7 @@
 import { fmtDue } from "../components/ui";
 import { safeHref } from "./safeUrl";
 import { supabase, supabaseConfigured } from "./supabase";
-import type { Project, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
+import type { Project, RiskImpact, RiskProbability, RiskSeverity, StatusUpdate, User, Workspace, WorkspaceData } from "./types";
 
 const devApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -377,6 +377,19 @@ function parseExecNarrative(out: string): ExecNarrative {
   return { statement, since };
 }
 
+// Mirrors the authoritative severity logic in RiskTracker.tsx (SEVERITY_MATRIX/calcSeverity) —
+// duplicated here rather than imported since it's ~10 lines and pulling in a UI component
+// just for this would be overkill.
+const SEVERITY_MATRIX: Record<RiskProbability, Record<RiskImpact, RiskSeverity>> = {
+  low: { low: "low", medium: "low", high: "medium" },
+  medium: { low: "low", medium: "medium", high: "high" },
+  high: { low: "medium", medium: "high", high: "critical" },
+};
+
+function calcSeverity(prob: RiskProbability, imp: RiskImpact): RiskSeverity {
+  return SEVERITY_MATRIX[prob][imp];
+}
+
 /**
  * Writes the two pieces of prose shown per project on the Executive update
  * page: a forward-looking "coming next" paragraph, and a one-sentence recap of
@@ -409,19 +422,45 @@ export async function generateExecNarrative(
     .map((m) => `- [${m.status}] "${m.title}" due ${m.due}`)
     .join("\n");
 
+  // Same "open risks" filter serializeContext() uses below, plus severity computed with the
+  // authoritative matrix so high/critical risks can be called out separately.
+  const openRisks = (project.risks ?? []).filter((r) => r.status === "open");
+  const riskLines = openRisks.length
+    ? openRisks
+        .map((r) => `- ${r.description} (prob: ${r.probability}, impact: ${r.impact}${r.mitigation ? `, mitigation: ${r.mitigation}` : ""})`)
+        .join("\n")
+    : "None.";
+  const highRiskItems = openRisks.filter((r) => {
+    const sev = calcSeverity(r.probability, r.impact);
+    return sev === "high" || sev === "critical";
+  });
+  const highRiskLines = highRiskItems.length
+    ? highRiskItems
+        .map((r) => `- ${r.description} (${calcSeverity(r.probability, r.impact)} severity${r.mitigation ? `, mitigation: ${r.mitigation}` : ""})`)
+        .join("\n")
+    : "None.";
+  const riskNoteLine = project.riskNote ? `Risk note: ${project.riskNote}\n` : "";
+
   const system = `You write the per-project prose an executive reads in a weekly portfolio roll-up. Output exactly two lines, in this order and with these exact labels:
 
-NEXT: a forward-looking paragraph, 2-4 sentences, about what happens next — the upcoming milestones and the next actions standing in the way of them. Look forward only; do not recap what has already happened.
+NEXT: a forward-looking paragraph, 2-4 sentences, about what happens next — the upcoming milestones and the next actions standing in the way of them. Look forward only; do not recap what has already happened. If any high-risk items are listed, prioritize mentioning them and how they bear on what's coming next.
 SINCE: exactly one sentence compressing the most recent executive update into what changed since it was written. Write "SINCE: none" if there is no executive update. Do not start it with "Since last update".
 
-Plain text only. No headers, bullets, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, or due date — those already appear beside your text.`;
+Plain text only. No headers, bullets, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, due date, or budget — those already appear beside your text.`;
 
   const prompt = `Project: "${project.title}"
 Status: ${project.status} · ${ctx.ragLabel} · ${ctx.timeline}
+Budget: ${ctx.budget}
 Progress: ${Math.round(project.progress * 100)}% (${ctx.doneSubtasks}/${ctx.totalSubtasks} subtasks done)
-
+${riskNoteLine}
 Milestones:
 ${milestoneLines || "None."}
+
+Open risks:
+${riskLines}
+
+High-risk items:
+${highRiskLines}
 
 Most recent executive update:
 ${updateLine}
