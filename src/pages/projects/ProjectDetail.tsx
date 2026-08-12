@@ -24,6 +24,7 @@ import { UpdateTypeTag, UpdateTypePicker } from "./UpdateTypeTag";
 import { DraftEmailPanel } from "./DraftEmailPanel";
 import { AddProjectTaskRow } from "./AddProjectTaskRow";
 import { MeetingAgendasSection } from "./MeetingAgendasSection";
+import { ProjectNotesSection } from "./ProjectNotesSection";
 import { ProjectModal } from "./ProjectModal";
 
 /* ================= Project detail ================= */
@@ -116,7 +117,7 @@ export function ProjectDetail() {
   useEffect(() => {
     const sc = document.querySelector(".scroll");
     if (!sc) return;
-    const ids = ["overview", "decisions", "issues", "risks", "tasks", "agendas"];
+    const ids = ["overview", "decisions", "issues", "risks", "tasks", "agendas", "notes"];
     const syncActive = () => {
       const barH = jumpbarRef.current?.offsetHeight ?? 0;
       const line = sc.getBoundingClientRect().top + barH + 24;
@@ -185,6 +186,7 @@ export function ProjectDetail() {
     { id: "risks", label: "Risks", sub: riskSummary, chip: openRisks.length > 0 ? `${openRisks.length} open` : String(risksList.length), amber: openRisks.length > 0 },
     { id: "tasks", label: "Project Tasks", sub: "Loose tasks tagged to this project", chip: String(projectTasks.length) },
     { id: "agendas", label: "Meeting Agendas", sub: "Meeting agendas, notes & exports", chip: String((project.agendas ?? []).length) },
+    { id: "notes", label: "Project Notes", sub: "Freeform markdown notes & links", chip: String((project.notes ?? []).length) },
   ];
 
   const jumpItems: { id: string; label: string; n?: number }[] = [
@@ -194,6 +196,7 @@ export function ProjectDetail() {
     { id: "risks", label: "Risks", n: openRisks.length },
     { id: "tasks", label: "Tasks", n: projectTasks.length },
     { id: "agendas", label: "Agendas", n: (project.agendas ?? []).length },
+    { id: "notes", label: "Notes", n: (project.notes ?? []).length },
   ];
 
   const nextActionItems = [
@@ -984,6 +987,7 @@ export function ProjectDetail() {
                     </div>
                   )}
                   {r.id === "agendas" && <MeetingAgendasSection project={project} />}
+                  {r.id === "notes" && <ProjectNotesSection project={project} />}
                 </div>
               )}
             </section>

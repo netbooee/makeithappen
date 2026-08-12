@@ -96,6 +96,15 @@ export interface ProjectResource {
   url: string;
 }
 
+export interface ProjectNote {
+  id: string;
+  title?: string;
+  body: string;
+  resources?: ProjectResource[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type RiskProbability = "low" | "medium" | "high";
 export type RiskImpact = "low" | "medium" | "high";
 export type RiskSeverity = "low" | "medium" | "high" | "critical";
@@ -177,6 +186,7 @@ export interface Project {
   members?: ProjectMember[];
   externalTeam?: ExternalTeamMember[];
   agendas?: MeetingAgenda[];
+  notes?: ProjectNote[];
   resources?: ProjectResource[];
   risks?: ProjectRisk[];
   issues?: ProjectIssue[];

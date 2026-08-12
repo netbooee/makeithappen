@@ -56,6 +56,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `IssueTracker.tsx` | Issue tracker table |
 | `DecisionsTracker.tsx` | Decisions log table |
 | `MeetingAgendasSection.tsx` | Meeting agendas: build, edit, export |
+| `ProjectNotesSection.tsx` | Project notes: markdown notes + links, edit/view toggle |
 | `DraftEmailPanel.tsx` | AI-drafted status email panel |
 | `UpdateTypeTag.tsx` | The update / heads-up / blocked / win pills |
 
