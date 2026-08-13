@@ -29,6 +29,7 @@ export interface Subtask {
   t: string;
   done: boolean;
   next?: boolean;
+  late?: boolean;
   state?: TaskFlow;
   to?: string;
   waitFor?: string;
@@ -210,6 +211,7 @@ export interface Task {
   text: string;
   done: boolean;
   next?: boolean;
+  late?: boolean;
   state?: TaskFlow;
   to?: string;
   waitFor?: string;

@@ -243,6 +243,7 @@ body.dark .topbanner { background: var(--surface-2); }
 .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 550; padding: 2px 8px; border-radius: 20px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); white-space: nowrap; }
 .chip svg { width: 11px; height: 11px; }
 .chip.next { background: var(--next-soft); color: var(--next-ink); border-color: transparent; }
+.chip.late { background: rgba(229,72,77,0.08); color: var(--danger); border-color: rgba(229,72,77,0.18); }
 .chip.delegate { background: var(--delegate-soft); color: var(--delegate-ink); border-color: transparent; }
 .chip.wait { background: var(--wait-soft); color: var(--wait-ink); border-color: transparent; }
 .chip.ts-not-started { background: var(--surface-2); color: var(--ink-3); border-color: var(--border); }

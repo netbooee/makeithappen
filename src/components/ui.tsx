@@ -186,9 +186,11 @@ export function StateTag({ task }: { task: Task | Subtask }) {
   if (task.state === "waiting") return <span className="chip wait"><Hourglass /> {task.waitFor ?? "Waiting"}</span>;
   const hasStatus = 'taskStatus' in task && task.taskStatus;
   const hasNext = task.next && !task.done;
-  if (!hasStatus && !hasNext) return null;
+  const hasLate = task.late && !task.done;
+  if (!hasStatus && !hasNext && !hasLate) return null;
   return (
     <Fragment>
+      {hasLate && <span className="chip late"><FlagIcon /> Late</span>}
       {hasNext && <span className="chip next"><FlagIcon /> Next</span>}
       {hasStatus && <span className={`chip ts-${task.taskStatus}`}>{TASK_STATUS_LABEL[task.taskStatus as SubtaskStatus]}</span>}
     </Fragment>

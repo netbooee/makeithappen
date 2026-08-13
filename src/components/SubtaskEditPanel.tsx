@@ -198,6 +198,19 @@ export function SubtaskEditPanel({
             />
           </div>
 
+          <div className="tweak-row" style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 550, color: "var(--ink)" }}>Late</div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Flags this as late</div>
+            </div>
+            <button
+              className={"switch" + (subtask.late ? " on" : "")}
+              role="switch"
+              aria-checked={!!subtask.late}
+              onClick={() => set({ late: !subtask.late })}
+            />
+          </div>
+
           <div className="tweak-row">
             <div style={{ fontSize: 13.5, fontWeight: 550, color: "var(--ink)" }}>Completed</div>
             <button

@@ -165,6 +165,16 @@ function taskStatusPill(status: SubtaskStatus | undefined): string {
   return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:${bg};color:${color};white-space:nowrap;flex-shrink:0;align-self:flex-start">${label}</span>`;
 }
 
+function taskNextBadge(item: { next?: boolean; done?: boolean }): string {
+  if (!item.next || item.done) return "";
+  return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:#E7F7F1;color:#0A7D58;white-space:nowrap;flex-shrink:0;align-self:flex-start">⚑ Next</span>`;
+}
+
+function taskLateBadge(item: { late?: boolean; done?: boolean }): string {
+  if (!item.late || item.done) return "";
+  return `<span style="display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(229,72,77,0.1);color:#E5484D;white-space:nowrap;flex-shrink:0;align-self:flex-start">⚑ Late</span>`;
+}
+
 function statusBadge(status: string): string {
   const map: Record<string, [string, string, string]> = {
     active:   ["#E6F1FB", "#185FA5", "Active"],
@@ -314,7 +324,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
                 <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
                   <div style="display:flex;align-items:center;gap:8px">
                     <span style="flex:1;font-size:12.5px;color:${s.done ? "#6B7280" : "#374151"}">${esc(s.t)}</span>
-                    ${taskStatusPill(s.taskStatus)}
+                    ${taskLateBadge(s)}${taskNextBadge(s)}${taskStatusPill(s.taskStatus)}
                     ${s.due ? `<span style="font-size:11px;color:${!isSubtaskComplete(s) && isExportOverdue(s.due) ? "#E5484D" : "#6B7280"};white-space:nowrap">${esc(s.due)}</span>` : ""}
                     <span style="font-size:10.5px;color:#6B7280">${esc(s.who)}</span>
                   </div>

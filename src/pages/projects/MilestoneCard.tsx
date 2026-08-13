@@ -143,7 +143,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
               </select>
             ) : (
               <span onClick={() => setEditingStatus(true)} style={{ cursor: "pointer" }} title="Click to edit status">
-                {s.taskStatus || s.next ? <StateTag task={s} /> : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>+ Status</span>}
+                {s.taskStatus || s.next || s.late ? <StateTag task={s} /> : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>+ Status</span>}
               </span>
             )}
             {editingDue ? (
