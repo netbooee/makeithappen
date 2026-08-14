@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Mail, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import type { ExternalTeamMember, Project } from "../../lib/types";
 
@@ -19,10 +19,12 @@ export function ExternalTeamSection({ project }: { project: Project }) {
   const [addName, setAddName] = useState("");
   const [addRole, setAddRole] = useState("");
   const [addCompany, setAddCompany] = useState("");
+  const [addEmail, setAddEmail] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editCompany, setEditCompany] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   const team = project.externalTeam ?? [];
 
@@ -33,23 +35,24 @@ export function ExternalTeamSection({ project }: { project: Project }) {
       name: addName.trim(),
       role: addRole.trim(),
       company: addCompany.trim(),
+      email: addEmail.trim(),
     };
     updateProject(project.id, { externalTeam: [...team, entry] });
-    setAddName(""); setAddRole(""); setAddCompany(""); setAdding(false);
+    setAddName(""); setAddRole(""); setAddCompany(""); setAddEmail(""); setAdding(false);
   };
 
   const remove = (id: string) =>
     updateProject(project.id, { externalTeam: team.filter((m) => m.id !== id) });
 
   const startEdit = (m: ExternalTeamMember) => {
-    setEditingId(m.id); setEditName(m.name); setEditRole(m.role); setEditCompany(m.company);
+    setEditingId(m.id); setEditName(m.name); setEditRole(m.role); setEditCompany(m.company); setEditEmail(m.email ?? "");
   };
 
   const saveEdit = () => {
     if (!editName.trim() || !editingId) return;
     updateProject(project.id, {
       externalTeam: team.map((m) =>
-        m.id === editingId ? { ...m, name: editName.trim(), role: editRole.trim(), company: editCompany.trim() } : m
+        m.id === editingId ? { ...m, name: editName.trim(), role: editRole.trim(), company: editCompany.trim(), email: editEmail.trim() } : m
       ),
     });
     setEditingId(null);
@@ -72,11 +75,14 @@ export function ExternalTeamSection({ project }: { project: Project }) {
           {adding && (
             <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px", borderBottom: "1px solid var(--border)" }}>
               <input className="input" autoFocus placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
-              <input className="input" placeholder="Role" value={addRole} onChange={(e) => setAddRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
-              <input className="input" placeholder="Company" value={addCompany} onChange={(e) => setAddCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
+              <div style={{ display: "flex", gap: 7 }}>
+                <input className="input" placeholder="Role" value={addRole} onChange={(e) => setAddRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13, flex: 1 }} />
+                <input className="input" placeholder="Company" value={addCompany} onChange={(e) => setAddCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13, flex: 1 }} />
+              </div>
+              <input className="input" placeholder="Email" type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} style={{ fontSize: 13 }} />
               <div style={{ display: "flex", gap: 7 }}>
                 <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={add}>Add</button>
-                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setAddName(""); setAddRole(""); setAddCompany(""); }}>Cancel</button>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => { setAdding(false); setAddName(""); setAddRole(""); setAddCompany(""); setAddEmail(""); }}>Cancel</button>
               </div>
             </div>
           )}
@@ -87,8 +93,11 @@ export function ExternalTeamSection({ project }: { project: Project }) {
             editingId === m.id ? (
               <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "6px 0 8px" }}>
                 <input className="input" autoFocus placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
-                <input className="input" placeholder="Role" value={editRole} onChange={(e) => setEditRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
-                <input className="input" placeholder="Company" value={editCompany} onChange={(e) => setEditCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
+                <div style={{ display: "flex", gap: 7 }}>
+                  <input className="input" placeholder="Role" value={editRole} onChange={(e) => setEditRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13, flex: 1 }} />
+                  <input className="input" placeholder="Company" value={editCompany} onChange={(e) => setEditCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13, flex: 1 }} />
+                </div>
+                <input className="input" placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} style={{ fontSize: 13 }} />
                 <div style={{ display: "flex", gap: 7 }}>
                   <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveEdit}>Save</button>
                   <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setEditingId(null)}>Cancel</button>
@@ -103,6 +112,9 @@ export function ExternalTeamSection({ project }: { project: Project }) {
                   <div style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)" }}>{m.name}</div>
                   <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 1 }}>{m.role}{m.role && m.company ? " · " : ""}{m.company}</div>
                 </div>
+                {m.email && (
+                  <a className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} href={`mailto:${m.email}`} title={m.email}><Mail size={12} /></a>
+                )}
                 <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => startEdit(m)}><Pencil size={12} /></button>
                 <button className="icon-btn" style={{ width: 26, height: 26, color: "var(--ink-4)" }} onClick={() => remove(m.id)}><Trash2 size={12} /></button>
               </div>

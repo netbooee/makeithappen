@@ -71,6 +71,7 @@ export interface ExternalTeamMember {
   name: string;
   role: string;
   company: string;
+  email?: string;
 }
 
 export type AgendaAttendee = ProjectContactRef;
