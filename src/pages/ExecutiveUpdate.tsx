@@ -5,6 +5,7 @@ import { parseTimestamp } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
 import { generateExecNarrative, localExecNext, localExecSince } from "../lib/claude";
+import { safeHref } from "../lib/safeUrl";
 
 /* ================= Executive update ================= */
 
@@ -60,6 +61,20 @@ export function formatBudgetShort(val?: string): string | null {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
   if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
   return `$${n}`;
+}
+
+/** Counts of what is still live on a project — shared by the live card and the HTML export. */
+export function execActiveCounts(project: Project): { risks: number; issues: number } {
+  return {
+    risks: (project.risks ?? []).filter((r) => r.status === "open").length,
+    issues: (project.issues ?? []).filter((i) => i.status === "open" || i.status === "in-progress")
+      .length,
+  };
+}
+
+/** "1 Risk" / "3 Risks" — pluralises the noun on the count. */
+export function countLabel(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
 /** Provenance line under the statement — shared by the live card and the HTML export. */
@@ -224,13 +239,30 @@ export function ExecutiveUpdate() {
             .join(" · ");
           const isEditing = editing === project.id;
           const isBusy = busy === project.id;
+          const desc = project.desc?.trim();
+          const counts = execActiveCounts(project);
+          // Badges link to the project site when there is a safe one; otherwise plain spans.
+          const siteHref = safeHref(project.webUrl);
+          const badge = (kind: "risk" | "issue", text: string) =>
+            siteHref === "#" ? (
+              <span key={kind} className={`chip ${kind}`}>
+                {text}
+              </span>
+            ) : (
+              <a
+                key={kind}
+                className={`chip ${kind}`}
+                href={siteHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {text}
+              </a>
+            );
           return (
-            <div
-              key={project.id}
-              className="card exec-card"
-              style={{ borderRadius: 10, padding: "14px 16px" }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div key={project.id} className="card exec-card">
+              <div className="exec-head">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 14.5, fontWeight: 500, color: "var(--ink)" }}>
@@ -249,194 +281,212 @@ export function ExecutiveUpdate() {
                       {chip[2]}
                     </span>
                   </div>
+                  {desc && <div className="exec-desc">{desc}</div>}
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 3 }}>{subline}</div>
+                </div>
 
-                  <div className={milestones.length ? "exec-body has-rail" : "exec-body"}>
-                    {milestones.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 8 }}>Milestones</div>
-                        {milestones.map((m, i) => {
-                          const isDone = m.status === "complete";
-                          const isActive = m.status === "active";
-                          const isLast = i === milestones.length - 1;
-                          return (
-                            <div key={m.id} style={{ display: "flex", gap: 8 }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  paddingTop: 3,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 13,
-                                    height: 13,
-                                    borderRadius: "50%",
-                                    flexShrink: 0,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    background: isDone ? MS_ACCENT : "transparent",
-                                    border: isDone
-                                      ? "none"
-                                      : isActive
-                                        ? `3px solid ${MS_ACCENT}`
-                                        : "1px solid var(--border)",
-                                    color: "#fff",
-                                  }}
-                                >
-                                  {isDone && <Check size={9} strokeWidth={3} />}
-                                </span>
-                                {!isLast && (
-                                  <span
-                                    style={{ flex: 1, width: 1, background: "var(--border)", marginTop: 2 }}
-                                  />
-                                )}
-                              </div>
-                              <div style={{ minWidth: 0, paddingBottom: isLast ? 0 : 10 }}>
-                                <div
-                                  style={{
-                                    fontSize: 12.5,
-                                    lineHeight: 1.35,
-                                    color: isDone ? "var(--ink-4)" : "var(--ink)",
-                                    fontWeight: isActive ? 500 : 400,
-                                    textDecoration: isDone ? "line-through" : "none",
-                                  }}
-                                >
-                                  {m.title}
-                                </div>
-                                <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 1 }}>
-                                  {[m.due, MS_LABEL[m.status]].filter(Boolean).join(" · ")}
-                                </div>
-                              </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
+                  {(counts.risks > 0 || counts.issues > 0) && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: 5,
+                        flexWrap: "wrap",
+                        paddingTop: 1,
+                      }}
+                    >
+                      {counts.risks > 0 && badge("risk", countLabel(counts.risks, "Risk"))}
+                      {counts.issues > 0 && badge("issue", countLabel(counts.issues, "Issue"))}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)" }}
+                      disabled={idx === 0}
+                      onClick={() => move(idx, -1)}
+                      title="Move up"
+                    >
+                      <ChevronUp size={10} />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 16, height: 14, color: idx === entries.length - 1 ? "var(--border)" : "var(--ink-4)" }}
+                      disabled={idx === entries.length - 1}
+                      onClick={() => move(idx, 1)}
+                      title="Move down"
+                    >
+                      <ChevronDown size={10} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={milestones.length ? "exec-body has-rail" : "exec-body"}>
+                {milestones.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 8 }}>Milestones</div>
+                    {milestones.map((m, i) => {
+                      const isDone = m.status === "complete";
+                      const isActive = m.status === "active";
+                      const isLast = i === milestones.length - 1;
+                      return (
+                        <div key={m.id} style={{ display: "flex", gap: 8 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              paddingTop: 3,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 13,
+                                height: 13,
+                                borderRadius: "50%",
+                                flexShrink: 0,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: isDone ? MS_ACCENT : "transparent",
+                                border: isDone
+                                  ? "none"
+                                  : isActive
+                                    ? `3px solid ${MS_ACCENT}`
+                                    : "1px solid var(--border)",
+                                color: "#fff",
+                              }}
+                            >
+                              {isDone && <Check size={9} strokeWidth={3} />}
+                            </span>
+                            {!isLast && (
+                              <span
+                                style={{ flex: 1, width: 1, background: "var(--border)", marginTop: 2 }}
+                              />
+                            )}
+                          </div>
+                          <div style={{ minWidth: 0, paddingBottom: isLast ? 0 : 10 }}>
+                            <div
+                              style={{
+                                fontSize: 12.5,
+                                lineHeight: 1.35,
+                                color: isDone ? "var(--ink-4)" : "var(--ink)",
+                                fontWeight: isActive ? 500 : 400,
+                                textDecoration: isDone ? "line-through" : "none",
+                              }}
+                            >
+                              {m.title}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 1 }}>
+                              {[m.due, MS_LABEL[m.status]].filter(Boolean).join(" · ")}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-                  <div className="exec-statement">
-                    {isEditing ? (
-                      <>
-                        <textarea
-                          value={draft}
-                          onChange={(e) => setDraft(e.target.value)}
-                          rows={4}
-                          autoFocus
-                          style={{
-                            width: "100%",
-                            fontSize: 13.5,
-                            lineHeight: 1.62,
-                            color: "var(--ink-1)",
-                            padding: "8px 10px",
-                            borderRadius: 8,
-                            border: "0.5px solid var(--border)",
-                            background: "var(--surface-3)",
-                            resize: "vertical",
-                            fontFamily: "inherit",
-                          }}
-                        />
-                        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                          <button className="btn btn-ghost" onClick={() => saveEdit(project)}>
-                            Save
-                          </button>
-                          <button className="btn btn-ghost" onClick={() => setEditing(null)}>
-                            Cancel
-                          </button>
-                          <span style={{ fontSize: 11, color: "var(--ink-4)", alignSelf: "center" }}>
-                            Clear the text to fall back to the auto-composed statement.
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 5 }}>
-                          Coming next
-                        </div>
+                <div className="exec-statement">
+                  {isEditing ? (
+                    <>
+                      <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={4}
+                        autoFocus
+                        style={{
+                          width: "100%",
+                          fontSize: 13.5,
+                          lineHeight: 1.62,
+                          color: "var(--ink-1)",
+                          padding: "8px 10px",
+                          borderRadius: 8,
+                          border: "0.5px solid var(--border)",
+                          background: "var(--surface-3)",
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                        }}
+                      />
+                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <button className="btn btn-ghost" onClick={() => saveEdit(project)}>
+                          Save
+                        </button>
+                        <button className="btn btn-ghost" onClick={() => setEditing(null)}>
+                          Cancel
+                        </button>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)", alignSelf: "center" }}>
+                          Clear the text to fall back to the auto-composed statement.
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 5 }}>
+                        Coming next
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          lineHeight: 1.62,
+                          color: "var(--ink-1)",
+                          whiteSpace: "pre-wrap",
+                          opacity: isBusy ? 0.5 : 1,
+                        }}
+                      >
+                        {statement}
+                      </div>
+                      {sinceLine && (
                         <div
                           style={{
-                            fontSize: 13.5,
-                            lineHeight: 1.62,
-                            color: "var(--ink-1)",
-                            whiteSpace: "pre-wrap",
+                            fontSize: 12,
+                            lineHeight: 1.55,
+                            color: "var(--ink-4)",
+                            fontStyle: "italic",
+                            marginTop: 8,
                             opacity: isBusy ? 0.5 : 1,
                           }}
                         >
-                          {statement}
+                          Since last update: {sinceLine}
                         </div>
-                        {sinceLine && (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              lineHeight: 1.55,
-                              color: "var(--ink-4)",
-                              fontStyle: "italic",
-                              marginTop: 8,
-                              opacity: isBusy ? 0.5 : 1,
-                            }}
-                          >
-                            Since last update: {sinceLine}
-                          </div>
-                        )}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            flexWrap: "wrap",
-                            marginTop: 7,
-                            fontSize: 11,
-                            color: "var(--ink-4)",
-                          }}
+                      )}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                          marginTop: 7,
+                          fontSize: 11,
+                          color: "var(--ink-4)",
+                        }}
+                      >
+                        {statementIsStored && <Sparkles size={11} />}
+                        <span>{execMetaLine(entry)}</span>
+                        <span style={{ flex: 1 }} />
+                        <button
+                          className="btn btn-ghost"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
+                          disabled={isBusy || bulk !== null}
+                          onClick={() => regenerate(entry)}
                         >
-                          {statementIsStored && <Sparkles size={11} />}
-                          <span>{execMetaLine(entry)}</span>
-                          <span style={{ flex: 1 }} />
-                          <button
-                            className="btn btn-ghost"
-                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
-                            disabled={isBusy || bulk !== null}
-                            onClick={() => regenerate(entry)}
-                          >
-                            <Sparkles size={11} />
-                            {isBusy ? "Writing…" : statementIsStored ? "Regenerate" : "AI update"}
-                          </button>
-                          <button
-                            className="btn btn-ghost"
-                            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
-                            disabled={isBusy || bulk !== null}
-                            onClick={() => startEdit(entry)}
-                          >
-                            <Pencil size={11} /> Edit
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
-                  <button
-                    className="icon-btn"
-                    style={{ width: 16, height: 14, color: idx === 0 ? "var(--border)" : "var(--ink-4)" }}
-                    disabled={idx === 0}
-                    onClick={() => move(idx, -1)}
-                    title="Move up"
-                  >
-                    <ChevronUp size={10} />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    style={{ width: 16, height: 14, color: idx === entries.length - 1 ? "var(--border)" : "var(--ink-4)" }}
-                    disabled={idx === entries.length - 1}
-                    onClick={() => move(idx, 1)}
-                    title="Move down"
-                  >
-                    <ChevronDown size={10} />
-                  </button>
+                          <Sparkles size={11} />
+                          {isBusy ? "Writing…" : statementIsStored ? "Regenerate" : "AI update"}
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "2px 8px" }}
+                          disabled={isBusy || bulk !== null}
+                          onClick={() => startEdit(entry)}
+                        >
+                          <Pencil size={11} /> Edit
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

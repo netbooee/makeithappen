@@ -244,6 +244,11 @@ body.dark .topbanner { background: var(--surface-2); }
 .chip svg { width: 11px; height: 11px; }
 .chip.next { background: var(--next-soft); color: var(--next-ink); border-color: transparent; }
 .chip.late { background: rgba(229,72,77,0.08); color: var(--danger); border-color: rgba(229,72,77,0.18); }
+.chip.risk { background: var(--personal-soft); color: var(--personal-ink); border-color: transparent; }
+.chip.issue { background: rgba(229,72,77,0.08); color: var(--danger); border-color: rgba(229,72,77,0.18); }
+/* Only the linked form gets a hover affordance; plain spans stay inert. */
+a.chip { text-decoration: none; }
+a.chip:hover { text-decoration: underline; }
 .chip.delegate { background: var(--delegate-soft); color: var(--delegate-ink); border-color: transparent; }
 .chip.wait { background: var(--wait-soft); color: var(--wait-ink); border-color: transparent; }
 .chip.ts-not-started { background: var(--surface-2); color: var(--ink-3); border-color: var(--border); }
@@ -532,15 +537,31 @@ section[id]{scroll-margin-top:60px}
 /* ---------- Executive update card ---------- */
 /* Container query, not a media query: the card's width depends on the sidebar
    width too, so it has to reflow on its own size rather than the viewport's. */
-.exec-card { container-type: inline-size; }
+.exec-card { container-type: inline-size; border-radius: 10px; overflow: hidden; }
+
+/* Header band: one gray step darker than the card body, hairline underneath. */
+.exec-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+}
+.exec-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+  margin-top: 3px;
+  max-width: 62ch;
+}
 
 .exec-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
-  border-top: 0.5px solid var(--border);
-  margin-top: 10px;
-  padding-top: 12px;
+  padding: 12px 16px 14px;
 }
 .exec-body.has-rail { grid-template-columns: 176px minmax(0, 1fr); }
 .exec-statement { min-width: 0; }

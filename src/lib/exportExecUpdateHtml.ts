@@ -1,5 +1,13 @@
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
-import { execMetaLine, formatBudgetShort, MS_ACCENT, MS_LABEL } from "../pages/ExecutiveUpdate";
+import {
+  countLabel,
+  execActiveCounts,
+  execMetaLine,
+  formatBudgetShort,
+  MS_ACCENT,
+  MS_LABEL,
+} from "../pages/ExecutiveUpdate";
+import { safeHref } from "../lib/safeUrl";
 
 /* ================= Executive update HTML export ================= */
 
@@ -76,31 +84,64 @@ function cardHtml(entry: ExecEntry): string {
 
   // Two-cell table rather than CSS grid — the export gets pasted into mail clients.
   const bodyHtml = milestones.length
-    ? `<table style="width:100%;border-collapse:collapse;margin-top:10px;border-top:0.5px solid #E2E5EA">
+    ? `<table style="width:100%;border-collapse:collapse">
     <tr>
-      <td width="176" valign="top" style="width:176px;padding:12px 0 0">
+      <td width="176" valign="top" style="width:176px;padding:12px 16px 14px">
         <div style="font-size:11px;color:#8A909B;margin-bottom:8px">Milestones</div>
         ${railHtml}
       </td>
-      <td valign="top" style="padding:12px 0 0 18px;border-left:0.5px solid #E2E5EA">
+      <td valign="top" style="padding:12px 16px 14px 18px;border-left:0.5px solid #E2E5EA">
         ${statementInner}
       </td>
     </tr>
   </table>`
-    : `<div style="border-top:0.5px solid #E2E5EA;margin-top:10px;padding-top:12px">
+    : `<div style="padding:12px 16px 14px">
     ${statementInner}
   </div>`;
 
-  const titleHtml = project.webUrl
-    ? `<a href="${esc(project.webUrl)}" style="color:#1A1D23;text-decoration:underline;text-underline-offset:2px">${esc(project.title)}</a>`
+  const href = safeHref(project.webUrl);
+  const linked = href !== "#";
+  const titleHtml = linked
+    ? `<a href="${esc(href)}" style="color:#1A1D23;text-decoration:underline;text-underline-offset:2px">${esc(project.title)}</a>`
     : esc(project.title);
 
-  return `<div style="border:0.5px solid #E2E5EA;border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fff">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:14.5px;font-weight:600;color:#1A1D23">${RISK_EMOJI[project.risk ?? "green"]} ${titleHtml}</span>
-      ${pill(chip[2], `background:${chip[0]};color:${chip[1]}`)}
-    </div>
-    <div style="font-size:12px;color:#8A909B;margin-top:3px">${esc(subline)}</div>
+  const desc = project.desc?.trim();
+  const descHtml = desc
+    ? `<div style="font-size:12px;line-height:1.45;color:#8A909B;margin-top:3px;max-width:62ch">${esc(desc)}</div>`
+    : "";
+
+  // Badges link to the project site when there is a safe one; otherwise plain pills.
+  const counts = execActiveCounts(project);
+  const badge = (text: string, style: string) =>
+    linked
+      ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">${pill(esc(text), style)}</a>`
+      : pill(esc(text), style);
+  const badgesHtml = [
+    counts.risks > 0
+      ? badge(countLabel(counts.risks, "Risk"), "background:#FEF5E7;color:#B5740A")
+      : "",
+    counts.issues > 0
+      ? badge(countLabel(counts.issues, "Issue"), "background:#FBEAEA;color:#E5484D")
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // Header band — one gray step darker than the body, hairline underneath.
+  return `<div style="border:0.5px solid #E2E5EA;border-radius:10px;margin-bottom:10px;background:#fff;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;background:#F6F7F9;border-bottom:1px solid #E7E9ED">
+      <tr>
+        <td valign="top" style="padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:14.5px;font-weight:600;color:#1A1D23">${RISK_EMOJI[project.risk ?? "green"]} ${titleHtml}</span>
+            ${pill(chip[2], `background:${chip[0]};color:${chip[1]}`)}
+          </div>
+          ${descHtml}
+          <div style="font-size:12px;color:#8A909B;margin-top:3px">${esc(subline)}</div>
+        </td>
+        <td valign="top" align="right" style="padding:13px 16px 12px 8px;white-space:nowrap">${badgesHtml}</td>
+      </tr>
+    </table>
     ${bodyHtml}
   </div>`;
 }
