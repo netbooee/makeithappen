@@ -127,9 +127,10 @@ function cardHtml(entry: ExecEntry): string {
     .filter(Boolean)
     .join(" ");
 
-  // Header band — one gray step darker than the body, hairline underneath.
+  // Header band — darker than the #F8F9FB page background so it reads as a
+  // header, not as the page showing through. Mirrors --exec-head in styles.css.
   return `<div style="border:0.5px solid #E2E5EA;border-radius:10px;margin-bottom:10px;background:#fff;overflow:hidden">
-    <table style="width:100%;border-collapse:collapse;background:#F6F7F9;border-bottom:1px solid #E7E9ED">
+    <table style="width:100%;border-collapse:collapse;background:#E9ECF2;border-bottom:1px solid #DDE1E9">
       <tr>
         <td valign="top" style="padding:12px 16px">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">

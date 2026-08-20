@@ -7,6 +7,11 @@
   --surface-3: #EEF0F3;
   --border: #E7E9ED;
   --border-strong: #D6D9DF;
+  /* exec-update card header band — deliberately darker than --bg so the band
+     never reads as the page showing through the card. Mirrored as literals
+     in src/lib/exportExecUpdateHtml.ts. */
+  --exec-head: #E9ECF2;
+  --exec-head-border: #DDE1E9;
   --ink: #1A1D23;
   --ink-2: #4A4F58;
   --ink-3: #8A909B;
@@ -61,6 +66,8 @@ body.dark {
   --surface-3: #262B36;
   --border: #2C3140;
   --border-strong: #3A4055;
+  --exec-head: #262B36;
+  --exec-head-border: #363C4C;
   --ink: #F0F2F5;
   --ink-2: #C4CAD4;
   --ink-3: #7A8292;
@@ -545,8 +552,8 @@ section[id]{scroll-margin-top:60px}
   align-items: flex-start;
   gap: 8px;
   padding: 12px 16px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  background: var(--exec-head);
+  border-bottom: 1px solid var(--exec-head-border);
   border-radius: 10px 10px 0 0;
 }
 .exec-desc {
