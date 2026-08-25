@@ -643,4 +643,20 @@ section[id]{scroll-margin-top:60px}
   .tweaks-panel { right: 12px; left: 12px; bottom: 76px; width: auto; }
   .chat-wrap { padding: 0 14px; }
   .bubble { max-width: 88%; }
+
+  /* Row title/metadata wrapping — several list/table rows lay out as a single
+     flex line with the title as the only growing item next to fixed-width
+     siblings (status pills, date chips, avatars, icon buttons). At narrow
+     widths those siblings don't shrink, so the title gets squeezed into an
+     unreadable sliver. `.row-title-flex` (paired with `flex-wrap: wrap` on
+     the row, set inline since it's harmless at any width) forces the title
+     onto its own full-width line and floats it to the front of the row, so
+     everything else reflows onto the line(s) below instead of crushing it.
+     Used by MilestoneCard, DecisionsTracker, IssueTracker, RiskTracker, and
+     MeetingAgendasSection. */
+  .row-title-flex {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    order: -1 !important;
+  }
 }

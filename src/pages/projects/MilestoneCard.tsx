@@ -91,10 +91,10 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
       <div className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
         <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {editingTitle ? (
               <input
-                className="input"
+                className="input row-title-flex"
                 autoFocus
                 value={titleDraft}
                 onChange={(e) => setTitleDraft(e.target.value)}
@@ -107,6 +107,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
               />
             ) : (
               <button
+                className="row-title-flex"
                 style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "text" }}
                 onClick={() => {
                   if (clickTimer.current) clearTimeout(clickTimer.current);
@@ -343,7 +344,7 @@ export function MilestoneCard({
               style={{ color: "var(--ink-4)", flexShrink: 0, transition: "transform .18s ease", transform: shown ? "rotate(90deg)" : "none" }}
             />
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
+            <div className="row-title-flex" style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
               {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
             </div>
@@ -359,7 +360,7 @@ export function MilestoneCard({
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, minWidth: 0 }}>
             <div style={{ width: 9, height: 9, borderRadius: "50%", flexShrink: 0, background: statusDotColor }} />
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
+            <div className="row-title-flex" style={{ flex: 1, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: m.status === "complete" ? "var(--ink-3)" : undefined }}>{m.title}</div>
               {m.desc && <div style={{ fontSize: 11.5, color: "var(--ink-4)", fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>}
             </div>
@@ -394,8 +395,9 @@ export function MilestoneCard({
             <div key={t.id} className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <button
+                    className="row-title-flex"
                     style={{ flex: 1, fontSize: 13, textAlign: "left", cursor: "pointer" }}
                     onClick={() => onEditTask(t.id)}
                     title="Edit task"

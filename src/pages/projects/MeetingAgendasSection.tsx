@@ -292,10 +292,10 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
             return (
               <div key={agenda.id} className="card" style={{ padding: "10px 14px 12px" }}>
                 {/* Header row — always visible */}
-                <div style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }} onClick={() => toggleAgendaOpen(agenda.id)}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", flexWrap: "wrap" }} onClick={() => toggleAgendaOpen(agenda.id)}>
                   <ChevronDown size={13} style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)", flexShrink: 0 }} />
                   <Calendar size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1 }}>{agenda.title}</span>
+                  <span className="row-title-flex" style={{ fontSize: 14, fontWeight: 550, color: "var(--ink)", flex: 1, minWidth: 0 }}>{agenda.title}</span>
                   {agenda.date && <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{fmtAgendaDate(agenda.date)}</span>}
                   {project.webUrl?.trim() && (
                     <label
