@@ -171,8 +171,8 @@ export function DecisionsTracker({ project }: { project: Project }) {
             );
           }
           return (
-            <div key={d.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div key={d.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div className="row-title-flex" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: d.status === "decided" ? "var(--ink-3)" : undefined }}>{d.title}</div>
                 {d.description && (
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.4 }}>↳ {d.description}</div>

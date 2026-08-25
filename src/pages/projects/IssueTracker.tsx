@@ -244,11 +244,11 @@ export function IssueTracker({ project }: { project: Project }) {
             );
           }
           return (
-            <div key={issue.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start" }}>
+            <div key={issue.id} style={{ display: "flex", gap: 10, padding: "7px 4px", borderBottom: "1px solid var(--border)", alignItems: "flex-start", flexWrap: "wrap" }}>
               <span style={{ width: 68, flexShrink: 0 }}>
                 <span style={{ ...riskPill, ...SEV_STYLE[issue.severity] }}>{issue.severity}</span>
               </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="row-title-flex" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{issue.title}</div>
                 {issue.description && (
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.4 }}>{issue.description}</div>
