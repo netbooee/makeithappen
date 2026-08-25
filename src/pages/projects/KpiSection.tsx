@@ -124,7 +124,7 @@ export function KpiSection({ project }: { project: Project }) {
       {/* Budget */}
       <div className="card" style={kpiCard}>
         <div style={kpiLabel}>Budget</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="budget-fields" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {([
             { sub: "Total Budget", val: project.budget, onChange: (v: string) => set({ budget: v || undefined }), placeholder: "e.g. $50,000" },
             { sub: "Actual Cost",  val: project.budgetSpent, onChange: (v: string) => set({ budgetSpent: v || undefined }), placeholder: "e.g. $12,000" },
@@ -141,6 +141,14 @@ export function KpiSection({ project }: { project: Project }) {
             </span>
           </div>
         </div>
+        {totalVal !== null && totalVal > 0 && spentVal !== null && (
+          <div className="budget-usage-bar" style={{ display: "none", flexDirection: "column", gap: 4 }}>
+            <div style={{ height: 6, borderRadius: 3, background: "var(--surface-3)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, (spentVal / totalVal) * 100))}%`, borderRadius: 3, background: "var(--accent)" }} />
+            </div>
+            <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{Math.round(Math.min(100, Math.max(0, (spentVal / totalVal) * 100)))}% of budget used</span>
+          </div>
+        )}
         <textarea
           style={{ ...kpiInput, fontSize: 12, fontWeight: 400, color: "var(--ink-3)", resize: "none", lineHeight: 1.4, minHeight: 32, borderTop: "1px solid var(--border)", marginTop: 2, paddingTop: 8 }}
           placeholder="Note…"

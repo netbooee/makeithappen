@@ -628,7 +628,11 @@ section[id]{scroll-margin-top:60px}
   .grid-2, .suggested { grid-template-columns: 1fr; }
   .project-cols { grid-template-columns: 1fr !important; }
   .kpi-grid { grid-template-columns: 1fr 1fr !important; }
-  .kpi-grid > :nth-child(4) { grid-column: 1 / -1; }
+  .kpi-grid > :nth-child(3), .kpi-grid > :nth-child(4) { grid-column: 1 / -1; }
+  /* Budget card, mobile only: now full-width, so its three fields lay out
+     as a scannable row instead of a stacked list, with a usage bar beneath. */
+  .budget-fields { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important; }
+  .budget-usage-bar { display: flex !important; }
   .bottom-nav {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
     background: var(--surface); border-top: 1px solid var(--border);
