@@ -113,13 +113,23 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                   if (clickTimer.current) clearTimeout(clickTimer.current);
                   clickTimer.current = setTimeout(() => setEditingTitle(true), 200);
                 }}
-                title="Click to edit, or double-click for full task details"
+                title="Click to edit"
                 onDoubleClick={() => {
                   if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; }
                   setPanelOpen(true);
                 }}
               >
                 {s.t}
+              </button>
+            )}
+            {!editingTitle && (
+              <button
+                className="icon-btn"
+                style={{ color: "var(--ink-4)", flexShrink: 0 }}
+                onClick={() => setPanelOpen(true)}
+                title="Open task details"
+              >
+                <Pencil size={12} />
               </button>
             )}
             {s.state === "delegated" || s.state === "waiting" ? (
