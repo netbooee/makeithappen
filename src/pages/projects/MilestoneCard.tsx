@@ -89,7 +89,9 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
   return (
     <>
       <div className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
-        <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
+        <span className="subtask-check-pad">
+          <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
+        </span>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {editingTitle ? (
@@ -124,7 +126,7 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
             )}
             {!editingTitle && (
               <button
-                className="icon-btn"
+                className="icon-btn subtask-detail-btn"
                 style={{ color: "var(--ink-4)", flexShrink: 0 }}
                 onClick={() => setPanelOpen(true)}
                 title="Open task details"
@@ -132,6 +134,12 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                 <Pencil size={12} />
               </button>
             )}
+            <span className="subtask-meta-summary" style={{ display: "none", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              <StateTag task={s} />
+              {s.due && <DueChip due={s.due} done={s.done} />}
+              <Avatar who={avatar.ini} size={20} color={avatar.color ?? "var(--ink-3)"} />
+            </span>
+            <span className="subtask-meta-editable" style={{ display: "contents" }}>
             {s.state === "delegated" || s.state === "waiting" ? (
               <StateTag task={s} />
             ) : editingStatus ? (
@@ -197,8 +205,9 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
                 <Avatar who={avatar.ini} size={20} color={avatar.color ?? "var(--ink-3)"} />
               </span>
             )}
+            </span>
             <button
-              className="icon-btn"
+              className="icon-btn subtask-delete-btn"
               style={{ color: "var(--ink-4)" }}
               onClick={() => deleteSubtask(projectId, milestoneId, s.id)}
               title="Delete task"

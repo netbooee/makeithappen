@@ -633,6 +633,17 @@ section[id]{scroll-margin-top:60px}
      as a scannable row instead of a stacked list, with a usage bar beneath. */
   .budget-fields { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important; }
   .budget-usage-bar { display: flex !important; }
+  /* Subtask rows under a milestone, mobile only: status/due/assignee stop
+     being independently-tappable inline controls (a native <select>, a date
+     input, a 56px-wide text box — all too small and fiddly to hit on a
+     touchscreen) and collapse into a read-only summary; editing them moves
+     to the detail panel, already a full-width touch-friendly form. Checkbox
+     and the row's icon buttons get a real 40px tap target. */
+  .subtask-check-pad { display: grid !important; place-items: center; width: 40px; height: 40px; margin: -11px -8px -11px -8px; }
+  .subtask-detail-btn { width: 40px !important; height: 40px !important; }
+  .subtask-delete-btn { display: none !important; }
+  .subtask-meta-editable { display: none !important; }
+  .subtask-meta-summary { display: flex !important; }
   .bottom-nav {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
     background: var(--surface); border-top: 1px solid var(--border);
