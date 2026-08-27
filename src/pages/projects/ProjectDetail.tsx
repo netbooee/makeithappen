@@ -41,7 +41,7 @@ export function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const {
-    data, tweaks, all,
+    data, tweaks, all, sidebarCollapsed,
     addUpdate, updateProject, deleteProject, updateStatusUpdate, deleteStatusUpdate,
     toggleTask, addContact,
   } = useStore();
@@ -351,7 +351,7 @@ export function ProjectDetail() {
   };
 
   return (
-    <div className="page fade" style={{ maxWidth: 1100 }}>
+    <div className="page fade" style={{ maxWidth: sidebarCollapsed ? 1284 : 1100, transition: "max-width .18s ease" }}>
       <button
         onClick={() => navigate("/projects")}
         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-3)", marginBottom: 16, fontWeight: 500 }}

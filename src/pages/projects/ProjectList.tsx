@@ -6,7 +6,7 @@ import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimest
 import { ProjectModal } from "./ProjectModal";
 
 export function ProjectList() {
-  const { data, addProject, all } = useStore();
+  const { data, addProject, all, sidebarCollapsed } = useStore();
   const navigate = useNavigate();
   const projects = data.projects;
   const [adding, setAdding] = useState(false);
@@ -67,7 +67,7 @@ export function ProjectList() {
   });
 
   return (
-    <div className="page fade">
+    <div className="page fade" style={{ maxWidth: sidebarCollapsed ? 1224 : undefined, transition: "max-width .18s ease" }}>
       <div className="page-head" style={{ display: "flex", alignItems: "flex-end" }}>
         <div style={{ flex: 1 }}>
           <div className="page-title">Projects</div>
