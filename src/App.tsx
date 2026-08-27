@@ -21,12 +21,33 @@ export default function App() {
 
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthReady(true);
+    let cancelled = false;
+
+    // supabase-js coordinates token refresh across tabs via the Web Locks API, and Safari
+    // has a documented bug where a lock from a previous page load can fail to release on
+    // reload — leaving getSession() hanging forever. Race it against a timeout so the app
+    // always renders instead of staying blank.
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<"timeout">((resolve) => {
+      timeoutId = setTimeout(() => resolve("timeout"), 5000);
     });
+
+    Promise.race([supabase.auth.getSession(), timeout])
+      .then((result) => {
+        if (cancelled) return;
+        if (result !== "timeout") setSession(result.data.session);
+        setAuthReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setAuthReady(true);
+      })
+      .finally(() => clearTimeout(timeoutId));
+
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   if (!authReady) return null;
