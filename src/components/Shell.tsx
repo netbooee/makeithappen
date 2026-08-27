@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, FileText, Flag, Flame, FolderKanban, Link2, ListTodo, Menu, Search, Settings, Sparkles, Users,
+  ChevronDown, FileText, Flag, Flame, FolderKanban, Link2, ListTodo, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, toDateInputValue } from "./ui";
@@ -34,7 +34,16 @@ export function Shell() {
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [projsOpen, setProjsOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "1");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const toggleNavCollapsed = () => {
+    setNavCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+      return next;
+    });
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -79,12 +88,20 @@ export function Shell() {
   );
 
   return (
-    <div className="app">
+    <div className={"app" + (navCollapsed ? " nav-collapsed" : "")}>
       {/* Sidebar (desktop) */}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">M</div>
           <div className="brand-name">Make<b style={{ color: "var(--accent)" }}>It</b>Happen</div>
+          <button
+            className="sidebar-collapse-btn"
+            onClick={toggleNavCollapsed}
+            title={navCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={navCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {navCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          </button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 4 }}>
