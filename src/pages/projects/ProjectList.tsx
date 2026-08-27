@@ -1,9 +1,25 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound, Rows3 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
+
+// Resizable table columns, in header order — Owner (the last column) is
+// deliberately excluded so it can flex to absorb whatever width remains.
+const RESIZABLE_COLS = ["name", "status", "milestones", "progress", "risk", "due", "activity"] as const;
+type ColKey = (typeof RESIZABLE_COLS)[number];
+const DEFAULT_COL_WIDTHS: Record<ColKey, number> = {
+  name: 240,
+  status: 110,
+  milestones: 130,
+  progress: 140,
+  risk: 120,
+  due: 110,
+  activity: 130,
+};
+const COL_WIDTHS_KEY = "projects-table-col-widths";
+const MIN_COL_WIDTH = 60;
 
 export function ProjectList() {
   const { data, addProject, all, sidebarCollapsed } = useStore();
@@ -14,6 +30,50 @@ export function ProjectList() {
   const [compact, setCompact] = useState(() => localStorage.getItem("projects-compact") === "1");
   const [sortCol, setSortCol] = useState<string | null>("activity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  // Column widths are one shared, persisted state — the compact toggle only
+  // changes padding/truncation, never the widths a user has dragged.
+  const [columnWidths, setColumnWidths] = useState<Record<ColKey, number>>(() => {
+    try {
+      const raw = localStorage.getItem(COL_WIDTHS_KEY);
+      if (raw) return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) };
+    } catch {
+      // malformed stored JSON — fall back to defaults
+    }
+    return DEFAULT_COL_WIDTHS;
+  });
+  const resizeRef = useRef<{ col: ColKey; startX: number; startWidth: number } | null>(null);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    const r = resizeRef.current;
+    if (!r) return;
+    const next = Math.max(MIN_COL_WIDTH, r.startWidth + (e.clientX - r.startX));
+    setColumnWidths((prev) => ({ ...prev, [r.col]: next }));
+  }, []);
+
+  const handleResizeEnd = useCallback(() => {
+    window.removeEventListener("mousemove", handleResizeMove);
+    window.removeEventListener("mouseup", handleResizeEnd);
+    resizeRef.current = null;
+    setColumnWidths((prev) => {
+      try {
+        localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(prev));
+      } catch {
+        // storage unavailable — resize still works for this session
+      }
+      return prev;
+    });
+  }, [handleResizeMove]);
+
+  const handleResizeStart = useCallback(
+    (col: ColKey) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      resizeRef.current = { col, startX: e.clientX, startWidth: columnWidths[col] };
+      window.addEventListener("mousemove", handleResizeMove);
+      window.addEventListener("mouseup", handleResizeEnd);
+    },
+    [columnWidths, handleResizeMove, handleResizeEnd]
+  );
 
   const resolveOwner = (owner: string) => {
     if (owner.includes(" ")) return owner;
@@ -160,22 +220,38 @@ export function ProjectList() {
         </div>
       ) : (
         <div className="data-table-wrap">
-          <table className="data-table">
+          <table className="data-table" style={{ tableLayout: "fixed" }}>
+            <colgroup>
+              {RESIZABLE_COLS.map((key) => (
+                <col key={key} style={{ width: columnWidths[key] }} />
+              ))}
+              <col />
+            </colgroup>
             <thead>
               <tr>
                 {(["name", "status", null, "progress", "risk", "due", "activity", "owner"] as const).map((col, i) => {
                   const labels = ["Name", "Status", "Milestones", "Progress", "Risk", "Due", "Last Changed", "Owner"];
                   const active = col && sortCol === col;
+                  const resizeKey: ColKey | null = i < RESIZABLE_COLS.length ? RESIZABLE_COLS[i] : null;
                   return (
                     <th
                       key={i}
                       onClick={col ? () => toggleSort(col) : undefined}
-                      style={{ padding: compact ? "5px 12px" : "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: active ? "var(--ink)" : "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", cursor: col ? "pointer" : "default", userSelect: "none" }}
+                      style={{ padding: compact ? "5px 12px" : "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: active ? "var(--ink)" : "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", cursor: col ? "pointer" : "default", userSelect: "none", position: "relative" }}
                     >
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                         {labels[i]}
                         {col && (active ? (sortDir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ChevronUp size={11} style={{ opacity: 0.25 }} />)}
                       </span>
+                      {resizeKey && (
+                        <div
+                          onMouseDown={handleResizeStart(resizeKey)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ position: "absolute", top: 0, right: -3, width: 6, height: "100%", cursor: "col-resize", zIndex: 1, background: "transparent" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--border-strong)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                        />
+                      )}
                     </th>
                   );
                 })}
@@ -188,8 +264,8 @@ export function ProjectList() {
                 const sortedMilestones = [...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); });
                 return (
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", minWidth: 200 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                         {p.heroImage ? (
                           <img
                             src={p.heroImage}
@@ -201,14 +277,14 @@ export function ProjectList() {
                             {p.title.slice(0, 1).toUpperCase()}
                           </div>
                         )}
-                        <div style={{ fontWeight: 600, fontSize: 13, ...(compact ? { maxWidth: 320, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const : {}) }}>{p.title}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
                       </div>
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
                       <StatusChip status={p.status} />
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px" }}>
-                      <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
+                      <div style={{ display: "flex", gap: 3, alignItems: "center", minWidth: 0, overflow: "hidden" }}>
                         {sortedMilestones.map((m) => {
                           const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
                           return <div key={m.id} style={{ height: 6, width: 20, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
@@ -216,32 +292,36 @@ export function ProjectList() {
                         {sortedMilestones.length === 0 && <span style={{ color: "var(--ink-4)", fontSize: 12 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", minWidth: 100 }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px" }}>
                       <Bar value={p.progress} color={riskColor(p.risk)} />
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
                       {p.risk ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, minWidth: 0, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
-                          {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
+                          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}</span>
                         </span>
                       ) : (
-                        <span style={{ fontSize: 12, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4 }}>
-                          <CheckCircle2 size={12} /> {done}/{total}
+                        <span style={{ fontSize: 12, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                          <CheckCircle2 size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{done}/{total}</span>
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={12} /> {p.due}</span>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                        <Calendar size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.due}</span>
+                      </span>
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: 12, color: "var(--ink-3)" }}>
                       {(() => {
                         const t = lastActivity(p);
                         return Number.isFinite(t) ? new Date(t).toLocaleDateString() : "—";
                       })()}
                     </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><UserRound size={12} /> {resolveOwner(p.owner)}</span>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: "var(--ink-3)" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                        <UserRound size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{resolveOwner(p.owner)}</span>
+                      </span>
                     </td>
                   </tr>
                 );
