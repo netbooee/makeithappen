@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ChevronRight, Flag } from "lucide-react";
 import { useStore } from "../store/store";
-import { Bar, StateTag, StatusChip, TaskMarker } from "../components/ui";
+import { Bar, StateTag, StatusChip, TaskMarker, riskColor } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 
 export function Today() {
@@ -117,7 +117,7 @@ export function Today() {
                   <ChevronRight size={11} /> {activeMs.title}
                 </div>
               </div>
-              <div style={{ width: 120, flexShrink: 0 }}><Bar value={p.progress} /></div>
+              <div style={{ width: 120, flexShrink: 0 }}><Bar value={p.progress} color={riskColor(p.risk)} /></div>
               <StatusChip status={p.status} />
             </button>
           );
