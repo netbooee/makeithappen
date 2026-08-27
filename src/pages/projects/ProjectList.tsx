@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound } from "lucide-react";
 import { useStore } from "../../store/store";
-import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
+import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
 
 export function ProjectList() {
@@ -128,10 +128,10 @@ export function ProjectList() {
                   })}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                  <ProgressDial value={p.progress} />
+                  <ProgressDial value={p.progress} color={riskColor(p.risk)} />
                   {p.risk ? (
                     <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.risk === "green" ? "#10B981" : p.risk === "amber" ? "#F59E0B" : "#EF4444", display: "inline-block", flexShrink: 0 }} />
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
                       {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
                     </span>
                   ) : (
@@ -210,12 +210,12 @@ export function ProjectList() {
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", minWidth: 100 }}>
-                      <Bar value={p.progress} />
+                      <Bar value={p.progress} color={riskColor(p.risk)} />
                     </td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       {p.risk ? (
                         <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.risk === "green" ? "#10B981" : p.risk === "amber" ? "#F59E0B" : "#EF4444", display: "inline-block", flexShrink: 0 }} />
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
                           {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
                         </span>
                       ) : (

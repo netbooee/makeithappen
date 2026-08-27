@@ -1,6 +1,14 @@
 import { Calendar, Check, ChevronDown, ChevronUp, Hourglass, UserRound } from "lucide-react";
 import { Fragment, type CSSProperties } from "react";
-import type { Status, Subtask, SubtaskStatus, Task } from "../lib/types";
+import type { Project, Status, Subtask, SubtaskStatus, Task } from "../lib/types";
+
+/** Shared green/amber/red risk color mapping, reused anywhere a project's RAG status needs a color. */
+export const RAG = { green: "#10B981", amber: "#F59E0B", red: "#EF4444" } as const;
+
+/** Color for a project's risk level, or undefined when no risk is set (callers should fall back to their default). */
+export function riskColor(risk: Project["risk"]): string | undefined {
+  return risk ? RAG[risk] : undefined;
+}
 
 /* ---- Date helpers ---- */
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -210,11 +218,11 @@ export function DueChip({ due, done = false }: { due: string; done?: boolean }) 
   return <span className={`chip${isOverdue(due, done) ? " overdue" : ""}`}><Calendar /> {fmtDue(due)}</span>;
 }
 
-export function Bar({ value }: { value: number }) {
-  return <div className="bar"><i style={{ width: `${value * 100}%` }} /></div>;
+export function Bar({ value, color }: { value: number; color?: string }) {
+  return <div className="bar"><i style={{ width: `${value * 100}%`, ...(color ? { background: color } : {}) }} /></div>;
 }
 
-export function ProgressDial({ value, size = 44 }: { value: number; size?: number }) {
+export function ProgressDial({ value, size = 44, color }: { value: number; size?: number; color?: string }) {
   const r = 17;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(1, value));
@@ -224,7 +232,7 @@ export function ProgressDial({ value, size = 44 }: { value: number; size?: numbe
       {pct > 0 && (
         <circle
           cx="22" cy="22" r={r} fill="none"
-          stroke="var(--accent)" strokeWidth="5" strokeLinecap="round"
+          stroke={color ?? "var(--accent)"} strokeWidth="5" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
           transform="rotate(-90 22 22)"
           style={{ transition: "stroke-dashoffset .5s" }}

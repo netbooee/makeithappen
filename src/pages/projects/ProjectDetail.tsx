@@ -5,7 +5,7 @@ import {
   Copy, Download, ExternalLink, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
-import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp } from "../../components/ui";
+import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
@@ -451,7 +451,7 @@ export function ProjectDetail() {
                 <circle
                   cx="36" cy="36" r={r}
                   fill="none"
-                  stroke={allDone ? "var(--next)" : "var(--accent)"}
+                  stroke={project.risk ? riskColor(project.risk) : allDone ? "var(--next)" : "var(--accent)"}
                   strokeWidth="5"
                   strokeLinecap="round"
                   strokeDasharray={circ}
