@@ -27,23 +27,16 @@ const CRUMB: Record<string, string> = {
 };
 
 export function Shell() {
-  const { workspace, setWorkspace, data, all } = useStore();
+  const { workspace, setWorkspace, data, all, sidebarCollapsed, setSidebarCollapsed } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const section = location.pathname.split("/")[1] || "projects";
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [projsOpen, setProjsOpen] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "1");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const toggleNavCollapsed = () => {
-    setNavCollapsed((v) => {
-      const next = !v;
-      localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
-      return next;
-    });
-  };
+  const toggleNavCollapsed = () => setSidebarCollapsed(!sidebarCollapsed);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -88,7 +81,7 @@ export function Shell() {
   );
 
   return (
-    <div className={"app" + (navCollapsed ? " nav-collapsed" : "")}>
+    <div className={"app" + (sidebarCollapsed ? " nav-collapsed" : "")}>
       {/* Sidebar (desktop) */}
       <aside className="sidebar">
         <div className="brand">
@@ -97,10 +90,10 @@ export function Shell() {
           <button
             className="sidebar-collapse-btn"
             onClick={toggleNavCollapsed}
-            title={navCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={navCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {navCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            {sidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
           </button>
         </div>
 

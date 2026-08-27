@@ -8,6 +8,7 @@ import type {
 const DATA_KEY = "mih_data_v1";
 const WS_KEY = "mih_ws";
 const TWEAKS_KEY = "mih_tweaks_v1";
+const SIDEBAR_KEY = "sidebar-collapsed";
 
 const TWEAK_DEFAULTS: Tweaks = { collapsible: true, defaultState: "active", showCount: true, darkMode: false };
 
@@ -23,6 +24,8 @@ function load<T>(key: string, fallback: T): T {
 export interface Store {
   workspace: Workspace;
   setWorkspace: (ws: Workspace) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   data: WorkspaceData;
   all: AppData;
   tweaks: Tweaks;
@@ -83,6 +86,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspace] = useState<Workspace>(
     () => (localStorage.getItem(WS_KEY) as Workspace) || "work",
   );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_KEY) === "1",
+  );
   const [tweaks, setTweaks] = useState<Tweaks>(() => load(TWEAKS_KEY, TWEAK_DEFAULTS));
   const [dataLoading, setDataLoading] = useState(supabaseConfigured);
   const initialAll = useRef(all);
@@ -122,6 +128,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [workspace]);
 
   useEffect(() => {
+    localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? "1" : "0");
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
     document.body.classList.toggle("dark", tweaks.darkMode);
   }, [tweaks.darkMode]);
 
@@ -157,6 +167,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       workspace,
       setWorkspace,
+      sidebarCollapsed,
+      setSidebarCollapsed,
       data: all[workspace],
       all,
       tweaks,
@@ -433,7 +445,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateUser: (patch) =>
         setAll((s) => ({ ...s, user: { ...s.user, ...patch } })),
     };
-  }, [all, workspace, tweaks]);
+  }, [all, workspace, tweaks, sidebarCollapsed]);
 
   if (dataLoading) {
     return (
