@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound } from "lucide-react";
+import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar, UserRound, Rows3 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
@@ -11,6 +11,7 @@ export function ProjectList() {
   const projects = data.projects;
   const [adding, setAdding] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "table">(() => (localStorage.getItem("projects-view") as "grid" | "table") ?? "grid");
+  const [compact, setCompact] = useState(() => localStorage.getItem("projects-compact") === "1");
   const [sortCol, setSortCol] = useState<string | null>("activity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -90,6 +91,12 @@ export function ProjectList() {
               title="Table view"
             ><List size={15} /></button>
           </div>
+          <button
+            className="btn"
+            onClick={() => { const next = !compact; setCompact(next); localStorage.setItem("projects-compact", next ? "1" : "0"); }}
+            style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "6px 10px", background: compact ? "var(--surface-2)" : "transparent", color: compact ? "var(--ink)" : "var(--ink-3)" }}
+            title={`Compact view: ${compact ? "on" : "off"}`}
+          ><Rows3 size={15} /></button>
           <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus /> New project</button>
         </div>
       </div>
@@ -104,7 +111,7 @@ export function ProjectList() {
                 key={p.id}
                 className="card card-pad"
                 onClick={() => navigate(`/projects/${p.id}`)}
-                style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s" }}
+                style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: compact ? 8 : 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s", padding: compact ? "12px 14px" : undefined, minWidth: compact ? 0 : undefined }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
               >
@@ -117,7 +124,7 @@ export function ProjectList() {
                         style={{ width: 44, height: 44, borderRadius: 7, objectFit: "cover", flexShrink: 0 }}
                       />
                     )}
-                    <div style={{ flex: 1, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{p.title}</div>
+                    <div style={{ flex: 1, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", ...(compact ? { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const : {}) }}>{p.title}</div>
                   </div>
                   {p.desc && <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>}
                 </div>
@@ -163,7 +170,7 @@ export function ProjectList() {
                     <th
                       key={i}
                       onClick={col ? () => toggleSort(col) : undefined}
-                      style={{ padding: "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: active ? "var(--ink)" : "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", cursor: col ? "pointer" : "default", userSelect: "none" }}
+                      style={{ padding: compact ? "5px 12px" : "9px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: active ? "var(--ink)" : "var(--ink-3)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap", cursor: col ? "pointer" : "default", userSelect: "none" }}
                     >
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                         {labels[i]}
@@ -181,7 +188,7 @@ export function ProjectList() {
                 const sortedMilestones = [...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); });
                 return (
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <td className="td-primary" style={{ padding: "10px 12px", minWidth: 200 }}>
+                    <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", minWidth: 200 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         {p.heroImage ? (
                           <img
@@ -194,13 +201,13 @@ export function ProjectList() {
                             {p.title.slice(0, 1).toUpperCase()}
                           </div>
                         )}
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13, ...(compact ? { maxWidth: 320, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const : {}) }}>{p.title}</div>
                       </div>
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap" }}>
                       <StatusChip status={p.status} />
                     </td>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px" }}>
                       <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
                         {sortedMilestones.map((m) => {
                           const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
@@ -209,10 +216,10 @@ export function ProjectList() {
                         {sortedMilestones.length === 0 && <span style={{ color: "var(--ink-4)", fontSize: 12 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ padding: "10px 12px", minWidth: 100 }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", minWidth: 100 }}>
                       <Bar value={p.progress} color={riskColor(p.risk)} />
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap" }}>
                       {p.risk ? (
                         <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
@@ -224,16 +231,16 @@ export function ProjectList() {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={12} /> {p.due}</span>
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
                       {(() => {
                         const t = lastActivity(p);
                         return Number.isFinite(t) ? new Date(t).toLocaleDateString() : "—";
                       })()}
                     </td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
+                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", fontSize: 12, color: "var(--ink-3)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}><UserRound size={12} /> {resolveOwner(p.owner)}</span>
                     </td>
                   </tr>
