@@ -52,6 +52,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `ExternalTeamSection.tsx` | External team rail card |
 | `ResourcesSection.tsx` | Links/resources rail card |
 | `KpiSection.tsx` | Budget / risk / progress KPI strip |
+| `NextActionsSection.tsx` | Next-action subtasks across all milestones, read-only with click-through to edit |
 | `RiskTracker.tsx` | Risk register table |
 | `IssueTracker.tsx` | Issue tracker table |
 | `DecisionsTracker.tsx` | Decisions log table |

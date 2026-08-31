@@ -181,7 +181,7 @@ export function TaskMarker({ task, onClick }: { task: Task | Subtask; onClick?: 
   return <Checkbox done={task.done} onClick={onClick} />;
 }
 
-const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
+export const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
   "not-started": "Not started",
   "scheduled": "Scheduled",
   "in-progress": "In progress",
