@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Flag, Plus } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput, DueChip, StateTag, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { nextActionSubtasks } from "./projects/NextActionsSection";
-import type { Milestone, Subtask, Task, TaskGroup } from "../lib/types";
+import type { Milestone, Subtask, Task } from "../lib/types";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
 const colHead: React.CSSProperties = {
@@ -33,11 +34,12 @@ function sortRows(rows: Row[]): Row[] {
 
 export function Tasks() {
   const { data, workspace, addTask } = useStore();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [text, setText] = useState("");
   const [due, setDue] = useState("");
-  const [group, setGroup] = useState<TaskGroup>("today");
+  const [nextFlag, setNextFlag] = useState(false);
   const [project, setProject] = useState("");
   const [milestoneId, setMilestoneId] = useState("");
   const [who, setWho] = useState("");
@@ -51,7 +53,7 @@ export function Tasks() {
   const subtaskAvatar = (projectId: string, s: Subtask) =>
     assigneeAvatar(projectContactPool(data.projects.find((p) => p.id === projectId), data.contacts), s.assignee, s.who);
 
-  useEffect(() => { setProject(""); setMilestoneId(""); setWho(""); setEditingId(null); setEditingSubtask(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setProject(""); setMilestoneId(""); setWho(""); setNextFlag(false); setEditingId(null); setEditingSubtask(null); }, [workspace]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // press T anywhere to focus quick capture
   useEffect(() => {
@@ -77,18 +79,19 @@ export function Tasks() {
       id: "t" + Date.now(),
       text: text.trim(),
       done: false,
-      next: false,
+      next: nextFlag,
       context: "",
       project: project || null,
       ...(milestoneId ? { milestoneId } : {}),
       ...(who.trim() ? { who: who.trim() } : {}),
       ...(due ? { due } : {}),
     };
-    addTask(task, group);
+    addTask(task, "today");
     setText("");
     setDue("");
     setMilestoneId("");
     setWho("");
+    setNextFlag(false);
   };
 
   const milestoneMap = useMemo(() => {
@@ -193,11 +196,15 @@ export function Tasks() {
           value={who}
           onChange={(e) => setWho(e.target.value)}
         />
-        <select className="input" style={{ width: 105, fontSize: 12.5 }} value={group} onChange={(e) => setGroup(e.target.value as TaskGroup)}>
-          <option value="today">Today</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="someday">Someday</option>
-        </select>
+        <button
+          type="button"
+          className={"chip" + (nextFlag ? " next" : "")}
+          style={{ cursor: "pointer" }}
+          aria-pressed={nextFlag}
+          onClick={() => setNextFlag((v) => !v)}
+        >
+          <Flag size={12} /> Next Action
+        </button>
         <button className="btn btn-primary" onClick={capture}><Plus /> Add</button>
       </div>
 
@@ -210,7 +217,18 @@ export function Tasks() {
       {groups.map((g) => (
         <div key={g.key} style={{ marginBottom: 22 }}>
           <div className="section-h">
-            {g.title} <span style={{ fontWeight: 500 }}>{g.rows.length}</span>
+            {g.projectId ? (
+              <span
+                onClick={() => navigate(`/projects/${g.projectId}`)}
+                title="Open project"
+                style={{ cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
+              >
+                {g.title}
+              </span>
+            ) : (
+              g.title
+            )}{" "}
+            <span style={{ fontWeight: 500 }}>{g.rows.length}</span>
           </div>
           <div className="card" style={{ padding: "6px 10px 8px" }}>
             <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
