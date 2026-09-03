@@ -113,9 +113,9 @@ export function Tasks() {
     return m;
   }, [data.todayTasks, data.upcoming, data.someday]);
 
-  // One group per project (in project order) + a trailing "No project" group.
+  // One group per project (sorted alphabetically by title) + a trailing "No project" group.
   const groups = useMemo(() => {
-    const result: { key: string; title: string; projectId: string | null; rows: Row[] }[] = [];
+    const projectGroups: { key: string; title: string; projectId: string | null; rows: Row[] }[] = [];
 
     for (const p of data.projects) {
       const rows: Row[] = [];
@@ -126,10 +126,12 @@ export function Tasks() {
         rows.push({ kind: "subtask", projectId: p.id, milestone, subtask });
       }
       if (rows.length > 0) {
-        result.push({ key: p.id, title: p.title, projectId: p.id, rows: sortRows(rows) });
+        projectGroups.push({ key: p.id, title: p.title, projectId: p.id, rows: sortRows(rows) });
       }
     }
+    projectGroups.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
 
+    const result = [...projectGroups];
     const looseTasks = nextTasksByProject.get(null) ?? [];
     if (looseTasks.length > 0) {
       const rows: Row[] = looseTasks.map((t) => ({
@@ -216,19 +218,22 @@ export function Tasks() {
 
       {groups.map((g) => (
         <div key={g.key} style={{ marginBottom: 22 }}>
-          <div className="section-h">
+          <div
+            className="section-h"
+            style={{ fontSize: 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", color: "var(--ink)" }}
+          >
             {g.projectId ? (
               <span
                 onClick={() => navigate(`/projects/${g.projectId}`)}
                 title="Open project"
-                style={{ cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
+                style={{ cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
               >
                 {g.title}
               </span>
             ) : (
               g.title
             )}{" "}
-            <span style={{ fontWeight: 500 }}>{g.rows.length}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-4)" }}>{g.rows.length}</span>
           </div>
           <div className="card" style={{ padding: "6px 10px 8px" }}>
             <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
@@ -241,6 +246,7 @@ export function Tasks() {
             {g.rows.map((row) => {
               const isTask = row.kind === "task";
               const name = isTask ? row.task.text : row.subtask.t;
+              const notesVal = isTask ? row.task.notes : row.subtask.notes;
               const milestoneName = isTask ? row.milestoneName : row.milestone.title;
               const dueVal = isTask ? row.task.due : row.subtask.due;
               const doneVal = isTask ? row.task.done : row.subtask.done;
@@ -262,7 +268,14 @@ export function Tasks() {
                     textAlign: "left", cursor: "pointer",
                   }}
                 >
-                  <span className="row-title-flex" style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500 }}>{name}</span>
+                  <div className="row-title-flex" style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
+                    {notesVal && (
+                      <div style={{ fontSize: 11.5, color: "var(--ink-4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                        {notesVal}
+                      </div>
+                    )}
+                  </div>
                   <span style={{ width: 130, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {milestoneName ?? "—"}
                   </span>
