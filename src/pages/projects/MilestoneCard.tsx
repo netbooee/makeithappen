@@ -246,12 +246,8 @@ export function MilestoneCard({
 }) {
   const { tweaks, updateMilestone, deleteMilestone, data, toggleTask } = useStore();
 
-  // Tasks from the task lists that have been assigned to this milestone
-  const linkedTasks = [
-    ...data.todayTasks.map((t) => ({ task: t, list: "Today" })),
-    ...data.upcoming.map((t) => ({ task: t, list: "Upcoming" })),
-    ...data.someday.map((t) => ({ task: t, list: "Someday" })),
-  ].filter(({ task }) => task.milestoneId === m.id);
+  // Standalone tasks assigned to this milestone
+  const linkedTasks = data.tasks.filter((task) => task.milestoneId === m.id);
   const { collapsible, showCount } = tweaks;
   const total = m.subtasks.length;
   const done = m.subtasks.filter((s) => s.done).length;
@@ -410,7 +406,7 @@ export function MilestoneCard({
             .map((s) => (
               <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
             ))}
-          {linkedTasks.map(({ task: t, list }) => (
+          {linkedTasks.map((t) => (
             <div key={t.id} className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
@@ -424,7 +420,6 @@ export function MilestoneCard({
                     {t.text}
                   </button>
                   <StateTag task={t} />
-                  <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
                   {t.due && <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>{fmtDue(t.due)}</span>}
                 </div>
                 {t.notes && !t.done && (

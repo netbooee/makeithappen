@@ -9,7 +9,7 @@ import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInpu
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
-import type { Contact, ProjectMember, StatusUpdate, Task, UpdateType } from "../../lib/types";
+import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
 import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
@@ -147,15 +147,9 @@ export function ProjectDetail() {
   const total = project.milestones.reduce((a, m) => a + m.subtasks.length, 0);
   const done = project.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
 
-  // Tasks from the task lists that are tagged to this project
-  const allTasks: { task: Task; list: string }[] = [
-    ...data.todayTasks.map((t) => ({ task: t, list: "Today" })),
-    ...data.upcoming.map((t) => ({ task: t, list: "Upcoming" })),
-    ...data.someday.map((t) => ({ task: t, list: "Someday" })),
-  ];
   // Only unassigned project tasks (assigned ones show under their milestone)
-  const projectTasks = allTasks.filter(
-    ({ task }) => task.project === project.title && !task.milestoneId,
+  const projectTasks = data.tasks.filter(
+    (task) => task.project === project.title && !task.milestoneId,
   );
 
   // Registers & records: counts and summary lines for the accordion heads
@@ -212,8 +206,8 @@ export function ProjectDetail() {
       m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title })),
     ),
     ...projectTasks
-      .filter(({ task }) => task.next && !task.done)
-      .map(({ task }) => ({ text: task.text, source: task.context })),
+      .filter((task) => task.next && !task.done)
+      .map((task) => ({ text: task.text, source: task.context })),
   ];
   const handleGenerateNextActionsSummary = async () => {
     const executiveUpdates = project.updates.filter((u) => u.type === "executive");
@@ -961,7 +955,7 @@ export function ProjectDetail() {
                       <div className="section-h">
                         Project Tasks
                         <span style={{ fontWeight: 400, color: "var(--ink-4)", marginLeft: 6 }}>
-                          — {projectTasks.filter(({ task }) => !task.done).length} open
+                          — {projectTasks.filter((task) => !task.done).length} open
                         </span>
                       </div>
                       <div className="card" style={{ padding: "6px 10px 8px" }}>
@@ -970,7 +964,7 @@ export function ProjectDetail() {
                             No tasks yet. Add one below or tag this project on any task.
                           </div>
                         )}
-                        {projectTasks.map(({ task: t, list }) => (
+                        {projectTasks.map((t) => (
                           <div key={t.id} className="task-row">
                             <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
                             <button
@@ -982,7 +976,6 @@ export function ProjectDetail() {
                               {t.text}
                             </button>
                             <StateTag task={t} />
-                            <span className="chip" style={{ fontSize: 11, color: "var(--ink-3)" }}>{list}</span>
                             <span className="chip context">{t.context}</span>
                             {t.due && (
                               <span style={{ fontSize: 11.5, color: isOverdue(t.due, t.done) ? "var(--danger)" : "var(--ink-4)", whiteSpace: "nowrap" }}>

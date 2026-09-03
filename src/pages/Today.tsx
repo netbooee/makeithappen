@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ChevronRight, Flag } from "lucide-react";
 import { useStore } from "../store/store";
-import { Bar, StateTag, StatusChip, TaskMarker, riskColor } from "../components/ui";
+import { Bar, StateTag, StatusChip, TaskMarker, isOverdue, riskColor, toDateInputValue } from "../components/ui";
 import { TaskEditPanel } from "../components/TaskEditPanel";
+
+/** Same soonest-due-first, undated-last comparator used on the Tasks page. */
+function sortByDue<T>(items: T[], due: (item: T) => string | undefined): T[] {
+  return [...items].sort((a, b) => {
+    const da = toDateInputValue(due(a));
+    const db = toDateInputValue(due(b));
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.localeCompare(db);
+  });
+}
 
 export function Today() {
   const { data, workspace, toggleTask, toggleHabit } = useStore();
@@ -14,9 +26,21 @@ export function Today() {
     weekday: "long", month: "long", day: "numeric",
   });
   const spotlight = data.spotlight;
-  const spotlightTask = data.todayTasks.find((t) => t.text.startsWith(spotlight.text.slice(0, 18)));
+  const spotlightTask = data.tasks.find((t) => t.text.startsWith(spotlight.text.slice(0, 18)));
   const activeProjects = data.projects.filter((p) => p.status === "active").slice(0, 4);
   const followUps = data.contacts.filter((c) => c.followUp);
+
+  const todaysTasks = useMemo(() => {
+    const todayIso = toDateInputValue(new Date().toISOString().slice(0, 10));
+    const matches = data.tasks.filter((t) => {
+      if (t.done) return false;
+      if (t.next) return true;
+      const due = toDateInputValue(t.due);
+      if (!due) return false;
+      return due === todayIso || isOverdue(t.due, t.done);
+    });
+    return sortByDue(matches, (t) => t.due);
+  }, [data.tasks]);
 
   const goToProjectByTitle = (title: string | null) => {
     const p = title ? data.projects.find((x) => x.title === title) : null;
@@ -66,7 +90,7 @@ export function Today() {
       {/* Today's tasks */}
       <div className="section-h">Today's tasks</div>
       <div className="card" style={{ padding: "6px 10px 8px", marginBottom: 24 }}>
-        {data.todayTasks.map((t) => (
+        {todaysTasks.map((t) => (
           <div key={t.id} className="task-row">
             <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
             <button

@@ -47,11 +47,9 @@ export function SearchModal({ close }: { close: () => void }) {
           out.push({ type: "project", id: p.id, label: p.title, sub: p.desc ?? "", path: `/projects/${p.id}` });
         }
       }
-      for (const list of [all[ws].todayTasks, all[ws].upcoming, all[ws].someday]) {
-        for (const t of list) {
-          if (t.text.toLowerCase().includes(q)) {
-            out.push({ type: "task", id: t.id, label: t.text, sub: t.project ?? t.context, path: "/tasks" });
-          }
+      for (const t of all[ws].tasks) {
+        if (t.text.toLowerCase().includes(q)) {
+          out.push({ type: "task", id: t.id, label: t.text, sub: t.project ?? t.context, path: "/tasks" });
         }
       }
       for (const h of all[ws].habits) {

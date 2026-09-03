@@ -3,27 +3,14 @@ import { createPortal } from "react-dom";
 import { ListTodo, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { DateInput } from "./ui";
-import type { Task, TaskGroup } from "../lib/types";
+import type { Task } from "../lib/types";
 import { contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
 
-const GROUPS: { key: TaskGroup; label: string }[] = [
-  { key: "today", label: "Today" },
-  { key: "upcoming", label: "Upcoming" },
-  { key: "someday", label: "Someday" },
-];
-
 export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => void }) {
-  const { data, updateTask, moveTask, deleteTask } = useStore();
+  const { data, updateTask, deleteTask } = useStore();
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  let task: Task | undefined;
-  let group: TaskGroup = "today";
-  for (const [g, list] of [
-    ["today", data.todayTasks], ["upcoming", data.upcoming], ["someday", data.someday],
-  ] as [TaskGroup, Task[]][]) {
-    const found = list.find((t) => t.id === taskId);
-    if (found) { task = found; group = g; break; }
-  }
+  const task = data.tasks.find((t) => t.id === taskId);
 
   useEffect(() => { if (!task) close(); }, [task, close]);
   useEffect(() => { bodyRef.current?.scrollTo(0, 0); }, []);
@@ -63,22 +50,6 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label className="field-label">Task</label>
             <input className="input" value={task.text} onChange={(e) => set({ text: e.target.value })} style={{ fontWeight: 500 }} />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label className="field-label">List</label>
-            <div className="segmented" style={{ display: "flex" }}>
-              {GROUPS.map((g) => (
-                <button
-                  key={g.key}
-                  className={group === g.key ? "active" : ""}
-                  style={{ flex: 1 }}
-                  onClick={() => moveTask(task!.id, g.key)}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

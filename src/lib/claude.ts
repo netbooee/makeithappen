@@ -525,7 +525,7 @@ export function serializeContext(ws: Workspace, data: WorkspaceData, user: User)
     })
     .join("\n\n");
 
-  const tasks = [...data.todayTasks, ...data.upcoming]
+  const tasks = data.tasks
     .filter((t) => !t.done)
     .map((t) => `  - ${t.text}${t.next ? " (NEXT ACTION)" : ""}${t.due ? ` due ${t.due}` : ""} ${t.context}${t.project ? ` [${t.project}]` : ""}`)
     .join("\n");
@@ -585,16 +585,17 @@ function localAssistant(question: string, data: WorkspaceData): string {
     return `These contacts could use a follow-up:\n\n${lines.join("\n")}`;
   }
   if (q.includes("weekly review") || q.includes("gtd")) {
-    const openCount = [...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length;
+    const openCount = data.tasks.filter((t) => !t.done).length;
+    const nextCount = data.tasks.filter((t) => t.next && !t.done).length;
     const activeProjects = data.projects.filter((p) => p.status === "active");
-    const waiting = [...data.todayTasks, ...data.upcoming].filter((t) => t.state === "waiting" && !t.done);
-    return `Let's run a quick weekly review.\n\n1. Open loops: you have ${openCount} open tasks and ${data.someday.length} someday items.\n2. Active projects (${activeProjects.length}): ${activeProjects.map((p) => `${p.title} (${Math.round(p.progress * 100)}%)`).join(", ")}.\n3. Waiting on: ${waiting.length ? waiting.map((t) => `${t.text} — ${t.waitFor}`).join("; ") : "nothing"}.\n4. Each active project has a flagged next action — good GTD hygiene.\n\nSuggestion: clear the two "Today" next actions first, then review the someday list for anything to promote.`;
+    const waiting = data.tasks.filter((t) => t.state === "waiting" && !t.done);
+    return `Let's run a quick weekly review.\n\n1. Open loops: you have ${openCount} open tasks, ${nextCount} flagged as next actions.\n2. Active projects (${activeProjects.length}): ${activeProjects.map((p) => `${p.title} (${Math.round(p.progress * 100)}%)`).join(", ")}.\n3. Waiting on: ${waiting.length ? waiting.map((t) => `${t.text} — ${t.waitFor}`).join("; ") : "nothing"}.\n4. Each active project has a flagged next action — good GTD hygiene.\n\nSuggestion: clear the flagged next actions first, then look for anything still undone that deserves one.`;
   }
   if (q.includes("draft") && q.includes("email")) {
     return `Open the project, find the latest status update, and hit "Draft email" — I'll compose it from the project's milestone status and the update text. Or tell me which project and I'll summarize it here.`;
   }
   const active = data.projects.filter((p) => p.status === "active");
-  return `Here's a quick snapshot: ${active.length} active projects, ${[...data.todayTasks, ...data.upcoming].filter((t) => !t.done).length} open tasks, and ${data.habits.filter((h) => !h.doneToday).length} habits left today. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Add your Anthropic API key in Settings to unlock full conversational AI.)`;
+  return `Here's a quick snapshot: ${active.length} active projects, ${data.tasks.filter((t) => !t.done).length} open tasks, and ${data.habits.filter((h) => !h.doneToday).length} habits left today. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Add your Anthropic API key in Settings to unlock full conversational AI.)`;
 }
 
 export async function askAssistant(

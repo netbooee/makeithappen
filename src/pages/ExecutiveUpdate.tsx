@@ -98,7 +98,7 @@ export function ExecutiveUpdate() {
   const [draft, setDraft] = useState("");
 
   const entries = useMemo<ExecEntry[]>(() => {
-    const taskPool = [...data.todayTasks, ...data.upcoming, ...data.someday];
+    const taskPool = data.tasks;
     const raw = data.projects
       .map((project) => {
         const execUpdate = latestExecUpdate(project);

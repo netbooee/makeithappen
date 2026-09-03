@@ -16,21 +16,17 @@ export const SEED: AppData = {
       due: "Today · 5:00 PM",
       context: "@calls",
     },
-    todayTasks: [
+    tasks: [
       { id: "wt1", text: "Send launch brief to Priya for sign-off", done: false, next: true, context: "@calls", project: "Product Launch (Sample)" },
       { id: "wt2", text: "Approve pricing page copy from Alex", done: false, next: true, context: "@work", project: "Product Launch (Sample)" },
       { id: "wt3", text: "Stand-up with the platform team", done: true, next: false, context: "@work", project: null },
       { id: "wt4", text: "Review vendor contract renewal", done: false, next: false, context: "@work", project: null },
       { id: "wt5", text: "Offsite venue — shortlist & book", done: false, state: "delegated", to: "Alex", context: "@calls", project: null },
       { id: "wt6", text: "Legal sign-off on partner agreement", done: false, state: "waiting", waitFor: "Luis (counsel)", context: "@work", project: null },
-    ],
-    upcoming: [
       { id: "wu1", text: "Beta wrap-up report to stakeholders", done: false, next: true, context: "@work", project: "Product Launch (Sample)", due: "Tomorrow", reminder: "9:00 AM" },
       { id: "wu2", text: "Pricing sign-off meeting with finance", done: false, next: false, context: "@work", project: "Product Launch (Sample)", due: "Jul 10" },
       { id: "wu3", text: "1:1 with Alex about launch campaign", done: false, next: false, context: "@calls", project: "Product Launch (Sample)", due: "Jun 25", reminder: "2:30 PM" },
       { id: "wu4", text: "Legal review of launch partner agreements", done: false, state: "waiting", waitFor: "Luis (counsel)", context: "@work", project: null, due: "Jun 30" },
-    ],
-    someday: [
       { id: "ws1", text: "Write up the platform migration RFC", done: false, next: false, context: "@work", project: null },
       { id: "ws2", text: "Explore a referral program", done: false, next: false, context: "@work", project: null },
       { id: "ws3", text: "Refresh the onboarding email sequence", done: false, next: false, context: "@work", project: null },
@@ -167,22 +163,18 @@ export const SEED: AppData = {
       due: "This week",
       context: "@errands",
     },
-    todayTasks: [
+    tasks: [
       { id: "pt1", text: "Review flooring samples with designer", done: false, next: true, context: "@errands", project: "Home Renovation (Sample)" },
       { id: "pt2", text: "Call Mom", done: false, next: true, context: "@calls", project: null },
       { id: "pt3", text: "Morning run — 5k", done: true, next: false, context: "@home", project: null },
       { id: "pt4", text: "Pick up dry cleaning", done: false, next: false, context: "@errands", project: null },
       { id: "pt6", text: "Confirm demo start date with Rivera Contracting", done: false, state: "waiting", waitFor: "Rivera Contracting", context: "@calls", project: "Home Renovation (Sample)" },
       { id: "pt5", text: "Finish 'The Overstory'", done: false, next: false, context: "@home", project: null },
-    ],
-    upcoming: [
       { id: "pu1", text: "Schedule the dentist appointment", done: false, next: true, context: "@calls", project: null, due: "This week", reminder: "Mon 10 AM" },
       { id: "pu2", text: "Contractor kickoff meeting", done: false, next: false, context: "@home", project: "Home Renovation (Sample)", due: "Jun 20" },
       { id: "pu5", text: "Materials delivery window", done: false, state: "waiting", waitFor: "arrives Jul 5", context: "@home", project: "Home Renovation (Sample)", due: "Jul 5" },
       { id: "pu3", text: "Submit permit application", done: false, next: false, context: "@errands", project: "Home Renovation (Sample)", due: "Jun 25" },
       { id: "pu4", text: "Sam's anniversary — send a note", done: false, next: false, context: "@calls", project: null, due: "Sep 2", reminder: "Sep 1" },
-    ],
-    someday: [
       { id: "ps-t1", text: "Look into a pottery class", done: false, next: false, context: "@home", project: null },
       { id: "ps-t2", text: "Research home gym options for the basement", done: false, next: false, context: "@errands", project: null },
       { id: "ps-t3", text: "Plan a visit to Theo in Berlin", done: false, next: false, context: "@home", project: null },

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { SEED } from "../data/seed";
 import { supabase, supabaseConfigured, saveTweaks, loadUserData, saveUserData } from "../lib/supabase";
 import type {
-  AppData, Contact, ContactTouch, Habit, Milestone, Project, StatusUpdate, Subtask, Task, TaskGroup, Tweaks, Workspace, WorkspaceData,
+  AppData, Contact, ContactTouch, Habit, Milestone, Project, StatusUpdate, Subtask, Task, Tweaks, Workspace, WorkspaceData,
 } from "../lib/types";
 
 const DATA_KEY = "mih_data_v1";
@@ -21,6 +21,28 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * Old saved data stored standalone tasks across three parallel arrays
+ * (`todayTasks`/`upcoming`/`someday`) instead of a single `tasks` list.
+ * Collapse that old shape into the new one in place so returning users
+ * (localStorage or Supabase) don't lose their tasks.
+ */
+function migrateWorkspaceData(d: any): WorkspaceData {
+  if (d && !d.tasks && (d.todayTasks || d.upcoming || d.someday)) {
+    d.tasks = [...(d.todayTasks ?? []), ...(d.upcoming ?? []), ...(d.someday ?? [])];
+    delete d.todayTasks;
+    delete d.upcoming;
+    delete d.someday;
+  }
+  return d;
+}
+
+function migrateAppData(a: AppData): AppData {
+  if (a?.work) migrateWorkspaceData(a.work);
+  if (a?.personal) migrateWorkspaceData(a.personal);
+  return a;
+}
+
 export interface Store {
   workspace: Workspace;
   setWorkspace: (ws: Workspace) => void;
@@ -31,9 +53,8 @@ export interface Store {
   tweaks: Tweaks;
   setTweak: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
   toggleTask: (id: string) => void;
-  addTask: (task: Task, group: TaskGroup) => void;
+  addTask: (task: Task) => void;
   updateTask: (id: string, patch: Partial<Task>) => void;
-  moveTask: (id: string, toGroup: TaskGroup) => void;
   deleteTask: (id: string) => void;
   toggleSubtask: (projectId: string, milestoneId: string, subtaskId: string) => void;
   addProject: (project: Project) => void;
@@ -82,7 +103,7 @@ function computeStreak(checkins: string[]): number {
 const Ctx = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [all, setAll] = useState<AppData>(() => load(DATA_KEY, SEED));
+  const [all, setAll] = useState<AppData>(() => migrateAppData(load(DATA_KEY, SEED)));
   const [workspace, setWorkspace] = useState<Workspace>(
     () => (localStorage.getItem(WS_KEY) as Workspace) || "work",
   );
@@ -101,7 +122,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = supabase;
     loadUserData<AppData>().then((loaded) => {
       if (loaded) {
-        setAll(loaded);
+        setAll(migrateAppData(loaded));
       } else {
         // First login: populate user profile from Google session and upload local data.
         return sb.auth.getUser().then(({ data: { user } }) => {
@@ -176,47 +197,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       toggleTask: (id) =>
         mutate((d) => {
-          for (const list of [d.todayTasks, d.upcoming, d.someday]) {
-            const t = list.find((x) => x.id === id);
-            if (t) t.done = !t.done;
-          }
+          const t = d.tasks.find((x) => x.id === id);
+          if (t) t.done = !t.done;
         }),
 
-      addTask: (task, group) =>
-        mutate((d) => {
-          const list = group === "today" ? d.todayTasks : group === "upcoming" ? d.upcoming : d.someday;
-          list.unshift(task);
-        }),
+      addTask: (task) => mutate((d) => d.tasks.unshift(task)),
 
       updateTask: (id, patch) =>
         mutate((d) => {
-          for (const list of [d.todayTasks, d.upcoming, d.someday]) {
-            const t = list.find((x) => x.id === id);
-            if (t) Object.assign(t, patch);
-          }
-        }),
-
-      moveTask: (id, toGroup) =>
-        mutate((d) => {
-          const lists: [TaskGroup, Task[]][] = [
-            ["today", d.todayTasks], ["upcoming", d.upcoming], ["someday", d.someday],
-          ];
-          for (const [group, list] of lists) {
-            const i = list.findIndex((x) => x.id === id);
-            if (i >= 0 && group !== toGroup) {
-              const [t] = list.splice(i, 1);
-              const target = toGroup === "today" ? d.todayTasks : toGroup === "upcoming" ? d.upcoming : d.someday;
-              target.unshift(t);
-              return;
-            }
-          }
+          const t = d.tasks.find((x) => x.id === id);
+          if (t) Object.assign(t, patch);
         }),
 
       deleteTask: (id) =>
         mutate((d) => {
-          d.todayTasks = d.todayTasks.filter((x) => x.id !== id);
-          d.upcoming = d.upcoming.filter((x) => x.id !== id);
-          d.someday = d.someday.filter((x) => x.id !== id);
+          d.tasks = d.tasks.filter((x) => x.id !== id);
         }),
 
       toggleSubtask: (projectId, milestoneId, subtaskId) =>
@@ -438,8 +433,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
 
       importData: (data: AppData) => {
-        setAll(data);
-        saveUserData(data);
+        const migrated = migrateAppData(data);
+        setAll(migrated);
+        saveUserData(migrated);
       },
 
       updateUser: (patch) =>
