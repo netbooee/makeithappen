@@ -8,7 +8,7 @@ import type { Contact, Milestone, Project, Subtask, SubtaskStatus } from "./type
 import { safeHref } from "./safeUrl";
 import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
-import { assigneeAvatar, projectContactPool } from "./projectContacts";
+import { assigneeAvatar, findProjectContact, projectContactPool } from "./projectContacts";
 
 /* ── Design tokens (Modernist, from the handoff's styles.css + README RAG additions) ───────── */
 const C = {
@@ -524,12 +524,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const total = m.subtasks.length, done = m.subtasks.filter((s) => isSubtaskComplete(s)).length;
     const meta = MILESTONE_STATUS_META[m.status] ?? { label: m.status, accent: false };
     const color = meta.accent ? C.accent700 : C.n600;
+    const phaseComplete = m.status === "complete";
     return `
       <details data-v2-phase style="border-top:2px solid ${C.divider};margin-bottom:26px">
         <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;background:${C.n200};padding:12px 14px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
-          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1">${esc(m.title)}</h3>
+          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${C.n600}">${esc(m.title)}</h3>
+          <span style="font-size:12px;color:${C.n700};white-space:nowrap">${dateRangeCopy(m)}</span>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
+          ${phaseComplete ? chipOutline("Completed", RAG.green.text) : ""}
         </summary>
         <div style="padding:0 14px">
           ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks).map(taskRow).join("")}
@@ -693,6 +696,51 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <a href="${esc(safeHref(r.url))}" target="_blank" rel="noopener noreferrer" style="font-size:14px;font-weight:600;color:${C.accent700}">${esc(r.label)}</a>
         </div>`).join("");
 
+  // Meetings — same newest-first sort as v1's Meeting Agendas section. The register only lists
+  // meeting name + date; clicking the name opens a <dialog> pop-up with the full agenda and notes.
+  const sortedAgendas = [...(project.agendas ?? [])].sort((a, b) => {
+    const da = toDateInputValue(a.date), db = toDateInputValue(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return db.localeCompare(da);
+  });
+  const meetingDialogsHtml = sortedAgendas.map((ag, i) => {
+    const attendeeNames = ag.attendees
+      .map((att) => findProjectContact(contactPool, att)?.name)
+      .filter((n): n is string => !!n);
+    const itemsHtml = ag.items.length === 0
+      ? `<div style="font-size:13px;color:${C.n700}">No agenda items.</div>`
+      : ag.items.map((it) => `
+        <div style="padding:8px 0;border-top:1px solid ${C.divider}">
+          <div style="font-size:14px;font-weight:600">${esc(it.text)}</div>
+          ${it.detail ? `<div style="font-size:13px;color:${C.n700};margin-top:2px">${esc(it.detail)}</div>` : ""}
+        </div>`).join("");
+    return `
+      <dialog id="v2-meeting-${i}" class="v2-dialog">
+        <div style="padding:24px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <h3 style="font-size:20px;letter-spacing:-0.01em;margin:0;line-height:1.3">${esc(ag.title)}</h3>
+            <button type="button" onclick="this.closest('dialog').close()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Close</button>
+          </div>
+          ${ag.date ? `<div style="font-size:12px;color:${C.n700};margin-top:4px">${fmtDateLong(ag.date)}</div>` : ""}
+          ${attendeeNames.length > 0 ? `<div style="font-size:13px;color:${C.n700};margin-top:8px">${attendeeNames.map((n) => esc(n)).join(", ")}</div>` : ""}
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Agenda</div>
+          ${itemsHtml}
+          ${ag.notes ? `
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Notes</div>
+          <div style="font-size:13px;color:${C.n700};line-height:1.5;white-space:pre-wrap">${esc(ag.notes)}</div>` : ""}
+        </div>
+      </dialog>`;
+  }).join("");
+  const meetingsHtml = sortedAgendas.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No meetings logged.</div>`
+    : sortedAgendas.map((ag, i) => `
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid ${C.divider}">
+          <button type="button" onclick="document.getElementById('v2-meeting-${i}').showModal()" style="background:none;border:none;padding:0;font-family:${FONT};font-size:14px;font-weight:600;color:${C.accent700};cursor:pointer;text-align:left">${esc(ag.title)}</button>
+          ${ag.date ? `<span style="font-size:11px;color:${C.n700};white-space:nowrap">${fmtDateShort(ag.date)}</span>` : ""}
+        </div>`).join("");
+
   // Open registers
   const risksCount = project.risks?.length ?? 0;
   const issuesCount = project.issues?.length ?? 0;
@@ -752,6 +800,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     railSection("Status log", statusLogHtml),
     railSection("Internal team", teamHtml),
     railSection("Stakeholders", stakeholdersHtml),
+    railSection("Meetings", meetingsHtml, { id: "v2-meetings" }),
     railSection("Decisions", decisionsHtml),
     railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
     railSection("Issues", issuesHtml, { id: "v2-issues" }),
@@ -762,7 +811,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   <div id="v2-band-g" class="v2-2col v2-band-g" style="border-top:2px solid ${C.divider}">
     <div class="v2-band-g-left" style="padding:32px">${taskDetailLeft}</div>
     <div class="v2-right" style="padding:32px">${detailRight}</div>
-  </div>`;
+  </div>
+  ${meetingDialogsHtml}`;
 
   /* ── Band H — Footer ──────────────────────────────────────────────────────────────────────── */
   const feedbackHtml = feedbackEmail
@@ -797,6 +847,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     .v2-rail-chev{display:inline-block;font-size:8px;line-height:1;color:${C.n600};transition:transform .15s;flex-shrink:0}
     details[open]>summary .v2-rail-chev{transform:rotate(90deg)}
     .v2-feedback-link:hover{color:${C.accent700}}
+    dialog.v2-dialog{border:2px solid ${C.divider};border-radius:0;padding:0;background:${C.bg};color:${C.text};max-width:560px;width:90vw}
+    dialog.v2-dialog::backdrop{background:rgba(32,30,29,.55)}
     :focus-visible{outline:2px solid ${C.accent};outline-offset:2px}
     .v2-2col{display:grid;grid-template-columns:1.85fr 1fr}
     .v2-band-b .v2-right,.v2-band-e .v2-right{border-left:2px solid ${C.divider}}
@@ -834,7 +886,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${project.title.toLowerCase().replace(/[^a-z0-9]/g, "")}-v2.html`;
+  a.download = `${project.title.toLowerCase().replace(/[^a-z0-9]/g, "")}.html`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
