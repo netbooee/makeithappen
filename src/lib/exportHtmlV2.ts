@@ -209,29 +209,10 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   <div class="v2-2col v2-band-b" style="border-bottom:2px solid ${C.divider}">
     <div style="padding:40px 32px 32px">
       <h1 class="v2-h1" style="font-size:64px;line-height:1;letter-spacing:-0.03em;margin:0 0 16px">${esc(project.title)}</h1>
-      <p style="font-size:19px;line-height:1.45;max-width:56ch;margin:0 0 28px">${esc(project.desc)}</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;border-top:1px solid ${C.divider};padding-top:16px">
-        <div>
-          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Owner</div>
-          <div style="font-family:${FONT};font-weight:800;font-size:15px">${esc(project.owner)}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Status</div>
-          <div style="font-family:${FONT};font-weight:800;font-size:15px;color:${C.accent700}">${esc(statusLabel)}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Start</div>
-          <div style="font-family:${FONT};font-weight:800;font-size:15px">${startVal}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Due</div>
-          <div style="font-family:${FONT};font-weight:800;font-size:15px">${dueVal}</div>
-        </div>
-      </div>
+      <p style="font-size:19px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}</p>
     </div>
     <div class="v2-right" style="padding:40px 32px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
       <div>
-        ${project.heroImage ? `<img src="${esc(project.heroImage)}" alt="" style="width:100%;height:180px;object-fit:cover;border-radius:0;filter:grayscale(1);display:block;margin-bottom:24px">` : ""}
         <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:10px">Completion</div>
         <div style="display:flex;align-items:baseline;gap:10px">
           <span style="font-family:${FONT};font-weight:800;font-size:88px;line-height:.85;letter-spacing:-0.04em">${pct}</span>
@@ -340,9 +321,34 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     </div>`;
   })() : "";
 
+  const metaRow = `
+  <div style="padding:18px 32px 16px;border-bottom:1px solid ${C.divider}">
+    <div class="v2-meta-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Owner</div>
+        <div style="font-family:${FONT};font-weight:800;font-size:15px">${esc(project.owner)}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Status</div>
+        <div style="font-family:${FONT};font-weight:800;font-size:15px;color:${C.accent700}">${esc(statusLabel)}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Start</div>
+        <div style="font-family:${FONT};font-weight:800;font-size:15px">${startVal}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:4px">Due</div>
+        <div style="font-family:${FONT};font-weight:800;font-size:15px">${dueVal}</div>
+      </div>
+    </div>
+  </div>`;
+
   const bandC = `
-  <div class="v2-metrics" style="--cols:${showBudget ? 4 : 3};border-bottom:2px solid ${C.divider}">
-    ${healthCell}${riskCell}${scheduleCell}${budgetCell}
+  <div style="border-bottom:2px solid ${C.divider}">
+    ${metaRow}
+    <div class="v2-metrics" style="--cols:${showBudget ? 4 : 3}">
+      ${healthCell}${riskCell}${scheduleCell}${budgetCell}
+    </div>
   </div>`;
 
   /* ── Band D — Executive poster ────────────────────────────────────────────────────────────── */
@@ -447,7 +453,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     if (s.next && !s.done) tags.push(chipFilled("Next"));
     if (complete) tags.push(chipOutline("Complete", RAG.green.text));
     else if (s.taskStatus) tags.push(chipOutline(TASK_STATUS_LABEL[s.taskStatus], TASK_STATUS_COLOR[s.taskStatus]));
-    const due = s.due ? `<span style="font-size:11px;color:${!complete && isExportOverdue(s.due) ? C.accent700 : C.n700}">${esc(s.due)}</span>` : "";
+    const due = s.due ? `<span style="font-size:11px;font-weight:600;color:${!complete && isExportOverdue(s.due) ? C.accent700 : C.n700};flex-shrink:0">${esc(s.due)}</span>` : "";
     const hasExtras = !!s.notes || tags.length > 0 || !!due;
     const av = assigneeAvatar(contactPool, s.assignee, s.who);
     const ownerLabel = av.ini || s.who || "";
@@ -458,9 +464,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         <div style="display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-top:1px solid ${C.divider}">
           ${checkbox}
           <div>
-            <div style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n700}` : ""}">${esc(s.t)}</div>
-            ${s.notes ? `<div style="font-size:13px;color:${C.n700};line-height:1.45;margin-top:3px">${esc(s.notes)}</div>` : ""}
-            ${tags.length || due ? `<div style="display:flex;align-items:center;gap:6px;margin-top:7px">${tags.join("")}${due}</div>` : ""}
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+              <span style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n700}` : ""}">${esc(s.t)}</span>
+              ${tags.join("")}
+              ${due}
+            </div>
+            ${s.notes ? `<div style="font-size:13px;color:${C.n700};line-height:1.45;margin-top:5px">${esc(s.notes)}</div>` : ""}
           </div>
           ${ownerLabel ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;color:${C.n700};margin-top:3px">${esc(ownerLabel)}</span>` : "<span></span>"}
         </div>`;
@@ -471,7 +480,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const meta = MILESTONE_STATUS_META[m.status] ?? { label: m.status, accent: false };
     const color = meta.accent ? C.accent700 : C.n600;
     return `
-      <details data-v2-phase open style="border-top:2px solid ${C.divider};padding-top:14px;margin-bottom:26px">
+      <details data-v2-phase style="border-top:2px solid ${C.divider};padding-top:14px;margin-bottom:26px">
         <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
           <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1">${esc(m.title)}</h3>
@@ -490,7 +499,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         ds.forEach(function(d){ if(!d.open) anyClosed=true; });
         ds.forEach(function(d){ d.open=anyClosed; });
         document.getElementById('v2-phase-toggle-all').textContent=anyClosed?'Collapse all':'Expand all';
-      " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Collapse all</button>` : ""}
+      " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Expand all</button>` : ""}
     </div>
     <p style="font-size:13px;color:${C.n700};margin:0 0 24px">${totalSubs > 0 ? `All ${totalSubs} task${totalSubs === 1 ? "" : "s"} by phase, for project stakeholders.` : "No tasks recorded for this project yet."}</p>
     ${phasesTotal === 0 ? `<div style="font-size:13px;color:${C.n700}">No milestones yet.</div>` : phaseBlocks}`;
@@ -551,17 +560,26 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   // Decisions
   const decisions = [...(project.decisions ?? [])].sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
-  const decisionsHtml = decisions.length === 0
-    ? `<div style="font-size:13px;color:${C.n700}">No decisions logged.</div>`
-    : decisions.map((d, i) => `
-        <div style="${i < decisions.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+  const renderDecisionRow = (d: (typeof decisions)[number], withDivider: boolean) => `
+        <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">${d.owner ? `Decided · ${esc(d.owner)}` : "Decided"}</span>
             <span style="font-size:11px;color:${C.n700}">${esc(d.decidedDate)}</span>
           </div>
           <div style="font-size:14px;font-weight:600;line-height:1.4;margin-top:6px">${esc(d.title)}</div>
           ${d.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(d.description)}</div>` : ""}
-        </div>`).join("");
+        </div>`;
+  const DECISIONS_SHOWN = 3;
+  const shownDecisions = decisions.slice(0, DECISIONS_SHOWN);
+  const olderDecisions = decisions.slice(DECISIONS_SHOWN);
+  const decisionsHtml = decisions.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No decisions logged.</div>`
+    : shownDecisions.map((d, i) => renderDecisionRow(d, i < shownDecisions.length - 1 || olderDecisions.length > 0)).join("")
+      + (olderDecisions.length === 0 ? "" : `
+        <details style="margin-top:0">
+          <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${olderDecisions.length} older decision${olderDecisions.length === 1 ? "" : "s"}</summary>
+          <div style="margin-top:12px">${olderDecisions.map((d, i) => renderDecisionRow(d, i < olderDecisions.length - 1)).join("")}</div>
+        </details>`);
 
   // Risk register
   const SEV_TEXT_COLOR: Record<string, string> = {
@@ -571,12 +589,10 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     low: C.n700,
   };
   const risks = project.risks ?? [];
-  const risksHtml = risks.length === 0
-    ? `<div style="font-size:13px;color:${C.n700}">No risks logged.</div>`
-    : risks.map((r, i) => {
-        const sev = SEV_MATRIX[r.probability]?.[r.impact] ?? "low";
-        return `
-        <div style="${i < risks.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+  const renderRiskRow = (r: (typeof risks)[number], withDivider: boolean) => {
+    const sev = SEV_MATRIX[r.probability]?.[r.impact] ?? "low";
+    return `
+        <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             ${chipOutline(sev, SEV_TEXT_COLOR[sev])}
             <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(r.status)}</span>
@@ -584,14 +600,23 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <div style="font-size:14px;line-height:1.4;margin-top:6px">${esc(r.description)}</div>
           ${r.mitigation ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(r.mitigation)}</div>` : ""}
         </div>`;
-      }).join("");
+  };
+  const RISKS_SHOWN = 2;
+  const shownRisks = risks.slice(0, RISKS_SHOWN);
+  const moreRisks = risks.slice(RISKS_SHOWN);
+  const risksHtml = risks.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No risks logged.</div>`
+    : shownRisks.map((r, i) => renderRiskRow(r, i < shownRisks.length - 1 || moreRisks.length > 0)).join("")
+      + (moreRisks.length === 0 ? "" : `
+        <details style="margin-top:0">
+          <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${moreRisks.length} more risk${moreRisks.length === 1 ? "" : "s"}</summary>
+          <div style="margin-top:12px">${moreRisks.map((r, i) => renderRiskRow(r, i < moreRisks.length - 1)).join("")}</div>
+        </details>`);
 
   // Issues
   const issues = project.issues ?? [];
-  const issuesHtml = issues.length === 0
-    ? `<div style="font-size:13px;color:${C.n700}">No issues logged.</div>`
-    : issues.map((iss, i) => `
-        <div style="${i < issues.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+  const renderIssueRow = (iss: (typeof issues)[number], withDivider: boolean) => `
+        <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             ${chipOutline(iss.severity, SEV_TEXT_COLOR[iss.severity])}
             <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(iss.status)}</span>
@@ -599,7 +624,18 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <div style="font-size:14px;font-weight:600;line-height:1.4;margin-top:6px">${esc(iss.title)}</div>
           ${iss.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.description)}</div>` : ""}
           ${iss.resolution ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.resolution)}</div>` : ""}
-        </div>`).join("");
+        </div>`;
+  const ISSUES_SHOWN = 2;
+  const shownIssues = issues.slice(0, ISSUES_SHOWN);
+  const moreIssues = issues.slice(ISSUES_SHOWN);
+  const issuesHtml = issues.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No issues logged.</div>`
+    : shownIssues.map((iss, i) => renderIssueRow(iss, i < shownIssues.length - 1 || moreIssues.length > 0)).join("")
+      + (moreIssues.length === 0 ? "" : `
+        <details style="margin-top:0">
+          <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${moreIssues.length} more issue${moreIssues.length === 1 ? "" : "s"}</summary>
+          <div style="margin-top:12px">${moreIssues.map((iss, i) => renderIssueRow(iss, i < moreIssues.length - 1)).join("")}</div>
+        </details>`);
 
   // Open registers
   const risksCount = project.risks?.length ?? 0;
@@ -632,10 +668,18 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         ${body}
       </div>`;
 
+  /** Whole-section accordion — the label itself is the toggle, default open. Used where the
+   *  user wants to be able to hide an entire section, as opposed to a "show N more" reveal. */
+  const railSectionCollapsible = (label: string, body: string, marginBottom = 28) => `
+      <details open style="margin-bottom:${marginBottom}px">
+        <summary style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-bottom:2px solid ${C.divider};padding-bottom:8px;margin-bottom:12px">${esc(label)}</summary>
+        ${body}
+      </details>`;
+
   const detailRight = [
     railSection("Status log", statusLogHtml),
-    railSection("Internal team", teamHtml),
-    railSection("Stakeholders", stakeholdersHtml),
+    railSectionCollapsible("Internal team", teamHtml),
+    railSectionCollapsible("Stakeholders", stakeholdersHtml),
     railSection("Decisions", decisionsHtml),
     railSection("Risk register", risksHtml),
     railSection("Issues", issuesHtml),
@@ -692,6 +736,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       .v2-band-d-right{border-left:none!important;border-top:2px solid rgba(243,242,242,.45);padding-left:0!important;padding-top:24px}
       .v2-metrics{grid-template-columns:repeat(2,1fr)}
       .v2-phase-grid{grid-template-columns:repeat(2,1fr)}
+      .v2-meta-row{grid-template-columns:repeat(2,1fr)}
       .v2-h1{font-size:44px!important}
       .v2-poster-stmt{font-size:26px!important}
     }
