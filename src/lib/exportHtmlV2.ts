@@ -374,7 +374,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate))[0];
 
   const bandD = !execUpdate ? "" : `
-  <div style="background:${C.accent};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
+  <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
     <div class="v2-2col v2-band-d" style="grid-template-columns:${decided ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
       <div>
         <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}</div>
