@@ -529,7 +529,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       <details data-v2-phase style="border-top:2px solid ${C.divider};margin-bottom:26px">
         <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;background:${C.n200};padding:12px 14px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
-          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${C.n600}">${esc(m.title)}</h3>
+          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${phaseComplete ? C.n600 : C.text}">${esc(m.title)}</h3>
           <span style="font-size:12px;color:${C.n700};white-space:nowrap">${dateRangeCopy(m)}</span>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
           ${phaseComplete ? chipOutline("Completed", RAG.green.text) : ""}
