@@ -109,6 +109,19 @@ function isExportOverdue(due: string): boolean {
   return d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+/** "MMM DD" — used for task-row due dates. Falls back to the raw string if unparseable. */
+function fmtDateShort(str: string | undefined): string {
+  const d = parseExportDate(str);
+  if (d) return `${_MONTHS[d.getMonth()]} ${d.getDate()}`;
+  return str && str !== "No date" && str !== "Not set" ? esc(str) : "";
+}
+/** "MMM DD, YYYY" — used for the Owner/Status/Start/Due meta row. Falls back to the raw string if unparseable. */
+function fmtDateLong(str: string | undefined): string {
+  const d = parseExportDate(str);
+  if (d) return `${_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  return str && str !== "No date" && str !== "Not set" ? esc(str) : "";
+}
+
 const SEV_MATRIX: Record<string, Record<string, string>> = {
   low:    { low: "low",    medium: "low",    high: "medium"   },
   medium: { low: "low",    medium: "medium", high: "high"     },
@@ -200,8 +213,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   /* ── Band B — Title block ─────────────────────────────────────────────────────────────────── */
   const statusLabel = STATUS_LABEL[project.status] ?? project.status;
-  const startVal = project.start ? esc(project.start) : "—";
-  const dueVal = project.due && project.due !== "No date" ? esc(project.due) : "—";
+  const startVal = project.start ? fmtDateLong(project.start) : "—";
+  const dueVal = project.due && project.due !== "No date" ? fmtDateLong(project.due) : "—";
   const targetVal = project.due && project.due !== "No date" ? esc(project.due) : "Not set";
   const daysRemain = daysRemaining(project.due);
 
@@ -209,7 +222,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   <div class="v2-2col v2-band-b" style="border-bottom:2px solid ${C.divider}">
     <div style="padding:40px 32px 32px">
       <h1 class="v2-h1" style="font-size:64px;line-height:1;letter-spacing:-0.03em;margin:0 0 16px">${esc(project.title)}</h1>
-      <p style="font-size:19px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}</p>
+      <p style="font-size:21px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}</p>
     </div>
     <div class="v2-right" style="padding:40px 32px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
       <div>
@@ -361,7 +374,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate))[0];
 
   const bandD = !execUpdate ? "" : `
-  <div style="background:${C.accent};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
+  <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
     <div class="v2-2col v2-band-d" style="grid-template-columns:${decided ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
       <div>
         <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}</div>
@@ -378,25 +391,30 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   /* ── Band E — Coming up next / Next action ────────────────────────────────────────────────── */
   const nextRows = nextActionSubtasks(project);
-  const nextRow = nextRows[0];
+  const NEXT_ACTIONS_SHOWN = 3;
+  const nextRowsShown = nextRows.slice(0, NEXT_ACTIONS_SHOWN);
   const contactPool = projectContactPool(project, contacts);
   const leftText = project.nextActionsAiSummary ?? "";
 
   let rightHtml = "";
-  if (nextRow) {
-    const av = assigneeAvatar(contactPool, nextRow.subtask.assignee, nextRow.subtask.who);
-    const ownerLabel = av.ini || nextRow.subtask.who || "";
-    const statusText = nextRow.subtask.taskStatus ? TASK_STATUS_LABEL[nextRow.subtask.taskStatus] : "Scheduled";
-    const metaText = ownerLabel ? `${statusText} · Owner ${esc(ownerLabel)}` : statusText;
-    rightHtml = `
-      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Next action</div>
+  if (nextRowsShown.length > 0) {
+    const rowsHtml = nextRowsShown.map(({ subtask }) => {
+      const av = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
+      const ownerLabel = av.ini || subtask.who || "";
+      const statusText = subtask.taskStatus ? TASK_STATUS_LABEL[subtask.taskStatus] : "Scheduled";
+      const metaText = ownerLabel ? `${statusText} · Owner ${esc(ownerLabel)}` : statusText;
+      return `
       <div style="display:flex;align-items:flex-start;gap:10px">
         ${chipFilled("Next")}
         <div>
-          <div style="font-family:${FONT};font-weight:800;font-size:15px;line-height:1.3">${esc(nextRow.subtask.t)}</div>
+          <div style="font-family:${FONT};font-weight:800;font-size:15px;line-height:1.3">${esc(subtask.t)}</div>
           <div style="font-size:12px;color:${C.n700};margin-top:3px">${metaText}</div>
         </div>
       </div>`;
+    }).join("");
+    rightHtml = `
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Next action${nextRowsShown.length > 1 ? "s" : ""}</div>
+      <div style="display:flex;flex-direction:column;gap:14px">${rowsHtml}</div>`;
   }
   const leftHtml = leftText
     ? `<div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Coming up next</div>
@@ -449,12 +467,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   };
   const taskRow = (s: Subtask): string => {
     const complete = isSubtaskComplete(s);
-    const tags: string[] = [];
-    if (s.next && !s.done) tags.push(chipFilled("Next"));
-    if (complete) tags.push(chipOutline("Complete", RAG.green.text));
-    else if (s.taskStatus) tags.push(chipOutline(TASK_STATUS_LABEL[s.taskStatus], TASK_STATUS_COLOR[s.taskStatus]));
-    const due = s.due ? `<span style="font-size:11px;font-weight:600;color:${!complete && isExportOverdue(s.due) ? C.accent700 : C.n700};flex-shrink:0">${esc(s.due)}</span>` : "";
-    const hasExtras = !!s.notes || tags.length > 0 || !!due;
+    const nextTag = (s.next && !s.done) ? chipFilled("Next") : "";
+    const rightTags: string[] = [];
+    if (complete) rightTags.push(chipOutline("Complete", RAG.green.text));
+    else if (s.taskStatus) rightTags.push(chipOutline(TASK_STATUS_LABEL[s.taskStatus], TASK_STATUS_COLOR[s.taskStatus]));
+    const dueHtml = s.due
+      ? `<span style="font-size:11px;font-weight:600;color:${!complete && isExportOverdue(s.due) ? C.accent700 : C.n700};white-space:nowrap">${fmtDateShort(s.due)}</span>`
+      : "";
+    const showNotes = !!s.notes && !complete;
+    const hasExtras = !!nextTag || rightTags.length > 0 || !!dueHtml || showNotes;
     const av = assigneeAvatar(contactPool, s.assignee, s.who);
     const ownerLabel = av.ini || s.who || "";
     const checkbox = complete
@@ -465,13 +486,16 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${checkbox}
           <div>
             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-              <span style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n700}` : ""}">${esc(s.t)}</span>
-              ${tags.join("")}
-              ${due}
+              <span style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n500}` : ""}">${esc(s.t)}</span>
+              ${nextTag}
             </div>
-            ${s.notes ? `<div style="font-size:13px;color:${C.n700};line-height:1.45;margin-top:5px">${esc(s.notes)}</div>` : ""}
+            ${showNotes ? `<div style="font-size:13px;color:${C.n700};line-height:1.45;margin-top:5px">${esc(s.notes)}</div>` : ""}
           </div>
-          ${ownerLabel ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;color:${C.n700};margin-top:3px">${esc(ownerLabel)}</span>` : "<span></span>"}
+          <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+            ${rightTags.join("")}
+            ${dueHtml}
+            ${ownerLabel ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;color:${C.n700}">${esc(ownerLabel)}</span>` : ""}
+          </div>
         </div>`;
   };
 
@@ -480,13 +504,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const meta = MILESTONE_STATUS_META[m.status] ?? { label: m.status, accent: false };
     const color = meta.accent ? C.accent700 : C.n600;
     return `
-      <details data-v2-phase style="border-top:2px solid ${C.divider};padding-top:14px;margin-bottom:26px">
-        <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
+      <details data-v2-phase style="border-top:2px solid ${C.divider};margin-bottom:26px">
+        <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;background:${C.n200};padding:12px 14px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
           <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1">${esc(m.title)}</h3>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
         </summary>
-        ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : m.subtasks.map(taskRow).join("")}
+        <div style="padding:0 14px">
+          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : m.subtasks.map(taskRow).join("")}
+        </div>
       </details>`;
   }).join("");
 
@@ -652,18 +678,18 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   }
   const registersHtml = `
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Risks logged</span><span style="font-family:${FONT};font-weight:800">${risksCount}</span>
+      <span>Risks logged</span><a href="#v2-risk-register" style="font-family:${FONT};font-weight:800;color:inherit">${risksCount}</a>
     </div>
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Issues logged</span><span style="font-family:${FONT};font-weight:800">${issuesCount}</span>
+      <span>Issues logged</span><a href="#v2-issues" style="font-family:${FONT};font-weight:800;color:inherit">${issuesCount}</a>
     </div>
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
       <span>Resources attached</span><span style="font-family:${FONT};font-weight:800">${resourcesCount}</span>
     </div>
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
 
-  const railSection = (label: string, body: string, marginBottom = 28) => `
-      <div style="margin-bottom:${marginBottom}px">
+  const railSection = (label: string, body: string, marginBottom = 28, id?: string) => `
+      <div${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
         <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-bottom:2px solid ${C.divider};padding-bottom:8px;margin-bottom:12px">${esc(label)}</div>
         ${body}
       </div>`;
@@ -677,13 +703,13 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       </details>`;
 
   const detailRight = [
+    railSection("Open registers", registersHtml),
     railSection("Status log", statusLogHtml),
     railSectionCollapsible("Internal team", teamHtml),
     railSectionCollapsible("Stakeholders", stakeholdersHtml),
     railSection("Decisions", decisionsHtml),
-    railSection("Risk register", risksHtml),
-    railSection("Issues", issuesHtml),
-    railSection("Open registers", registersHtml, 0),
+    railSection("Risk register", risksHtml, 28, "v2-risk-register"),
+    railSection("Issues", issuesHtml, 0, "v2-issues"),
   ].join("");
 
   const bandG = `
