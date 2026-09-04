@@ -10,6 +10,11 @@ const WS_KEY = "mih_ws";
 const TWEAKS_KEY = "mih_tweaks_v1";
 const SIDEBAR_KEY = "sidebar-collapsed";
 
+// Date.now() alone has only 1ms resolution — a counter suffix keeps subtask ids
+// unique even when several are created synchronously in the same tick (e.g. a
+// bulk paste-import), so later lookups by id can't collide.
+let subtaskIdCounter = 0;
+
 const TWEAK_DEFAULTS: Tweaks = { collapsible: true, defaultState: "active", showCount: true, darkMode: false };
 
 function load<T>(key: string, fallback: T): T {
@@ -333,7 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const p = d.projects.find((x) => x.id === projectId);
           const m = p?.milestones.find((x) => x.id === milestoneId);
           if (!p || !m) return;
-          m.subtasks.push({ id: "s" + Date.now(), t: title, done: false, next: false, who: all.user.initials });
+          m.subtasks.push({ id: "s" + Date.now() + "-" + subtaskIdCounter++, t: title, done: false, next: false, who: all.user.initials });
           recomputeProgress(p);
           touch(p);
         }),
