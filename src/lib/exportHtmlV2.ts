@@ -151,6 +151,18 @@ function toDateInputValue(str: string | undefined): string {
   }
   return "";
 }
+/** Same subtask ordering as exportHtml.ts (v1): not-done before done, then soonest-due-first
+ *  within each group, undated last. Uses raw `.done` (not isSubtaskComplete) to match v1 exactly. */
+function sortSubtasksLikeV1(subtasks: Subtask[]): Subtask[] {
+  return [...subtasks].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const da = parseExportDate(a.due), db = parseExportDate(b.due);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.getTime() - db.getTime();
+  });
+}
 function sortMilestones(milestones: Milestone[]): Milestone[] {
   return [...milestones].sort((a, b) => {
     const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
@@ -511,7 +523,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
         </summary>
         <div style="padding:0 14px">
-          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : m.subtasks.map(taskRow).join("")}
+          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks).map(taskRow).join("")}
         </div>
       </details>`;
   }).join("");
@@ -663,10 +675,19 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <div style="margin-top:12px">${moreIssues.map((iss, i) => renderIssueRow(iss, i < moreIssues.length - 1)).join("")}</div>
         </details>`);
 
+  // Resources
+  const resourcesList = project.resources ?? [];
+  const resourcesHtml = resourcesList.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No resources added.</div>`
+    : resourcesList.map((r, i) => `
+        <div style="padding:7px 0;${i < resourcesList.length - 1 ? `border-bottom:1px solid ${C.divider}` : ""}">
+          <a href="${esc(safeHref(r.url))}" target="_blank" rel="noopener noreferrer" style="font-size:14px;font-weight:600;color:${C.accent700}">${esc(r.label)}</a>
+        </div>`).join("");
+
   // Open registers
   const risksCount = project.risks?.length ?? 0;
   const issuesCount = project.issues?.length ?? 0;
-  const resourcesCount = project.resources?.length ?? 0;
+  const resourcesCount = resourcesList.length;
   let registerNote = "";
   if (risksCount === 0) {
     const flagged = ([
@@ -676,40 +697,42 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     ] as [string, "green" | "amber" | "red" | undefined][]).find(([, v]) => v === "amber" || v === "red");
     if (flagged) registerNote = `${flagged[0]} is flagged ${RAG[flagged[1]!].label.toLowerCase()} — no formal risk has been logged for it yet.`;
   }
+  // Jump links also force the (now-collapsed-by-default) target section open, so the count
+  // always lands somewhere visible rather than on a collapsed summary.
+  const jumpLink = (targetId: string, count: number) =>
+    `<a href="#${targetId}" onclick="var d=document.getElementById('${targetId}');if(d)d.open=true" style="font-family:${FONT};font-weight:800;color:inherit">${count}</a>`;
   const registersHtml = `
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Risks logged</span><a href="#v2-risk-register" style="font-family:${FONT};font-weight:800;color:inherit">${risksCount}</a>
+      <span>Risks logged</span>${jumpLink("v2-risk-register", risksCount)}
     </div>
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Issues logged</span><a href="#v2-issues" style="font-family:${FONT};font-weight:800;color:inherit">${issuesCount}</a>
+      <span>Issues logged</span>${jumpLink("v2-issues", issuesCount)}
     </div>
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Resources attached</span><span style="font-family:${FONT};font-weight:800">${resourcesCount}</span>
+      <span>Resources attached</span>${jumpLink("v2-resources", resourcesCount)}
     </div>
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
 
-  const railSection = (label: string, body: string, marginBottom = 28, id?: string) => `
-      <div${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
-        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-bottom:2px solid ${C.divider};padding-bottom:8px;margin-bottom:12px">${esc(label)}</div>
-        ${body}
-      </div>`;
-
-  /** Whole-section accordion — the label itself is the toggle, default open. Used where the
-   *  user wants to be able to hide an entire section, as opposed to a "show N more" reveal. */
-  const railSectionCollapsible = (label: string, body: string, marginBottom = 28) => `
-      <details open style="margin-bottom:${marginBottom}px">
-        <summary style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-bottom:2px solid ${C.divider};padding-bottom:8px;margin-bottom:12px">${esc(label)}</summary>
+  /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
+   *  (same font/style/underline, plus a background tint) so sections don't blend together. */
+  const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string } = {}) => {
+    const { marginBottom = 28, defaultOpen = false, id } = opts;
+    return `
+      <details${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
+        <summary style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">${esc(label)}</summary>
         ${body}
       </details>`;
+  };
 
   const detailRight = [
-    railSection("Open registers", registersHtml),
+    railSection("Open registers", registersHtml, { defaultOpen: true }),
     railSection("Status log", statusLogHtml),
-    railSectionCollapsible("Internal team", teamHtml),
-    railSectionCollapsible("Stakeholders", stakeholdersHtml),
+    railSection("Internal team", teamHtml),
+    railSection("Stakeholders", stakeholdersHtml),
     railSection("Decisions", decisionsHtml),
-    railSection("Risk register", risksHtml, 28, "v2-risk-register"),
-    railSection("Issues", issuesHtml, 0, "v2-issues"),
+    railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
+    railSection("Issues", issuesHtml, { id: "v2-issues" }),
+    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
   ].join("");
 
   const bandG = `
