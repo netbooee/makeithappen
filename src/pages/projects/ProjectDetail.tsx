@@ -8,6 +8,7 @@ import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
 import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
+import { exportProjectHtmlV2 } from "../../lib/exportHtmlV2";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
 import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
@@ -43,7 +44,7 @@ export function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const {
-    data, tweaks, all, sidebarCollapsed,
+    data, tweaks, all, sidebarCollapsed, workspace,
     addUpdate, updateProject, deleteProject, updateStatusUpdate, deleteStatusUpdate,
     toggleTask, addContact,
   } = useStore();
@@ -439,6 +440,14 @@ export function ProjectDetail() {
               title="Print / save as PDF (landscape)"
             >
               <Download size={12} /> Export PDF
+            </button>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
+              onClick={() => exportProjectHtmlV2(project, data.contacts, all.user.feedbackEmail ?? "", workspace === "work" ? "Work" : "Personal")}
+              title="Download self-contained HTML report (v2.0 design)"
+            >
+              <Download size={12} /> Export v2.0
             </button>
           </div>
         </div>
