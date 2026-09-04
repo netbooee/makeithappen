@@ -14,6 +14,7 @@ import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddMilestone } from "./AddMilestone";
+import { PasteMilestones } from "./PasteMilestones";
 import { ExternalTeamSection } from "./ExternalTeamSection";
 import { StakeholderSection } from "./StakeholderSection";
 import { ResourcesSection } from "./ResourcesSection";
@@ -588,6 +589,10 @@ export function ProjectDetail() {
               />
             ))}
             <AddMilestone projectId={project.id} onAdded={(newId) => setOpenMap((o) => ({ ...o, [newId]: true }))} />
+            <PasteMilestones
+              projectId={project.id}
+              onAdded={(newIds) => setOpenMap((o) => ({ ...o, ...Object.fromEntries(newIds.map((id) => [id, true])) }))}
+            />
           </div>
         </div>
 

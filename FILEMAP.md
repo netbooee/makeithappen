@@ -47,6 +47,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `ProjectModal.tsx` | Create/edit project dialog |
 | `MilestoneCard.tsx` | A milestone + its subtasks |
 | `AddMilestone.tsx` | Add-milestone form |
+| `PasteMilestones.tsx` | Paste-outline-to-milestones control: textarea + live preview, creates milestones + tasks in bulk |
 | `AddProjectTaskRow.tsx` | Inline "add task" row |
 | `StakeholderSection.tsx` | Stakeholders rail card (names, satisfaction faces, notes) |
 | `ExternalTeamSection.tsx` | External team rail card |
@@ -83,3 +84,4 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
 | `src/lib/constants.ts` | Context lists per workspace |
 | `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution |
+| `src/lib/parseMilestonePaste.ts` | Pure parser: plain-text outline → ordered `{ title, tasks[] }[]` for the paste-milestones feature |
