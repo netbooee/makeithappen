@@ -151,6 +151,18 @@ function toDateInputValue(str: string | undefined): string {
   }
   return "";
 }
+/** Same subtask ordering as exportHtml.ts (v1): not-done before done, then soonest-due-first
+ *  within each group, undated last. Uses raw `.done` (not isSubtaskComplete) to match v1 exactly. */
+function sortSubtasksLikeV1(subtasks: Subtask[]): Subtask[] {
+  return [...subtasks].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const da = parseExportDate(a.due), db = parseExportDate(b.due);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.getTime() - db.getTime();
+  });
+}
 function sortMilestones(milestones: Milestone[]): Milestone[] {
   return [...milestones].sort((a, b) => {
     const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
@@ -511,7 +523,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
         </summary>
         <div style="padding:0 14px">
-          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : m.subtasks.map(taskRow).join("")}
+          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks).map(taskRow).join("")}
         </div>
       </details>`;
   }).join("");
