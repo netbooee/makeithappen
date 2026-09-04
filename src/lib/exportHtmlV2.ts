@@ -284,7 +284,6 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">
         <span style="flex:1">Green</span><span style="flex:1">Amber</span><span style="flex:1">Red</span>
       </div>
-      ${project.riskNote ? `<p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(project.riskNote)}</p>` : ""}
     </div>`;
 
   const riskCell = `
@@ -300,6 +299,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${RAG[v!].text}">${RAG[v!].label}</span>
         </div>`).join("")}
       </div>`}
+      ${project.riskNote ? `<p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(project.riskNote)}</p>` : ""}
     </div>`;
 
   const activeMilestoneIdx = sortedMilestones.findIndex((m) => m.status !== "complete");
@@ -445,8 +445,13 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const color = meta.accent ? C.accent700 : C.n600;
     const total = m.subtasks.length;
     const done = m.subtasks.filter((s) => isSubtaskComplete(s)).length;
-    const barPct = total > 0 ? Math.round((done / total) * 100) : 0;
     const countText = total > 0 ? `${done} / ${total} tasks` : "No tasks";
+    // One chiclet per task, all the same width regardless of count — green once its task is
+    // done (or the whole phase is marked complete), neutral otherwise.
+    const phaseComplete = m.status === "complete";
+    const chiclets = total > 0
+      ? m.subtasks.map((s) => `<span style="flex:1;height:6px;background:${phaseComplete || isSubtaskComplete(s) ? RAG.green.swatch : C.n300}"></span>`).join("")
+      : `<span style="flex:1;height:6px;background:${C.n300}"></span>`;
     return `
     <div style="background:${C.bg};padding:16px 18px">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
@@ -455,7 +460,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       </div>
       <div style="font-family:${FONT};font-weight:800;font-size:16px;line-height:1.2;margin-top:8px">${esc(m.title)}</div>
       <div style="font-size:12px;color:${C.n700};margin-top:4px">${dateRangeCopy(m)}</div>
-      <div style="height:6px;background:${C.n300};margin-top:12px;display:flex"><div style="width:${barPct}%;background:${C.accent}"></div></div>
+      <div style="display:flex;gap:2px;margin-top:12px">${chiclets}</div>
       <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700};margin-top:6px">${countText}</div>
     </div>`;
   }).join("");
@@ -719,7 +724,10 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const { marginBottom = 28, defaultOpen = false, id } = opts;
     return `
       <details${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
-        <summary style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">${esc(label)}</summary>
+        <summary style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">
+          <span>${esc(label)}</span>
+          <span class="v2-rail-chev">&#9656;</span>
+        </summary>
         ${body}
       </details>`;
   };
@@ -771,6 +779,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     .v2-toggle-btn:hover:not(.v2-selected){background:rgba(32,30,29,0.1)}
     details>summary{list-style:none;cursor:pointer}
     details>summary::-webkit-details-marker{display:none}
+    .v2-rail-chev{display:inline-block;font-size:8px;line-height:1;color:${C.n600};transition:transform .15s;flex-shrink:0}
+    details[open]>summary .v2-rail-chev{transform:rotate(90deg)}
     .v2-feedback-link:hover{color:${C.accent700}}
     :focus-visible{outline:2px solid ${C.accent};outline-offset:2px}
     .v2-2col{display:grid;grid-template-columns:1.85fr 1fr}
