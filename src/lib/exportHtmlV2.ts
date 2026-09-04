@@ -251,10 +251,13 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <span>${phasesOpen} of ${phasesTotal} phases open</span>
         </div>
       </div>
-      <div style="border-top:1px solid ${C.divider};padding-top:16px">
-        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Target completion</div>
-        <div style="font-family:${FONT};font-weight:800;font-size:26px;letter-spacing:-0.01em">${targetVal}</div>
-        ${daysRemain ? `<div style="font-size:13px;color:${C.n700};margin-top:2px">${esc(daysRemain)}</div>` : ""}
+      <div style="border-top:1px solid ${C.divider};padding-top:16px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px">
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Target completion</div>
+          <div style="font-family:${FONT};font-weight:800;font-size:26px;letter-spacing:-0.01em">${targetVal}</div>
+          ${daysRemain ? `<div style="font-size:13px;color:${C.n700};margin-top:2px">${esc(daysRemain)}</div>` : ""}
+        </div>
+        ${project.clientLogo ? `<img src="${esc(project.clientLogo)}" alt="" style="max-width:120px;max-height:48px;object-fit:contain;filter:grayscale(1);flex-shrink:0">` : ""}
       </div>
     </div>
   </div>`;
@@ -446,11 +449,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const total = m.subtasks.length;
     const done = m.subtasks.filter((s) => isSubtaskComplete(s)).length;
     const countText = total > 0 ? `${done} / ${total} tasks` : "No tasks";
-    // One chiclet per task, all the same width regardless of count — green once its task is
-    // done (or the whole phase is marked complete), neutral otherwise.
+    // One chiclet per task, all the same width regardless of count — filled green from the
+    // left by completed-task count (not tied to which specific task is done), or entirely
+    // green when the whole phase is marked complete.
     const phaseComplete = m.status === "complete";
     const chiclets = total > 0
-      ? m.subtasks.map((s) => `<span style="flex:1;height:6px;background:${phaseComplete || isSubtaskComplete(s) ? RAG.green.swatch : C.n300}"></span>`).join("")
+      ? Array.from({ length: total }, (_, idx) => `<span style="flex:1;height:6px;background:${phaseComplete || idx < done ? RAG.green.swatch : C.n300}"></span>`).join("")
       : `<span style="flex:1;height:6px;background:${C.n300}"></span>`;
     return `
     <div style="background:${C.bg};padding:16px 18px">
@@ -723,7 +727,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string } = {}) => {
     const { marginBottom = 28, defaultOpen = false, id } = opts;
     return `
-      <details${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
+      <details data-v2-rail${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
         <summary style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">
           <span>${esc(label)}</span>
           <span class="v2-rail-chev">&#9656;</span>
@@ -732,7 +736,18 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       </details>`;
   };
 
-  const detailRight = [
+  const railToggleAll = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <button type="button" id="v2-rail-toggle-all" class="v2-toggle-btn" onclick="
+        var ds=document.querySelectorAll('[data-v2-rail]');
+        var anyClosed=false;
+        ds.forEach(function(d){ if(!d.open) anyClosed=true; });
+        ds.forEach(function(d){ d.open=anyClosed; });
+        document.getElementById('v2-rail-toggle-all').textContent=anyClosed?'Collapse all':'Expand all';
+      " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Expand all</button>
+    </div>`;
+
+  const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
     railSection("Status log", statusLogHtml),
     railSection("Internal team", teamHtml),
