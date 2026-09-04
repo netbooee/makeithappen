@@ -6,7 +6,7 @@
  */
 import type { Contact, Milestone, Project, Subtask, SubtaskStatus } from "./types";
 import { safeHref } from "./safeUrl";
-import { TASK_STATUS_LABEL } from "../components/ui";
+import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
 import { assigneeAvatar, projectContactPool } from "./projectContacts";
 
@@ -101,6 +101,19 @@ function daysRemaining(due: string | undefined): string {
 function isSubtaskComplete(s: { done: boolean; taskStatus?: SubtaskStatus }): boolean {
   return s.done || s.taskStatus === "completed";
 }
+
+function isExportOverdue(due: string): boolean {
+  const d = parseExportDate(due);
+  if (!d) return false;
+  const now = new Date();
+  return d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+const SEV_MATRIX: Record<string, Record<string, string>> = {
+  low:    { low: "low",    medium: "low",    high: "medium"   },
+  medium: { low: "low",    medium: "medium", high: "high"     },
+  high:   { low: "medium", medium: "high",   high: "critical" },
+};
 
 const STATUS_LABEL: Record<string, string> = { active: "Active", waiting: "Waiting", hold: "On Hold", complete: "Complete" };
 
@@ -218,6 +231,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     </div>
     <div class="v2-right" style="padding:40px 32px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
       <div>
+        ${project.heroImage ? `<img src="${esc(project.heroImage)}" alt="" style="width:100%;height:180px;object-fit:cover;border-radius:0;filter:grayscale(1);display:block;margin-bottom:24px">` : ""}
         <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:10px">Completion</div>
         <div style="display:flex;align-items:baseline;gap:10px">
           <span style="font-family:${FONT};font-weight:800;font-size:88px;line-height:.85;letter-spacing:-0.04em">${pct}</span>
@@ -332,8 +346,10 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   </div>`;
 
   /* ── Band D — Executive poster ────────────────────────────────────────────────────────────── */
-  const execUpdate = [...project.updates].filter((u) => u.type === "executive")
-    .sort((a, b) => (a.when < b.when ? 1 : -1))[0];
+  const execUpdates = project.updates.filter((u) => u.type === "executive");
+  const execUpdate = execUpdates.length > 0
+    ? execUpdates.reduce((a, b) => (parseTimestamp(b.when) > parseTimestamp(a.when) ? b : a))
+    : undefined;
   const decided = [...(project.decisions ?? [])]
     .filter((d) => d.status === "decided")
     .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate))[0];
@@ -420,13 +436,21 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     : `<div class="v2-phase-grid" style="gap:2px;background:${C.divider};margin:0 32px 32px;border-top:2px solid ${C.divider};border-bottom:2px solid ${C.divider}">${phaseCells}</div>`}`;
 
   /* ── Band G — Detail layer (Full detail view only) ────────────────────────────────────────── */
+  const TASK_STATUS_COLOR: Record<string, string | undefined> = {
+    "not-started": undefined,
+    "scheduled": RAG.amber.text,
+    "in-progress": C.accent700,
+  };
   const taskRow = (s: Subtask): string => {
     const complete = isSubtaskComplete(s);
     const tags: string[] = [];
     if (s.next && !s.done) tags.push(chipFilled("Next"));
-    if (complete) tags.push(chipOutline("Complete", C.n700));
-    else if (s.taskStatus) tags.push(chipOutline(TASK_STATUS_LABEL[s.taskStatus]));
-    const hasExtras = !!s.notes || tags.length > 0 || !!s.who;
+    if (complete) tags.push(chipOutline("Complete", RAG.green.text));
+    else if (s.taskStatus) tags.push(chipOutline(TASK_STATUS_LABEL[s.taskStatus], TASK_STATUS_COLOR[s.taskStatus]));
+    const due = s.due ? `<span style="font-size:11px;color:${!complete && isExportOverdue(s.due) ? C.accent700 : C.n700}">${esc(s.due)}</span>` : "";
+    const hasExtras = !!s.notes || tags.length > 0 || !!due;
+    const av = assigneeAvatar(contactPool, s.assignee, s.who);
+    const ownerLabel = av.ini || s.who || "";
     const checkbox = complete
       ? `<span style="width:14px;height:14px;background:${C.text};display:flex;align-items:center;justify-content:center;margin-top:3px;color:${C.bg};font-size:9px;font-weight:800">&#10003;</span>`
       : `<span style="width:14px;height:14px;border:2px solid ${C.n500};display:block;margin-top:3px"></span>`;
@@ -434,11 +458,11 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         <div style="display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-top:1px solid ${C.divider}">
           ${checkbox}
           <div>
-            <div style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n700};text-decoration:line-through` : ""}">${esc(s.t)}</div>
+            <div style="font-size:15px;font-weight:${hasExtras ? 600 : 400};line-height:1.35${complete ? `;color:${C.n700}` : ""}">${esc(s.t)}</div>
             ${s.notes ? `<div style="font-size:13px;color:${C.n700};line-height:1.45;margin-top:3px">${esc(s.notes)}</div>` : ""}
-            ${tags.length ? `<div style="display:flex;gap:6px;margin-top:7px">${tags.join("")}</div>` : ""}
+            ${tags.length || due ? `<div style="display:flex;align-items:center;gap:6px;margin-top:7px">${tags.join("")}${due}</div>` : ""}
           </div>
-          ${s.who ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;color:${C.n700};margin-top:3px">${esc(s.who)}</span>` : "<span></span>"}
+          ${ownerLabel ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;color:${C.n700};margin-top:3px">${esc(ownerLabel)}</span>` : "<span></span>"}
         </div>`;
   };
 
@@ -447,18 +471,27 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const meta = MILESTONE_STATUS_META[m.status] ?? { label: m.status, accent: false };
     const color = meta.accent ? C.accent700 : C.n600;
     return `
-      <div style="border-top:2px solid ${C.divider};padding-top:14px;margin-bottom:26px">
-        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
+      <details data-v2-phase open style="border-top:2px solid ${C.divider};padding-top:14px;margin-bottom:26px">
+        <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
           <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1">${esc(m.title)}</h3>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
-        </div>
+        </summary>
         ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : m.subtasks.map(taskRow).join("")}
-      </div>`;
+      </details>`;
   }).join("");
 
   const taskDetailLeft = `
-    <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0 0 4px">Task detail</h2>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:4px">
+      <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0">Task detail</h2>
+      ${phasesTotal > 0 ? `<button type="button" id="v2-phase-toggle-all" class="v2-toggle-btn" onclick="
+        var ds=document.querySelectorAll('[data-v2-phase]');
+        var anyClosed=false;
+        ds.forEach(function(d){ if(!d.open) anyClosed=true; });
+        ds.forEach(function(d){ d.open=anyClosed; });
+        document.getElementById('v2-phase-toggle-all').textContent=anyClosed?'Collapse all':'Expand all';
+      " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Collapse all</button>` : ""}
+    </div>
     <p style="font-size:13px;color:${C.n700};margin:0 0 24px">${totalSubs > 0 ? `All ${totalSubs} task${totalSubs === 1 ? "" : "s"} by phase, for project stakeholders.` : "No tasks recorded for this project yet."}</p>
     ${phasesTotal === 0 ? `<div style="font-size:13px;color:${C.n700}">No milestones yet.</div>` : phaseBlocks}`;
 
@@ -468,16 +501,25 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const labels: Record<string, string> = { update: "Update", "heads-up": "Heads up", blocked: "Blocked", win: "Win" };
     return chipOutline(labels[type ?? "update"] ?? "Update");
   };
-  const statusLogHtml = project.updates.length === 0
-    ? `<div style="font-size:13px;color:${C.n700}">No status updates yet.</div>`
-    : project.updates.map((u, i) => `
-        <div style="${i < project.updates.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+  const renderUpdateRow = (u: (typeof project.updates)[number], withDivider: boolean) => `
+        <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             ${updateTypeChip(u.type)}
             <span style="font-size:11px;color:${C.n700}">${esc(u.when)}</span>
           </div>
           <p style="font-size:14px;line-height:1.45;margin:8px 0 0">${esc(u.text)}</p>
-        </div>`).join("");
+        </div>`;
+  const STATUS_LOG_SHOWN = 2;
+  const shownUpdates = project.updates.slice(0, STATUS_LOG_SHOWN);
+  const olderUpdates = project.updates.slice(STATUS_LOG_SHOWN);
+  const statusLogHtml = project.updates.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No status updates yet.</div>`
+    : shownUpdates.map((u, i) => renderUpdateRow(u, i < shownUpdates.length - 1 || olderUpdates.length > 0)).join("")
+      + (olderUpdates.length === 0 ? "" : `
+        <details style="margin-top:0">
+          <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${olderUpdates.length} older update${olderUpdates.length === 1 ? "" : "s"}</summary>
+          <div style="margin-top:12px">${olderUpdates.map((u, i) => renderUpdateRow(u, i < olderUpdates.length - 1)).join("")}</div>
+        </details>`);
 
   // Internal team
   const members = project.members ?? [];
@@ -521,6 +563,44 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${d.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(d.description)}</div>` : ""}
         </div>`).join("");
 
+  // Risk register
+  const SEV_TEXT_COLOR: Record<string, string> = {
+    critical: C.accent700,
+    high: C.accent700,
+    medium: RAG.amber.text,
+    low: C.n700,
+  };
+  const risks = project.risks ?? [];
+  const risksHtml = risks.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No risks logged.</div>`
+    : risks.map((r, i) => {
+        const sev = SEV_MATRIX[r.probability]?.[r.impact] ?? "low";
+        return `
+        <div style="${i < risks.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            ${chipOutline(sev, SEV_TEXT_COLOR[sev])}
+            <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(r.status)}</span>
+          </div>
+          <div style="font-size:14px;line-height:1.4;margin-top:6px">${esc(r.description)}</div>
+          ${r.mitigation ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(r.mitigation)}</div>` : ""}
+        </div>`;
+      }).join("");
+
+  // Issues
+  const issues = project.issues ?? [];
+  const issuesHtml = issues.length === 0
+    ? `<div style="font-size:13px;color:${C.n700}">No issues logged.</div>`
+    : issues.map((iss, i) => `
+        <div style="${i < issues.length - 1 ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            ${chipOutline(iss.severity, SEV_TEXT_COLOR[iss.severity])}
+            <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(iss.status)}</span>
+          </div>
+          <div style="font-size:14px;font-weight:600;line-height:1.4;margin-top:6px">${esc(iss.title)}</div>
+          ${iss.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.description)}</div>` : ""}
+          ${iss.resolution ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.resolution)}</div>` : ""}
+        </div>`).join("");
+
   // Open registers
   const risksCount = project.risks?.length ?? 0;
   const issuesCount = project.issues?.length ?? 0;
@@ -557,6 +637,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     railSection("Internal team", teamHtml),
     railSection("Stakeholders", stakeholdersHtml),
     railSection("Decisions", decisionsHtml),
+    railSection("Risk register", risksHtml),
+    railSection("Issues", issuesHtml),
     railSection("Open registers", registersHtml, 0),
   ].join("");
 
@@ -594,6 +676,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     .v2-toggle-btn{background:transparent;color:${C.text}}
     .v2-toggle-btn.v2-selected{background:${C.accent};color:${C.bg}}
     .v2-toggle-btn:hover:not(.v2-selected){background:rgba(32,30,29,0.1)}
+    details>summary{list-style:none;cursor:pointer}
+    details>summary::-webkit-details-marker{display:none}
     .v2-feedback-link:hover{color:${C.accent700}}
     :focus-visible{outline:2px solid ${C.accent};outline-offset:2px}
     .v2-2col{display:grid;grid-template-columns:1.85fr 1fr}
