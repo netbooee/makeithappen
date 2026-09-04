@@ -77,6 +77,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/lib/exportHtml.ts` | **All project exports** — project report HTML, PDF, agenda HTML, status CSV. Self-contained HTML strings, separate from the live UI |
+| `src/lib/exportHtmlV2.ts` | "Export v2.0" — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle. Self-contained, does not import from `exportHtml.ts` |
 | `src/lib/exportExecUpdateHtml.ts` | The exec-snapshot HTML export |
 | `src/lib/claude.ts` | Every AI call: draft update, draft email, summarize next actions, assistant chat, contact import |
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge |
