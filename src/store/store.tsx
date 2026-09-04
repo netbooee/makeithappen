@@ -338,7 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const p = d.projects.find((x) => x.id === projectId);
           const m = p?.milestones.find((x) => x.id === milestoneId);
           if (!p || !m) return;
-          m.subtasks.push({ id: "s" + Date.now() + "-" + subtaskIdCounter++, t: title, done: false, next: false, who: all.user.initials });
+          m.subtasks.push({ id: "s" + Date.now() + "-" + subtaskIdCounter++, t: title, done: false, next: false, who: "" });
           recomputeProgress(p);
           touch(p);
         }),
