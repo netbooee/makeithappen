@@ -403,17 +403,15 @@ export function ContactDetail() {
       if (!groups.has(project)) groups.set(project, []);
       groups.get(project)!.push(row);
     };
-    for (const list of [data.todayTasks, data.upcoming, data.someday]) {
-      for (const t of list) {
-        if (!isMine(t.assignee)) continue;
-        push(t.project ?? "No project", {
-          key: "t" + t.id,
-          text: t.text,
-          due: t.due,
-          done: t.done,
-          chip: assignedChip({ done: t.done, state: t.state, next: t.next }),
-        });
-      }
+    for (const t of data.tasks) {
+      if (!isMine(t.assignee)) continue;
+      push(t.project ?? "No project", {
+        key: "t" + t.id,
+        text: t.text,
+        due: t.due,
+        done: t.done,
+        chip: assignedChip({ done: t.done, state: t.state, next: t.next }),
+      });
     }
     for (const p of data.projects) {
       for (const m of p.milestones) {

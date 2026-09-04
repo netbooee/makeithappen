@@ -6,6 +6,7 @@ import { Avatar, DateInput, DueChip, StateTag, toDateInputValue } from "../compo
 import { TaskEditPanel } from "../components/TaskEditPanel";
 import { SubtaskEditPanel } from "../components/SubtaskEditPanel";
 import { nextActionSubtasks } from "./projects/NextActionsSection";
+import { nextActionCount } from "../lib/tasks";
 import type { Milestone, Subtask, Task } from "../lib/types";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
@@ -86,7 +87,7 @@ export function Tasks() {
       ...(who.trim() ? { who: who.trim() } : {}),
       ...(due ? { due } : {}),
     };
-    addTask(task, "today");
+    addTask(task);
     setText("");
     setDue("");
     setMilestoneId("");
@@ -103,7 +104,7 @@ export function Tasks() {
   // All next-action, not-done Tasks (across the whole app), keyed by project title (or null for none).
   const nextTasksByProject = useMemo(() => {
     const m = new Map<string | null, Task[]>();
-    for (const t of [...data.todayTasks, ...data.upcoming, ...data.someday]) {
+    for (const t of data.tasks) {
       if (!t.next || t.done) continue;
       const key = t.project ?? null;
       const list = m.get(key) ?? [];
@@ -111,7 +112,7 @@ export function Tasks() {
       m.set(key, list);
     }
     return m;
-  }, [data.todayTasks, data.upcoming, data.someday]);
+  }, [data.tasks]);
 
   // One group per project (sorted alphabetically by title) + a trailing "No project" group.
   const groups = useMemo(() => {
@@ -145,7 +146,9 @@ export function Tasks() {
     return result;
   }, [data.projects, nextTasksByProject, milestoneMap]);
 
-  const totalCount = useMemo(() => groups.reduce((sum, g) => sum + g.rows.length, 0), [groups]);
+  // Kept in sync with the sidebar nav badge via the shared `nextActionCount` helper —
+  // both count the same thing (undone next-action Tasks + Subtasks across the app).
+  const totalCount = useMemo(() => nextActionCount(data), [data]);
 
   return (
     <div className="page fade">

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, toDateInputValue } from "./ui";
+import { nextActionCount } from "../lib/tasks";
 import { TweaksPanel } from "./TweaksPanel";
 import { SearchModal } from "./SearchModal";
 import type { Workspace } from "../lib/types";
@@ -53,7 +54,7 @@ export function Shell() {
     scrollRef.current?.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const openTasks = data.todayTasks.filter((t) => !t.done).length;
+  const openTasks = nextActionCount(data);
   const followUps = data.contacts.filter((c) => c.followUp).length;
 
   const goNextAction = (project: string | null) => {

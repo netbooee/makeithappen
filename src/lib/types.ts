@@ -226,8 +226,6 @@ export interface Task {
   notes?: string;
 }
 
-export type TaskGroup = "today" | "upcoming" | "someday";
-
 export interface Habit {
   id: string;
   name: string;
@@ -285,9 +283,7 @@ export interface Spotlight {
 export interface WorkspaceData {
   nextActions: NextAction[];
   spotlight: Spotlight;
-  todayTasks: Task[];
-  upcoming: Task[];
-  someday: Task[];
+  tasks: Task[];
   habits: Habit[];
   projects: Project[];
   contacts: Contact[];
