@@ -524,12 +524,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     const total = m.subtasks.length, done = m.subtasks.filter((s) => isSubtaskComplete(s)).length;
     const meta = MILESTONE_STATUS_META[m.status] ?? { label: m.status, accent: false };
     const color = meta.accent ? C.accent700 : C.n600;
+    const phaseComplete = m.status === "complete";
     return `
       <details data-v2-phase style="border-top:2px solid ${C.divider};margin-bottom:26px">
         <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;background:${C.n200};padding:12px 14px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
-          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1">${esc(m.title)}</h3>
+          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${C.n600}">${esc(m.title)}</h3>
+          <span style="font-size:12px;color:${C.n700};white-space:nowrap">${dateRangeCopy(m)}</span>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
+          ${phaseComplete ? chipOutline("Completed", RAG.green.text) : ""}
         </summary>
         <div style="padding:0 14px">
           ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks).map(taskRow).join("")}
