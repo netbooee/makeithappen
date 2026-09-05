@@ -51,6 +51,119 @@ function initialsOf(name: string): string {
   return name.trim().split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase();
 }
 
+/** Renders free-text notes fields (bold/italic, links, lists, tables, headings) as their
+ *  final displayed HTML rather than showing the raw Markdown source — same feature set as
+ *  v1's mdNotes, duplicated here per the file header's self-contained convention. */
+function mdText(s: string): string {
+  const inline = (t: string) =>
+    esc(t)
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_m, label, url) =>
+        `<a href="${url}" target="_blank" style="color:${C.accent700}">${label}</a>`)
+      .replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (_m, a, b) => `<strong>${a ?? b}</strong>`)
+      .replace(/\*([^*]+)\*|_([^_]+)_/g, (_m, a, b) => `<em>${a ?? b}</em>`);
+
+  type ListItem = { html: string; children: ListNode[] };
+  type ListNode = { tag: "ul" | "ol"; items: ListItem[] };
+  const renderList = (node: ListNode): string =>
+    `<${node.tag} style="margin:4px 0;padding-left:18px">${node.items
+      .map((it) => `<li>${it.html}${it.children.map(renderList).join("")}</li>`)
+      .join("")}</${node.tag}>`;
+
+  const lines = s.split("\n");
+  const blocks: string[] = [];
+  let stack: { indent: number; node: ListNode }[] = [];
+  // Track top-level list nodes so we can splice their rendered HTML into `blocks` once complete.
+  const topListMarkers = new Map<ListNode, number>();
+
+  // Table support: buffer consecutive pipe rows; on flush, render a <table> only if
+  // row 2 is a valid |---| separator — otherwise the rows fall back to plain text.
+  const tableBuf: string[] = [];
+  const isTableRow = (l: string) => /^\|.*\|$/.test(l.trim());
+  const splitRow = (l: string) =>
+    l.trim().replace(/\\\|/g, "\u0001").replace(/^\|/, "").replace(/\|$/, "")
+      .split("|").map((c) => c.replace(/\u0001/g, "|").trim());
+  const flushTable = () => {
+    if (!tableBuf.length) return;
+    const rows = tableBuf.splice(0);
+    const sep = rows.length >= 2 ? splitRow(rows[1]) : null;
+    if (sep && sep.every((c) => /^:?-{3,}:?$/.test(c))) {
+      const aligns = sep.map((c) =>
+        c.startsWith(":") && c.endsWith(":") ? "center" : c.endsWith(":") ? "right" : "left");
+      const tr = (cells: string[], th: boolean) =>
+        `<tr>${cells.map((c, i) => {
+          const style = `padding:4px 10px;border:1px solid ${C.divider};text-align:${aligns[i] ?? "left"}`
+            + (th ? `;font-weight:800;color:${C.n700};background:${C.n200}` : "");
+          return `<${th ? "th" : "td"} style="${style}">${inline(c)}</${th ? "th" : "td"}>`;
+        }).join("")}</tr>`;
+      blocks.push(`<table style="border-collapse:collapse;margin:6px 0;font-size:13px;line-height:1.5">`
+        + `<thead>${tr(splitRow(rows[0]), true)}</thead>`
+        + `<tbody>${rows.slice(2).map((r) => tr(splitRow(r), false)).join("")}</tbody></table>`);
+    } else {
+      for (const r of rows) blocks.push(inline(r));
+    }
+  };
+
+  for (const line of lines) {
+    if (isTableRow(line)) {
+      stack = [];
+      tableBuf.push(line);
+      continue;
+    }
+    flushTable();
+    const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
+    const o = line.match(/^\s*(\s*)\d+[.)]\s+(.*)$/);
+    const m = line.match(/^(\s*)[-*]\s+(.*)$/);
+    const listMatch = o ? { indent: (line.match(/^(\s*)/)?.[1] ?? "").length, tag: "ol" as const, text: o[2] }
+      : m ? { indent: m[1].length, tag: "ul" as const, text: m[2] }
+      : null;
+
+    if (h) {
+      stack = [];
+      const level = h[1].length;
+      const size = level === 1 ? 16 : level === 2 ? 14.5 : 13;
+      // Trailing marker lets the join scrub the <br/> after this block heading (it already breaks the line itself).
+      blocks.push(`<strong style="display:block;font-size:${size}px;margin:${blocks.length ? 8 : 0}px 0 2px">${inline(h[2])}</strong><!--/h-->`);
+    } else if (listMatch) {
+      while (stack.length && listMatch.indent < stack[stack.length - 1].indent) stack.pop();
+      const top = stack[stack.length - 1];
+      let node: ListNode;
+      if (!top || listMatch.indent > top.indent) {
+        node = { tag: listMatch.tag, items: [] };
+        if (!top) {
+          blocks.push("");
+          topListMarkers.set(node, blocks.length - 1);
+        } else {
+          top.node.items[top.node.items.length - 1].children.push(node);
+        }
+        stack.push({ indent: listMatch.indent, node });
+      } else if (top.node.tag !== listMatch.tag) {
+        stack.pop();
+        node = { tag: listMatch.tag, items: [] };
+        const parent = stack[stack.length - 1];
+        if (!parent) {
+          blocks.push("");
+          topListMarkers.set(node, blocks.length - 1);
+        } else {
+          parent.node.items[parent.node.items.length - 1].children.push(node);
+        }
+        stack.push({ indent: listMatch.indent, node });
+      } else {
+        node = top.node;
+      }
+      node.items.push({ html: inline(listMatch.text), children: [] });
+    } else {
+      stack = [];
+      if (line.trim()) blocks.push(inline(line));
+    }
+  }
+  flushTable();
+  for (const [node, idx] of topListMarkers) blocks[idx] = renderList(node);
+  return blocks.join("<br/>").replace(/<!--\/h--><br\/>/g, "").replace(/<!--\/h-->/g, "")
+    .replace(/<\/ul><br\/>/g, "</ul>").replace(/<br\/><ul/g, "<ul")
+    .replace(/<\/ol><br\/>/g, "</ol>").replace(/<br\/><ol/g, "<ol")
+    .replace(/<\/table><br\/>/g, "</table>").replace(/<br\/><table/g, "<table");
+}
+
 function parseBudgetNum(val: string | undefined): number | null {
   if (!val) return null;
   const c = val.replace(/[$,\s]/g, "");
@@ -529,7 +642,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       <details data-v2-phase style="border-top:2px solid ${C.divider};margin-bottom:26px">
         <summary class="v2-phase-summary" style="display:flex;align-items:baseline;gap:12px;background:${C.n200};padding:12px 14px">
           <span style="font-family:${FONT};font-weight:800;font-size:12px;color:${color}">${String(i + 1).padStart(2, "0")}</span>
-          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${C.n600}">${esc(m.title)}</h3>
+          <h3 style="font-size:19px;letter-spacing:-0.01em;margin:0;flex:1;color:${phaseComplete ? C.n600 : C.text}">${esc(m.title)}</h3>
           <span style="font-size:12px;color:${C.n700};white-space:nowrap">${dateRangeCopy(m)}</span>
           <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${total > 0 ? `${done} / ${total}` : "No tasks"}</span>
           ${phaseComplete ? chipOutline("Completed", RAG.green.text) : ""}
@@ -729,7 +842,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${itemsHtml}
           ${ag.notes ? `
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Notes</div>
-          <div style="font-size:13px;color:${C.n700};line-height:1.5;white-space:pre-wrap">${esc(ag.notes)}</div>` : ""}
+          <div style="font-size:13px;color:${C.n700};line-height:1.5">${mdText(ag.notes)}</div>` : ""}
         </div>
       </dialog>`;
   }).join("");
@@ -741,7 +854,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${ag.date ? `<span style="font-size:11px;color:${C.n700};white-space:nowrap">${fmtDateShort(ag.date)}</span>` : ""}
         </div>`).join("");
 
-  // Open registers
+  // Open registers — one row per right-rail section, each a count that jumps to its section.
+  const statusLogCount = project.updates.length;
+  const teamCount = members.length;
+  const stakeholdersCount = stakeholders.length;
+  const meetingsCount = sortedAgendas.length;
+  const decisionsCount = decisions.length;
   const risksCount = project.risks?.length ?? 0;
   const issuesCount = project.issues?.length ?? 0;
   const resourcesCount = resourcesList.length;
@@ -758,16 +876,19 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   // always lands somewhere visible rather than on a collapsed summary.
   const jumpLink = (targetId: string, count: number) =>
     `<a href="#${targetId}" onclick="var d=document.getElementById('${targetId}');if(d)d.open=true" style="font-family:${FONT};font-weight:800;color:inherit">${count}</a>`;
+  const registerRow = (label: string, targetId: string, count: number) => `
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
+      <span>${esc(label)}</span>${jumpLink(targetId, count)}
+    </div>`;
   const registersHtml = `
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Risks logged</span>${jumpLink("v2-risk-register", risksCount)}
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Issues logged</span>${jumpLink("v2-issues", issuesCount)}
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Resources attached</span>${jumpLink("v2-resources", resourcesCount)}
-    </div>
+    ${registerRow("Status updates", "v2-status-log", statusLogCount)}
+    ${registerRow("Team members", "v2-internal-team", teamCount)}
+    ${registerRow("Stakeholders", "v2-stakeholders", stakeholdersCount)}
+    ${registerRow("Meetings logged", "v2-meetings", meetingsCount)}
+    ${registerRow("Decisions logged", "v2-decisions", decisionsCount)}
+    ${registerRow("Risks logged", "v2-risk-register", risksCount)}
+    ${registerRow("Issues logged", "v2-issues", issuesCount)}
+    ${registerRow("Resources attached", "v2-resources", resourcesCount)}
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
 
   /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
@@ -797,11 +918,11 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
-    railSection("Status log", statusLogHtml),
-    railSection("Internal team", teamHtml),
-    railSection("Stakeholders", stakeholdersHtml),
+    railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
+    railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
+    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders" }),
     railSection("Meetings", meetingsHtml, { id: "v2-meetings" }),
-    railSection("Decisions", decisionsHtml),
+    railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
     railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
     railSection("Issues", issuesHtml, { id: "v2-issues" }),
     railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
