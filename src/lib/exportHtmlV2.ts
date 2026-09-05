@@ -854,7 +854,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${ag.date ? `<span style="font-size:11px;color:${C.n700};white-space:nowrap">${fmtDateShort(ag.date)}</span>` : ""}
         </div>`).join("");
 
-  // Open registers
+  // Open registers — one row per right-rail section, each a count that jumps to its section.
+  const statusLogCount = project.updates.length;
+  const teamCount = members.length;
+  const stakeholdersCount = stakeholders.length;
+  const meetingsCount = sortedAgendas.length;
+  const decisionsCount = decisions.length;
   const risksCount = project.risks?.length ?? 0;
   const issuesCount = project.issues?.length ?? 0;
   const resourcesCount = resourcesList.length;
@@ -871,16 +876,19 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   // always lands somewhere visible rather than on a collapsed summary.
   const jumpLink = (targetId: string, count: number) =>
     `<a href="#${targetId}" onclick="var d=document.getElementById('${targetId}');if(d)d.open=true" style="font-family:${FONT};font-weight:800;color:inherit">${count}</a>`;
+  const registerRow = (label: string, targetId: string, count: number) => `
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
+      <span>${esc(label)}</span>${jumpLink(targetId, count)}
+    </div>`;
   const registersHtml = `
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Risks logged</span>${jumpLink("v2-risk-register", risksCount)}
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Issues logged</span>${jumpLink("v2-issues", issuesCount)}
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:14px">
-      <span>Resources attached</span>${jumpLink("v2-resources", resourcesCount)}
-    </div>
+    ${registerRow("Status updates", "v2-status-log", statusLogCount)}
+    ${registerRow("Team members", "v2-internal-team", teamCount)}
+    ${registerRow("Stakeholders", "v2-stakeholders", stakeholdersCount)}
+    ${registerRow("Meetings logged", "v2-meetings", meetingsCount)}
+    ${registerRow("Decisions logged", "v2-decisions", decisionsCount)}
+    ${registerRow("Risks logged", "v2-risk-register", risksCount)}
+    ${registerRow("Issues logged", "v2-issues", issuesCount)}
+    ${registerRow("Resources attached", "v2-resources", resourcesCount)}
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
 
   /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
@@ -910,11 +918,11 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
-    railSection("Status log", statusLogHtml),
-    railSection("Internal team", teamHtml),
-    railSection("Stakeholders", stakeholdersHtml),
+    railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
+    railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
+    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders" }),
     railSection("Meetings", meetingsHtml, { id: "v2-meetings" }),
-    railSection("Decisions", decisionsHtml),
+    railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
     railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
     railSection("Issues", issuesHtml, { id: "v2-issues" }),
     railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
