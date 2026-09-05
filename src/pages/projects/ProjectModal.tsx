@@ -68,10 +68,10 @@ export function ProjectModal({
   };
 
   return (
-    <div className="modal-center">
+    <div className="modal-center mn-scope">
       <div className="overlay-bg" onClick={close} style={{ position: "fixed" }} />
       <div className="modal-card card-pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ fontSize: 15, fontWeight: 600 }}>{heading}</div>
+        <div style={{ fontFamily: "var(--mn-font)", fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em" }}>{heading}</div>
         <input
           className="input"
           autoFocus
@@ -116,7 +116,7 @@ export function ProjectModal({
           <div className="field-label" style={{ marginBottom: 7 }}>Client logo</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {clientLogo && (
-              <img src={clientLogo} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }} />
+              <img src={clientLogo} alt="" style={{ width: 44, height: 44, borderRadius: 0, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }} />
             )}
             <label style={{ cursor: "pointer" }}>
               <span className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", pointerEvents: "none" }}>
@@ -135,7 +135,7 @@ export function ProjectModal({
           <div className="field-label" style={{ marginBottom: 7 }}>Cover image</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {heroImage && (
-              <img src={heroImage} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+              <img src={heroImage} alt="" style={{ width: 52, height: 52, borderRadius: 0, objectFit: "cover", flexShrink: 0 }} />
             )}
             <label style={{ cursor: "pointer" }}>
               <span className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px", pointerEvents: "none" }}>

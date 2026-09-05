@@ -51,6 +51,7 @@
   --sidebar-w: 248px;
   --font: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --mn-font: "Archivo", var(--font);
 }
 
 body[data-workspace="personal"] {
@@ -536,6 +537,82 @@ section[id]{scroll-margin-top:60px}
 .rg-sub{font-size:12px;color:var(--ink-3);flex:1}
 .rg-body{padding:14px 16px 18px;background:var(--surface-2);border-top:1px solid var(--border)}
 .rg-body > :first-child{margin-top:0 !important}
+
+/* ---------- Modernist restyle — phase 1: project header + edit-project modal ----------
+   Rolling the Export v2.0 "Modernist" look into the live app section by section. Scoped
+   under .mn-scope (added alongside the existing class on the elements being restyled) so
+   untouched sections/pages keep their current look until their own pass. Deliberately
+   reuses the app's existing semantic classes and colors (chips, buttons, danger token,
+   workspace-swapped accent) rather than the export's fixed light/red palette — those
+   colors carry real meaning here (status, risk, workspace) that a static report doesn't
+   need to convey, and the app also has to work in dark mode. This pass only changes
+   shape and type: zero corner radius, stronger dividers, Archivo, flush-left bold-tracked
+   labels, no shadows. */
+.mn-scope {
+  font-family: var(--mn-font);
+}
+.mn-scope .btn,
+.mn-scope .icon-btn,
+.mn-scope .input,
+.mn-scope .chip,
+.mn-scope .modal-card,
+.mn-scope .segmented,
+.mn-scope .segmented button {
+  border-radius: 0;
+}
+.mn-scope .btn {
+  font-family: var(--mn-font);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  box-shadow: none;
+}
+.mn-scope .btn-ghost {
+  border-width: 1px;
+}
+.mn-scope .chip {
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-width: 1px;
+}
+.mn-scope .field-label {
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.mn-scope .page-title {
+  font-family: var(--mn-font);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.mn-scope .segmented button {
+  font-family: var(--mn-font);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.mn-scope .segmented button.active {
+  box-shadow: none;
+  border: 1px solid var(--border-strong);
+}
+.page-head.mn-scope {
+  border-bottom: 2px solid var(--border-strong);
+  padding-bottom: 24px;
+}
+.jumpbar.mn-scope {
+  border-bottom-width: 2px;
+}
+.mn-scope .modal-card {
+  border-width: 2px;
+  box-shadow: none;
+}
+.mn-scope .overlay-bg {
+  background: rgba(20,23,28,0.45);
+}
 
 /* ---------- Right-rail collapse cards ---------- */
 .rail-card{overflow:hidden}

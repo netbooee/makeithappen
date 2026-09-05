@@ -363,7 +363,7 @@ export function ProjectDetail() {
         <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> All projects
       </button>
 
-      <div className="page-head" style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+      <div className="page-head mn-scope" style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
         <div style={{ flex: 1 }}>
           <div
             className="page-title"
@@ -373,7 +373,7 @@ export function ProjectDetail() {
               <img
                 src={project.clientLogo}
                 alt=""
-                style={{ width: 36, height: 36, borderRadius: 6, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }}
+                style={{ width: 36, height: 36, borderRadius: 0, objectFit: "contain", flexShrink: 0, background: "var(--surface-2)", padding: 4 }}
               />
             )}
             {project.title}
@@ -471,7 +471,7 @@ export function ProjectDetail() {
                   transform="rotate(-90 36 36)"
                   style={{ transition: "stroke-dashoffset 0.4s ease" }}
                 />
-                <text x="36" y="33" textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--ink-1)">{Math.round(pct * 100)}%</text>
+                <text x="36" y="33" textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--ink)">{Math.round(pct * 100)}%</text>
                 <text x="36" y="47" textAnchor="middle" fontSize="10" fill="var(--ink-4)">{done}/{total}</text>
               </svg>
             </div>
@@ -479,7 +479,7 @@ export function ProjectDetail() {
         })()}
       </div>
 
-      <div className="jumpbar" ref={jumpbarRef}>
+      <div className="jumpbar mn-scope" ref={jumpbarRef}>
         {jumpItems.map((j) => (
           <button
             key={j.id}
