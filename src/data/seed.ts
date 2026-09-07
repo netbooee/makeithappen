@@ -32,12 +32,6 @@ export const SEED: AppData = {
       { id: "ws3", text: "Refresh the onboarding email sequence", done: false, next: false, context: "@work", project: null },
       { id: "ws4", text: "New brand illustration set", done: false, state: "delegated", to: "Mara", context: "@work", project: null },
     ],
-    habits: [
-      { id: "wh1", name: "Inbox to zero", icon: "📥", streak: 12, doneToday: true, cadence: "Daily" },
-      { id: "wh2", name: "Deep work block", icon: "🎯", streak: 5, doneToday: false, cadence: "Daily" },
-      { id: "wh3", name: "Plan tomorrow", icon: "🌙", streak: 23, doneToday: false, cadence: "Daily" },
-      { id: "wh4", name: "No-meeting mornings", icon: "🧘", streak: 3, doneToday: true, cadence: "Weekdays" },
-    ],
     projects: [
       {
         id: "p1",
@@ -179,13 +173,6 @@ export const SEED: AppData = {
       { id: "ps-t2", text: "Research home gym options for the basement", done: false, next: false, context: "@errands", project: null },
       { id: "ps-t3", text: "Plan a visit to Theo in Berlin", done: false, next: false, context: "@home", project: null },
     ],
-    habits: [
-      { id: "ph1", name: "Morning run", icon: "🏃", streak: 9, doneToday: true, cadence: "Daily" },
-      { id: "ph2", name: "Read 20 pages", icon: "📚", streak: 31, doneToday: false, cadence: "Daily" },
-      { id: "ph3", name: "Meditate", icon: "🧘", streak: 7, doneToday: false, cadence: "Daily" },
-      { id: "ph4", name: "No phone after 10pm", icon: "🌙", streak: 4, doneToday: false, cadence: "Daily" },
-      { id: "ph5", name: "Call a friend", icon: "💬", streak: 2, doneToday: true, cadence: "Weekly" },
-    ],
     projects: [
       {
         id: "pp1",
@@ -297,21 +284,3 @@ export const SEED: AppData = {
     ],
   },
 };
-
-/* contribution-grid history (deterministic) for habit detail */
-export function habitHistory(seed: number): number[][] {
-  const weeks = 52, days = 7, out: number[][] = [];
-  let s = seed;
-  for (let w = 0; w < weeks; w++) {
-    const col: number[] = [];
-    for (let d = 0; d < days; d++) {
-      s = (s * 9301 + 49297) % 233280;
-      const r = s / 233280;
-      // higher density toward the present (right side)
-      const bias = 0.35 + (w / weeks) * 0.5;
-      col.push(r < bias ? (r < bias * 0.55 ? 2 : 1) : 0);
-    }
-    out.push(col);
-  }
-  return out;
-}

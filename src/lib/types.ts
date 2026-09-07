@@ -226,16 +226,6 @@ export interface Task {
   notes?: string;
 }
 
-export interface Habit {
-  id: string;
-  name: string;
-  icon: string;
-  streak: number;
-  doneToday: boolean;
-  cadence: string;
-  checkins?: string[]; // YYYY-MM-DD dates
-}
-
 export type Relationship = "Colleague" | "Client" | "Vendor" | "Friend" | "Family" | "Other";
 
 export interface ContactTouch {
@@ -284,7 +274,6 @@ export interface WorkspaceData {
   nextActions: NextAction[];
   spotlight: Spotlight;
   tasks: Task[];
-  habits: Habit[];
   projects: Project[];
   contacts: Contact[];
   execUpdateOrder?: string[];

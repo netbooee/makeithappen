@@ -8,7 +8,6 @@ import { ProjectDetail } from "./pages/projects/ProjectDetail";
 import { ProjectList } from "./pages/projects/ProjectList";
 import { Tasks } from "./pages/Tasks";
 import { ContactDetail, ContactList } from "./pages/Contacts";
-import { HabitDetail, HabitList } from "./pages/Habits";
 import { Assistant } from "./pages/Assistant";
 import { Updates } from "./pages/Updates";
 import { ProjectSites } from "./pages/ProjectSites";
@@ -68,8 +67,6 @@ export default function App() {
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/contacts" element={<ContactList />} />
             <Route path="/contacts/:id" element={<ContactDetail />} />
-            <Route path="/habits" element={<HabitList />} />
-            <Route path="/habits/:id" element={<HabitDetail />} />
             <Route path="/updates" element={<Updates />} />
             <Route path="/project-sites" element={<ProjectSites />} />
             <Route path="/assistant" element={<Assistant />} />

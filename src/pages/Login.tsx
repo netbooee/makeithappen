@@ -9,7 +9,7 @@ export function Login() {
           Make<b style={{ color: "var(--accent)" }}>It</b>Happen
         </div>
         <div style={{ fontSize: 13.5, color: "var(--ink-3)", margin: "6px 0 26px" }}>
-          Your personal command center — projects, tasks, people, and habits in one place.
+          Your personal command center — projects, tasks, and people in one place.
         </div>
         <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center", padding: "10px 0", fontSize: 14 }} onClick={signInWithGoogle}>
           <svg width="17" height="17" viewBox="0 0 48 48">

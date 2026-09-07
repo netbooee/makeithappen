@@ -532,9 +532,6 @@ export function serializeContext(ws: Workspace, data: WorkspaceData, user: User)
   const contacts = data.contacts
     .map((c) => `  - ${c.name} (${c.rel}${c.company ? `, ${c.company}` : ""}) last contact ${c.lastDate}${c.followUp ? " — FOLLOW-UP FLAGGED" : ""}`)
     .join("\n");
-  const habits = data.habits
-    .map((h) => `  - ${h.icon} ${h.name}: ${h.streak}-day streak, ${h.doneToday ? "done" : "not done"} today (${h.cadence})`)
-    .join("\n");
   return `User: ${user.name}. Active workspace: ${ws}. Today is ${new Date().toDateString()}.
 
 PROJECTS:
@@ -544,10 +541,7 @@ OPEN TASKS (standalone and cross-project):
 ${tasks}
 
 CONTACTS:
-${contacts}
-
-HABITS:
-${habits}`;
+${contacts}`;
 }
 
 export interface ImportContact { name: string; company: string; email: string; role: string; }
@@ -595,7 +589,7 @@ function localAssistant(question: string, data: WorkspaceData): string {
     return `Open the project, find the latest status update, and hit "Draft email" — I'll compose it from the project's milestone status and the update text. Or tell me which project and I'll summarize it here.`;
   }
   const active = data.projects.filter((p) => p.status === "active");
-  return `Here's a quick snapshot: ${active.length} active projects, ${data.tasks.filter((t) => !t.done).length} open tasks, and ${data.habits.filter((h) => !h.doneToday).length} habits left today. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Add your Anthropic API key in Settings to unlock full conversational AI.)`;
+  return `Here's a quick snapshot: ${active.length} active projects and ${data.tasks.filter((t) => !t.done).length} open tasks. Ask me about next actions, contacts to follow up with, or a weekly review.\n\n(Add your Anthropic API key in Settings to unlock full conversational AI.)`;
 }
 
 export async function askAssistant(

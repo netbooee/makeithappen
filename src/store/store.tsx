@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { SEED } from "../data/seed";
 import { supabase, supabaseConfigured, saveTweaks, loadUserData, saveUserData } from "../lib/supabase";
 import type {
-  AppData, Contact, ContactTouch, Habit, Milestone, Project, StatusUpdate, Subtask, Task, Tweaks, Workspace, WorkspaceData,
+  AppData, Contact, ContactTouch, Milestone, Project, StatusUpdate, Subtask, Task, Tweaks, Workspace, WorkspaceData,
 } from "../lib/types";
 
 const DATA_KEY = "mih_data_v1";
@@ -77,12 +77,7 @@ export interface Store {
   deleteContact: (id: string) => void;
   addTouchpoint: (contactId: string, touch: ContactTouch) => void;
   deleteTouchpoint: (contactId: string, touchId: string) => void;
-  updateHabit: (id: string, patch: Partial<Habit>) => void;
-  deleteHabit: (id: string) => void;
   addUpdate: (projectId: string, text: string, type?: import("../lib/types").UpdateType) => void;
-  toggleHabit: (id: string) => void;
-  toggleCheckin: (id: string, date: string) => void;
-  addHabit: (habit: Habit) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   addContact: (contact: Contact) => void;
   addContacts: (contacts: Contact[]) => void;
@@ -90,19 +85,6 @@ export interface Store {
   resetDemoData: () => void;
   importData: (data: AppData) => void;
   updateUser: (patch: Partial<import("../lib/types").User>) => void;
-}
-
-function computeStreak(checkins: string[]): number {
-  if (!checkins.length) return 0;
-  const set = new Set(checkins);
-  let streak = 0;
-  const d = new Date();
-  while (true) {
-    const ds = d.toISOString().slice(0, 10);
-    if (set.has(ds)) { streak++; d.setDate(d.getDate() - 1); }
-    else break;
-  }
-  return streak;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -355,38 +337,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           touch(p);
         }),
 
-      toggleHabit: (id) =>
-        mutate((d) => {
-          const h = d.habits.find((x) => x.id === id);
-          if (!h) return;
-          const today = new Date().toISOString().slice(0, 10);
-          if (!h.checkins) h.checkins = [];
-          if (h.checkins.includes(today)) {
-            h.checkins = h.checkins.filter((c) => c !== today);
-          } else {
-            h.checkins.push(today);
-          }
-          h.doneToday = h.checkins.includes(today);
-          h.streak = computeStreak(h.checkins);
-        }),
-
-      toggleCheckin: (id, date) =>
-        mutate((d) => {
-          const h = d.habits.find((x) => x.id === id);
-          if (!h) return;
-          if (!h.checkins) h.checkins = [];
-          if (h.checkins.includes(date)) {
-            h.checkins = h.checkins.filter((c) => c !== date);
-          } else {
-            h.checkins.push(date);
-          }
-          const today = new Date().toISOString().slice(0, 10);
-          h.doneToday = h.checkins.includes(today);
-          h.streak = computeStreak(h.checkins);
-        }),
-
-      addHabit: (habit) => mutate((d) => d.habits.push(habit)),
-
       updateContact: (id, patch) =>
         mutate((d) => {
           const c = d.contacts.find((x) => x.id === id);
@@ -414,17 +364,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const c = d.contacts.find((x) => x.id === contactId);
           if (!c) return;
           c.touchpoints = (c.touchpoints ?? []).filter((t) => t.id !== touchId);
-        }),
-
-      updateHabit: (id, patch) =>
-        mutate((d) => {
-          const h = d.habits.find((x) => x.id === id);
-          if (h) Object.assign(h, patch);
-        }),
-
-      deleteHabit: (id) =>
-        mutate((d) => {
-          d.habits = d.habits.filter((x) => x.id !== id);
         }),
 
       setExecUpdateOrder: (order) =>

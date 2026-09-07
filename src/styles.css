@@ -426,34 +426,6 @@ textarea.input { resize: vertical; line-height: 1.6; }
 
 /* ---------- Today dashboard ---------- */
 .spotlight-card { border-left: 3px solid var(--next); }
-.habit-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
-.habit-bubble {
-  display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 20px;
-  border: 1px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 500;
-  white-space: nowrap; transition: all .14s; flex-shrink: 0;
-}
-.habit-bubble:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
-.habit-bubble.done { background: var(--next-soft); border-color: transparent; color: var(--next-ink); }
-
-/* ---------- Habits ---------- */
-.habit-card { display: flex; align-items: center; gap: 16px; padding: 16px 18px; cursor: pointer; transition: border-color .14s, box-shadow .14s; }
-.habit-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
-.habit-card.done-today { background: color-mix(in oklab, var(--next) 6%, var(--surface)); border-color: color-mix(in oklab, var(--next) 30%, transparent); }
-.habit-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
-.streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; background: #FFF4E5; color: #B45309; border-radius: 20px; padding: 2px 9px; }
-.ring-btn { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
-.ring-btn svg { transform: rotate(-90deg); }
-.ring-btn circle { transition: stroke-dashoffset .45s cubic-bezier(.2,.7,.3,1), stroke .3s; }
-@keyframes bloom { 0% { transform: scale(1); } 45% { transform: scale(1.14); } 100% { transform: scale(1); } }
-.ring-btn.just-done { animation: bloom .45s ease; }
-.ring-check { position: absolute; inset: 0; display: grid; place-items: center; color: var(--next); }
-
-/* contribution grid */
-.contrib { display: flex; gap: 3px; overflow-x: auto; padding: 4px 0; }
-.contrib-col { display: flex; flex-direction: column; gap: 3px; }
-.contrib-cell { width: 11px; height: 11px; border-radius: 3px; background: var(--surface-2); flex-shrink: 0; }
-.contrib-cell.l1 { background: #A7F3D0; }
-.contrib-cell.l2 { background: var(--next); }
 
 /* ---------- Assistant ---------- */
 .chat-wrap { display: flex; flex-direction: column; height: 100%; max-width: 760px; margin: 0 auto; width: 100%; padding: 0 24px; }

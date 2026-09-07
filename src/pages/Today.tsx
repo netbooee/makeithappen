@@ -18,7 +18,7 @@ function sortByDue<T>(items: T[], due: (item: T) => string | undefined): T[] {
 }
 
 export function Today() {
-  const { data, workspace, toggleTask, toggleHabit } = useStore();
+  const { data, workspace, toggleTask } = useStore();
   const navigate = useNavigate();
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -109,17 +109,6 @@ export function Today() {
             )}
             <span className="chip context">{t.context}</span>
           </div>
-        ))}
-      </div>
-
-      {/* Habit check-in strip */}
-      <div className="section-h">Habit check-in</div>
-      <div className="habit-strip" style={{ marginBottom: 24 }}>
-        {data.habits.map((h) => (
-          <button key={h.id} className={"habit-bubble" + (h.doneToday ? " done" : "")} onClick={() => toggleHabit(h.id)}>
-            <span>{h.icon}</span> {h.name}
-            {h.doneToday && <Check size={14} />}
-          </button>
         ))}
       </div>
 
