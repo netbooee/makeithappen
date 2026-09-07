@@ -4,7 +4,7 @@ import {
   ChevronDown, FileText, Flag, Flame, FolderKanban, Link2, ListTodo, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
-import { Avatar, toDateInputValue } from "./ui";
+import { Avatar } from "./ui";
 import { nextActionCount } from "../lib/tasks";
 import { TweaksPanel } from "./TweaksPanel";
 import { SearchModal } from "./SearchModal";
@@ -129,39 +129,16 @@ export function Shell() {
               <ChevronDown size={13} style={{ transition: "transform 0.18s", transform: projsOpen ? "rotate(0deg)" : "rotate(-90deg)", color: "var(--ink-4)" }} />
             </button>
             {projsOpen && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "2px 4px 4px" }}>
-                {data.projects.map((p) => {
-                  const dotColor =
-                    p.status === "complete" ? "var(--next)"
-                    : p.status === "active" ? "var(--accent)"
-                    : p.status === "hold" ? "#F59E0B"
-                    : "var(--ink-4)";
-                  return (
-                    <button
-                      key={p.id}
-                      className={"proj-nav-card" + (location.pathname === `/projects/${p.id}` ? " active" : "")}
-                      onClick={() => navigate(`/projects/${p.id}`)}
-                    >
-                      <div className="proj-nav-title">{p.title}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
-                          {p.start ? `${p.start} → ${p.due}` : p.due}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: 2, marginTop: 4 }}>
-                        {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
-                          const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "#8B5CF6" : "#F59E0B";
-                          return <div key={m.id} style={{ height: 4, width: 16, borderRadius: 2, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
-                        })}
-                      </div>
-                      <div style={{ marginTop: 4, height: 3, background: "var(--surface-3)", borderRadius: 99, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${p.progress * 100}%`, background: dotColor, borderRadius: 99 }} />
-                      </div>
-                      <div style={{ fontSize: 10.5, color: "var(--ink-4)", textAlign: "right", marginTop: 2 }}>{Math.round(p.progress * 100)}%</div>
-                    </button>
-                  );
-                })}
+              <div style={{ display: "flex", flexDirection: "column", padding: "2px 4px 4px" }}>
+                {[...data.projects].sort((a, b) => a.title.localeCompare(b.title)).map((p) => (
+                  <button
+                    key={p.id}
+                    className={"proj-nav-link" + (location.pathname === `/projects/${p.id}` ? " active" : "")}
+                    onClick={() => navigate(`/projects/${p.id}`)}
+                  >
+                    {p.title}
+                  </button>
+                ))}
               </div>
             )}
           </div>
