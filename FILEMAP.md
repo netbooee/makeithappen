@@ -31,7 +31,6 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/pages/Today.tsx` | Today dashboard |
 | `src/pages/Tasks.tsx` | Task list / groups |
 | `src/pages/Updates.tsx` | Cross-project status updates feed |
-| `src/pages/Habits.tsx` | Habit list + habit detail |
 | `src/pages/Contacts.tsx` | Contact list + contact detail |
 | `src/pages/Assistant.tsx` | Claude chat page |
 | `src/pages/ProjectSites.tsx` | Project links/sites index |

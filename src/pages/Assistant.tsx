@@ -147,7 +147,7 @@ export function Assistant() {
               </div>
               <div style={{ fontSize: 17, fontWeight: 650, letterSpacing: "-0.01em" }}>How can I help?</div>
               <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 3 }}>
-                I can see your {workspace} projects, tasks, contacts, and habits.
+                I can see your {workspace} projects, tasks, and contacts.
               </div>
             </div>
             <div className="suggested">

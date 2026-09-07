@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Flame, FolderKanban, ListTodo, Users, type LucideIcon } from "lucide-react";
+import { FolderKanban, ListTodo, Users, type LucideIcon } from "lucide-react";
 import { useStore } from "../store/store";
 
-type ResultType = "project" | "task" | "contact" | "habit";
+type ResultType = "project" | "task" | "contact";
 
 interface SearchResult {
   type: ResultType;
@@ -17,14 +17,12 @@ const TYPE_ICON: Record<ResultType, LucideIcon> = {
   project: FolderKanban,
   task: ListTodo,
   contact: Users,
-  habit: Flame,
 };
 
 const TYPE_LABEL: Record<ResultType, string> = {
   project: "Project",
   task: "Task",
   contact: "Contact",
-  habit: "Habit",
 };
 
 export function SearchModal({ close }: { close: () => void }) {
@@ -50,11 +48,6 @@ export function SearchModal({ close }: { close: () => void }) {
       for (const t of all[ws].tasks) {
         if (t.text.toLowerCase().includes(q)) {
           out.push({ type: "task", id: t.id, label: t.text, sub: t.project ?? t.context, path: "/tasks" });
-        }
-      }
-      for (const h of all[ws].habits) {
-        if (h.name.toLowerCase().includes(q)) {
-          out.push({ type: "habit", id: h.id, label: h.name, sub: `${h.streak}-day streak`, path: `/habits/${h.id}` });
         }
       }
     }
@@ -95,7 +88,7 @@ export function SearchModal({ close }: { close: () => void }) {
         <input
           ref={inputRef}
           className="search-dialog-input"
-          placeholder="Search projects, tasks, contacts, habits…"
+          placeholder="Search projects, tasks, contacts…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

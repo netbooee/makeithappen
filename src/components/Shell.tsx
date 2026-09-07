@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronDown, FileText, Flag, Flame, FolderKanban, Link2, ListTodo, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, Sparkles, Users,
+  ChevronDown, FileText, Flag, FolderKanban, Link2, ListTodo, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, Sparkles, Users,
 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, toDateInputValue } from "./ui";
@@ -15,7 +15,6 @@ const NAV = [
   { id: "tasks", label: "Tasks", icon: ListTodo, path: "/tasks" },
   { id: "contacts", label: "Contacts", icon: Users, path: "/contacts" },
   { id: "updates", label: "Updates", icon: FileText, path: "/updates" },
-  { id: "habits", label: "Habits", icon: Flame, path: "/habits" },
   { id: "project-sites", label: "Project Sites", icon: Link2, path: "/project-sites" },
   { id: "assistant", label: "AI Assistant", icon: Sparkles, path: "/assistant" },
   { id: "executive-update", label: "Executive Update", icon: Flag, path: "/executive-update" },
@@ -23,7 +22,7 @@ const NAV = [
 
 const CRUMB: Record<string, string> = {
   projects: "Projects", tasks: "Tasks", contacts: "Contacts",
-  updates: "Status Updates", habits: "Habits", "project-sites": "Project Sites", assistant: "AI Assistant",
+  updates: "Status Updates", "project-sites": "Project Sites", assistant: "AI Assistant",
   "executive-update": "Executive Update",
 };
 

@@ -1,6 +1,6 @@
 # MakeItHappen
 
-A personal command center — project management, GTD-style tasks, a lightweight CRM, habit tracking, and an AI assistant, split across **Work** and **Personal** workspaces. Built from the high-fidelity design handoff in `design_handoff_collapsible_milestones/`.
+A personal command center — project management, GTD-style tasks, a lightweight CRM, and an AI assistant, split across **Work** and **Personal** workspaces. Built from the high-fidelity design handoff in `design_handoff_collapsible_milestones/`.
 
 ## Quick start
 
@@ -13,11 +13,10 @@ Open the printed URL. **No configuration is required** — the app boots in loca
 
 ## Modules
 
-- **Today** — date header, Next Action spotlight, today's tasks, habit check-in strip, project pulse, contact follow-up nudges.
+- **Today** — date header, Next Action spotlight, today's tasks, project pulse, contact follow-up nudges.
 - **Projects** — card grid → detail view with the two-column layout: collapsible **Milestones** (chevron, status dot, done/total count when collapsed, due chip, status chip, "Toggle all") and **Status Updates** with per-update AI **Draft email**.
 - **Tasks** — quick capture (press `T`), Today / Upcoming / Someday groups, context tags, Next-action flag, delegated/waiting markers, Google Calendar reminder links, filters.
 - **Contacts** — card grid, relationship types, "Remember this" notes, last interaction, follow-up flag that surfaces on Today.
-- **Habits** — completion rings with bloom animation, streaks, 52-week contribution grid, cadence picker.
 - **AI Assistant** — chat over a serialized snapshot of your current workspace data.
 
 The **workspace toggle** (● Work / ● Personal) in the top bar recolors the whole app (blue ↔ amber) and filters every module. The **Tweaks panel** controls milestone collapsing: Collapsible on/off, default state (all / active / none), and count-when-collapsed.
@@ -51,7 +50,7 @@ React 18 + TypeScript + Vite · React Router v6 · Lucide icons · plain CSS des
 ```
 src/
   components/   Shell (sidebar/topbar/bottom-nav), TweaksPanel, ui primitives
-  pages/        Today, Projects, Tasks, Contacts, Habits, Assistant, Login
+  pages/        Today, Projects, Tasks, Contacts, Assistant, Login
   store/        React-context store with localStorage persistence
   lib/          types, supabase client, claude client (with offline fallbacks)
   data/         seed data from the design handoff
