@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Avatar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue } from "../../components/ui";
 import { SubtaskEditPanel } from "../../components/SubtaskEditPanel";
@@ -240,9 +240,10 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
 /* ================= Milestone card ================= */
 
 export function MilestoneCard({
-  project, m, isOpen, onToggle, onEditTask,
+  project, m, isOpen, onToggle, onEditTask, canMoveUp, canMoveDown, onMoveUp, onMoveDown,
 }: {
   project: Project; m: Milestone; isOpen: boolean; onToggle: () => void; onEditTask: (id: string) => void;
+  canMoveUp: boolean; canMoveDown: boolean; onMoveUp: () => void; onMoveDown: () => void;
 }) {
   const { tweaks, updateMilestone, deleteMilestone, data, toggleTask } = useStore();
 
@@ -384,14 +385,34 @@ export function MilestoneCard({
             <StatusChip status={m.status} />
           </div>
         )}
-        <button
-          className="icon-btn"
-          style={{ color: "var(--ink-4)", flexShrink: 0 }}
-          onClick={() => setEditing(true)}
-          title="Edit milestone / workstream"
-        >
-          <Pencil size={13} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+          <button
+            className="icon-btn"
+            style={{ color: "var(--ink-4)", opacity: canMoveUp ? 1 : 0.35, cursor: canMoveUp ? "pointer" : "default" }}
+            disabled={!canMoveUp}
+            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+            title="Move up"
+          >
+            <ChevronUp size={13} />
+          </button>
+          <button
+            className="icon-btn"
+            style={{ color: "var(--ink-4)", opacity: canMoveDown ? 1 : 0.35, cursor: canMoveDown ? "pointer" : "default" }}
+            disabled={!canMoveDown}
+            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+            title="Move down"
+          >
+            <ChevronDown size={13} />
+          </button>
+          <button
+            className="icon-btn"
+            style={{ color: "var(--ink-4)" }}
+            onClick={() => setEditing(true)}
+            title="Edit milestone / workstream"
+          >
+            <Pencil size={13} />
+          </button>
+        </div>
       </div>
       {shown && (
         <div style={{ padding: "6px 10px 8px" }}>

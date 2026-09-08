@@ -9,6 +9,7 @@ import { safeHref } from "./safeUrl";
 import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
 import { assigneeAvatar, findProjectContact, projectContactPool } from "./projectContacts";
+import { applyMilestoneOrder } from "./milestoneOrder";
 
 /* ── Design tokens (Modernist, from the handoff's styles.css + README RAG additions) ───────── */
 const C = {
@@ -276,8 +277,8 @@ function sortSubtasksLikeV1(subtasks: Subtask[]): Subtask[] {
     return da.getTime() - db.getTime();
   });
 }
-function sortMilestones(milestones: Milestone[]): Milestone[] {
-  return [...milestones].sort((a, b) => {
+function sortMilestones(milestones: Milestone[], order: string[] | undefined): Milestone[] {
+  return applyMilestoneOrder(milestones, order, (a, b) => {
     const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
     if (!da && !db) return 0;
     if (!da) return 1;
@@ -309,7 +310,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const pct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
   const phasesTotal = project.milestones.length;
   const phasesOpen = project.milestones.filter((m) => m.status !== "complete").length;
-  const sortedMilestones = sortMilestones(project.milestones);
+  const sortedMilestones = sortMilestones(project.milestones, project.milestoneOrder);
 
   /* ── Band A — Header bar ──────────────────────────────────────────────────────────────────── */
   const wsBadge = workspaceLabel ? `${esc(workspaceLabel)} · Project Report` : "Project Report";

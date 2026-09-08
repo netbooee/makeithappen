@@ -195,6 +195,8 @@ export interface Project {
   decisions?: ProjectDecision[];
   stakeholders?: ProjectStakeholder[];
   milestones: Milestone[];
+  /** Manual override of milestone display order (list of milestone ids). When unset, milestones sort by due date. */
+  milestoneOrder?: string[];
   updates: StatusUpdate[];
   nextActionsAiSummary?: string;
   /** Forward-looking "coming next" paragraph shown on the Executive update page */

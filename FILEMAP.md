@@ -85,3 +85,4 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/constants.ts` | Context lists per workspace |
 | `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution |
 | `src/lib/parseMilestonePaste.ts` | Pure parser: plain-text outline → ordered `{ title, tasks[] }[]` for the paste-milestones feature |
+| `src/lib/milestoneOrder.ts` | `applyMilestoneOrder` — applies a project's manual milestone reorder (`project.milestoneOrder`) on top of a default comparator, falling back to the default entirely when unset. Shared by ProjectDetail, ProjectList, `exportHtml.ts`, and `exportHtmlV2.ts` so manual order stays consistent everywhere |

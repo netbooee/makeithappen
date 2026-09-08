@@ -2,6 +2,16 @@ import type { Contact, MeetingAgenda, Project, StatusUpdate, SubtaskStatus } fro
 import { toDateInputValue } from "../components/ui";
 import { localNextActionsSummary } from "./claude";
 import { safeHref } from "./safeUrl";
+import { applyMilestoneOrder } from "./milestoneOrder";
+
+function dueDateCompare(a: { due: string }, b: { due: string }): number {
+  const da = toDateInputValue(a.due);
+  const db = toDateInputValue(b.due);
+  if (!da && !db) return 0;
+  if (!da) return 1;
+  if (!db) return -1;
+  return da.localeCompare(db);
+}
 
 function esc(s: string): string {
   return String(s ?? "")
@@ -291,14 +301,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
   const ragLabel = project.risk ? { green: "Green", amber: "Amber", red: "Red" }[project.risk] : "Not set";
 
   // ── Milestones ─────────────────────────────────────────────────────────────
-  const sortedMilestones = [...project.milestones].sort((a, b) => {
-    const da = toDateInputValue(a.due);
-    const db = toDateInputValue(b.due);
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da.localeCompare(db);
-  });
+  const sortedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, dueDateCompare);
 
   const milestonesHtml = sortedMilestones.length === 0
     ? `<div style="font-size:12.5px;color:#6B7280">No milestones yet.</div>`
@@ -790,14 +793,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     ? `${esc(project.start)} → ${esc(project.due)}`
     : project.due !== "No date" ? esc(project.due) : "—";
 
-  const sortedMilestones = [...project.milestones].sort((a, b) => {
-    const da = toDateInputValue(a.due);
-    const db = toDateInputValue(b.due);
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da.localeCompare(db);
-  });
+  const sortedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, dueDateCompare);
 
   const msHtml = sortedMilestones.length === 0
     ? `<div style="font-size:10px;color:#6B7280">No milestones.</div>`
