@@ -534,20 +534,52 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         </div>
       </div>`;
     }).join("");
+    const seeMoreBtn = nextRows.length > NEXT_ACTIONS_SHOWN ? `
+      <button type="button" onclick="document.getElementById('v2-next-actions-dialog').showModal()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;margin-top:16px">See more next actions</button>` : "";
     rightHtml = `
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Next action${nextRowsShown.length > 1 ? "s" : ""}</div>
-      <div style="display:flex;flex-direction:column;gap:14px">${rowsHtml}</div>`;
+      <div style="display:flex;flex-direction:column;gap:14px">${rowsHtml}</div>
+      ${seeMoreBtn}`;
   }
   const leftHtml = leftText
     ? `<div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Coming up next</div>
        <p style="font-size:17px;line-height:1.5;margin:0;max-width:62ch">${esc(leftText)}</p>`
     : "";
 
+  // Pop-up listing every next action (not just the NEXT_ACTIONS_SHOWN preview above).
+  const renderNextActionDialogRow = ({ subtask }: (typeof nextRows)[number]) => {
+    const av = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
+    const ownerLabel = av.ini || subtask.who || "";
+    const statusText = subtask.taskStatus ? TASK_STATUS_LABEL[subtask.taskStatus] : "Scheduled";
+    const metaText = ownerLabel ? `${statusText} · Owner ${esc(ownerLabel)}` : statusText;
+    return `
+      <div style="padding:10px 0;border-top:1px solid ${C.divider}">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          ${chipFilled("Next")}
+          <div>
+            <div style="font-family:${FONT};font-weight:800;font-size:15px;line-height:1.3">${esc(subtask.t)}</div>
+            <div style="font-size:12px;color:${C.n700};margin-top:3px">${metaText}</div>
+          </div>
+        </div>
+      </div>`;
+  };
+  const nextActionsDialogHtml = nextRows.length === 0 ? "" : `
+    <dialog id="v2-next-actions-dialog" class="v2-dialog">
+      <div style="padding:24px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+          <h3 style="font-size:20px;letter-spacing:-0.01em;margin:0;line-height:1.3">Next actions</h3>
+          <button type="button" onclick="this.closest('dialog').close()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Close</button>
+        </div>
+        <div style="margin-top:12px">${nextRows.map(renderNextActionDialogRow).join("")}</div>
+      </div>
+    </dialog>`;
+
   const bandE = (!leftHtml && !rightHtml) ? "" : `
   <div class="v2-2col" style="grid-template-columns:${leftHtml && rightHtml ? "1.85fr 1fr" : "1fr"};border-bottom:2px solid ${C.divider}">
     ${leftHtml ? `<div style="padding:28px 32px">${leftHtml}</div>` : ""}
     ${rightHtml ? `<div class="${leftHtml ? "v2-right" : ""}" style="padding:28px 32px">${rightHtml}</div>` : ""}
-  </div>`;
+  </div>
+  ${nextActionsDialogHtml}`;
 
   /* ── Band F — Delivery phases ─────────────────────────────────────────────────────────────── */
   const phaseCells = sortedMilestones.map((m, i) => {
