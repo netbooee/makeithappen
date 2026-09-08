@@ -762,13 +762,14 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const risks = project.risks ?? [];
   const renderRiskRow = (r: (typeof risks)[number], withDivider: boolean) => {
     const sev = SEV_MATRIX[r.probability]?.[r.impact] ?? "low";
+    const dialogIdx = risks.indexOf(r);
     return `
         <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             ${chipOutline(sev, SEV_TEXT_COLOR[sev])}
             <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(r.status)}</span>
           </div>
-          <div style="font-size:14px;line-height:1.4;margin-top:6px">${esc(r.description)}</div>
+          <button type="button" onclick="document.getElementById('v2-risk-${dialogIdx}').showModal()" style="display:block;width:100%;background:none;border:none;padding:0;font-family:${FONT};font-size:14px;line-height:1.4;color:${C.accent700};cursor:pointer;text-align:left;margin-top:6px">${esc(r.description)}</button>
           ${r.mitigation ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(r.mitigation)}</div>` : ""}
         </div>`;
   };
@@ -783,19 +784,59 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${moreRisks.length} more risk${moreRisks.length === 1 ? "" : "s"}</summary>
           <div style="margin-top:12px">${moreRisks.map((r, i) => renderRiskRow(r, i < moreRisks.length - 1)).join("")}</div>
         </details>`);
+  const riskDialogsHtml = risks.map((r, i) => {
+    const sev = SEV_MATRIX[r.probability]?.[r.impact] ?? "low";
+    return `
+      <dialog id="v2-risk-${i}" class="v2-dialog">
+        <div style="padding:24px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <h3 style="font-size:18px;letter-spacing:-0.01em;margin:0;line-height:1.35">${esc(r.description)}</h3>
+            <button type="button" onclick="this.closest('dialog').close()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Close</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            ${chipOutline(sev, SEV_TEXT_COLOR[sev])}
+            <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(r.status)}</span>
+          </div>
+          <div class="v2-meta-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px;padding-top:16px;border-top:2px solid ${C.divider}">
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Category</div>
+              <div style="font-size:14px;margin-top:2px">${esc(r.category)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Owner</div>
+              <div style="font-size:14px;margin-top:2px">${r.owner ? esc(r.owner) : "—"}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Probability</div>
+              <div style="font-size:14px;margin-top:2px;text-transform:capitalize">${esc(r.probability)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Impact</div>
+              <div style="font-size:14px;margin-top:2px;text-transform:capitalize">${esc(r.impact)}</div>
+            </div>
+          </div>
+          ${r.mitigation ? `
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Mitigation</div>
+          <div style="font-size:13px;color:${C.n700};line-height:1.5">${esc(r.mitigation)}</div>` : ""}
+        </div>
+      </dialog>`;
+  }).join("");
 
   // Issues
   const issues = project.issues ?? [];
-  const renderIssueRow = (iss: (typeof issues)[number], withDivider: boolean) => `
+  const renderIssueRow = (iss: (typeof issues)[number], withDivider: boolean) => {
+    const dialogIdx = issues.indexOf(iss);
+    return `
         <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             ${chipOutline(iss.severity, SEV_TEXT_COLOR[iss.severity])}
             <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(iss.status)}</span>
           </div>
-          <div style="font-size:14px;font-weight:600;line-height:1.4;margin-top:6px">${esc(iss.title)}</div>
+          <button type="button" onclick="document.getElementById('v2-issue-${dialogIdx}').showModal()" style="display:block;width:100%;background:none;border:none;padding:0;font-family:${FONT};font-size:14px;font-weight:600;line-height:1.4;color:${C.accent700};cursor:pointer;text-align:left;margin-top:6px">${esc(iss.title)}</button>
           ${iss.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.description)}</div>` : ""}
           ${iss.resolution ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(iss.resolution)}</div>` : ""}
         </div>`;
+  };
   const ISSUES_SHOWN = 2;
   const shownIssues = issues.slice(0, ISSUES_SHOWN);
   const moreIssues = issues.slice(ISSUES_SHOWN);
@@ -807,6 +848,35 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${moreIssues.length} more issue${moreIssues.length === 1 ? "" : "s"}</summary>
           <div style="margin-top:12px">${moreIssues.map((iss, i) => renderIssueRow(iss, i < moreIssues.length - 1)).join("")}</div>
         </details>`);
+  const issueDialogsHtml = issues.map((iss, i) => `
+      <dialog id="v2-issue-${i}" class="v2-dialog">
+        <div style="padding:24px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <h3 style="font-size:18px;letter-spacing:-0.01em;margin:0;line-height:1.35">${esc(iss.title)}</h3>
+            <button type="button" onclick="this.closest('dialog').close()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Close</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            ${chipOutline(iss.severity, SEV_TEXT_COLOR[iss.severity])}
+            <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(iss.status)}</span>
+          </div>
+          <div class="v2-meta-row" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;padding-top:16px;border-top:2px solid ${C.divider}">
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Owner</div>
+              <div style="font-size:14px;margin-top:2px">${iss.owner ? esc(iss.owner) : "—"}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Reported</div>
+              <div style="font-size:14px;margin-top:2px">${fmtDateLong(iss.reportedDate)}</div>
+            </div>
+          </div>
+          ${iss.description ? `
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Description</div>
+          <div style="font-size:13px;color:${C.n700};line-height:1.5">${esc(iss.description)}</div>` : ""}
+          ${iss.resolution ? `
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Resolution</div>
+          <div style="font-size:13px;color:${C.n700};line-height:1.5">${esc(iss.resolution)}</div>` : ""}
+        </div>
+      </dialog>`).join("");
 
   // Resources
   const resourcesList = project.resources ?? [];
@@ -944,7 +1014,9 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     <div class="v2-band-g-left" style="padding:32px">${taskDetailLeft}</div>
     <div class="v2-right" style="padding:32px">${detailRight}</div>
   </div>
-  ${meetingDialogsHtml}`;
+  ${meetingDialogsHtml}
+  ${riskDialogsHtml}
+  ${issueDialogsHtml}`;
 
   /* ── Band H — Footer ──────────────────────────────────────────────────────────────────────── */
   const feedbackHtml = feedbackEmail
