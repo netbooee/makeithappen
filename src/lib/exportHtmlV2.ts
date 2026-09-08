@@ -731,15 +731,18 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   // Decisions
   const decisions = [...(project.decisions ?? [])].sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
-  const renderDecisionRow = (d: (typeof decisions)[number], withDivider: boolean) => `
+  const renderDecisionRow = (d: (typeof decisions)[number], withDivider: boolean) => {
+    const dialogIdx = decisions.indexOf(d);
+    return `
         <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
             <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">${d.owner ? `Decided · ${esc(d.owner)}` : "Decided"}</span>
             <span style="font-size:11px;color:${C.n700}">${esc(d.decidedDate)}</span>
           </div>
-          <div style="font-size:14px;font-weight:600;line-height:1.4;margin-top:6px">${esc(d.title)}</div>
+          <button type="button" onclick="document.getElementById('v2-decision-${dialogIdx}').showModal()" style="display:block;width:100%;background:none;border:none;padding:0;font-family:${FONT};font-size:14px;font-weight:600;line-height:1.4;color:${C.accent700};cursor:pointer;text-align:left;margin-top:6px">${esc(d.title)}</button>
           ${d.description ? `<div style="font-size:13px;color:${C.n700};margin-top:3px">${esc(d.description)}</div>` : ""}
         </div>`;
+  };
   const DECISIONS_SHOWN = 3;
   const shownDecisions = decisions.slice(0, DECISIONS_SHOWN);
   const olderDecisions = decisions.slice(DECISIONS_SHOWN);
@@ -751,6 +754,31 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">Show ${olderDecisions.length} older decision${olderDecisions.length === 1 ? "" : "s"}</summary>
           <div style="margin-top:12px">${olderDecisions.map((d, i) => renderDecisionRow(d, i < olderDecisions.length - 1)).join("")}</div>
         </details>`);
+  const decisionDialogsHtml = decisions.map((d, i) => `
+      <dialog id="v2-decision-${i}" class="v2-dialog">
+        <div style="padding:24px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <h3 style="font-size:18px;letter-spacing:-0.01em;margin:0;line-height:1.35">${esc(d.title)}</h3>
+            <button type="button" onclick="this.closest('dialog').close()" class="v2-toggle-btn" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Close</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <span style="font-size:11px;color:${C.n700};text-transform:capitalize">${esc(d.status)}</span>
+          </div>
+          <div class="v2-meta-row" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;padding-top:16px;border-top:2px solid ${C.divider}">
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Owner</div>
+              <div style="font-size:14px;margin-top:2px">${d.owner ? esc(d.owner) : "—"}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Decided</div>
+              <div style="font-size:14px;margin-top:2px">${fmtDateLong(d.decidedDate)}</div>
+            </div>
+          </div>
+          ${d.description ? `
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};border-top:2px solid ${C.divider};margin-top:16px;padding-top:12px;margin-bottom:4px">Description</div>
+          <div style="font-size:13px;color:${C.n700};line-height:1.5">${esc(d.description)}</div>` : ""}
+        </div>
+      </dialog>`).join("");
 
   // Risk register
   const SEV_TEXT_COLOR: Record<string, string> = {
@@ -1015,6 +1043,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     <div class="v2-right" style="padding:32px">${detailRight}</div>
   </div>
   ${meetingDialogsHtml}
+  ${decisionDialogsHtml}
   ${riskDialogsHtml}
   ${issueDialogsHtml}`;
 
