@@ -322,16 +322,10 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     <div style="display:flex;align-items:center;gap:16px">
       <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">Exported ${esc(exportDate)}</span>
       <div style="display:flex;gap:0;border:1px solid ${C.divider}">
-        <button type="button" id="v2-btn-exec" class="v2-toggle-btn" onclick="
-          document.getElementById('v2-btn-exec').classList.add('v2-selected');
-          document.getElementById('v2-btn-full').classList.remove('v2-selected');
-          document.getElementById('v2-band-g').style.display='none';
-        " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 12px;border:0;cursor:pointer">Executive</button>
-        <button type="button" id="v2-btn-full" class="v2-toggle-btn v2-selected" onclick="
-          document.getElementById('v2-btn-full').classList.add('v2-selected');
-          document.getElementById('v2-btn-exec').classList.remove('v2-selected');
-          document.getElementById('v2-band-g').style.display='';
-        " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 12px;border:0;border-left:1px solid ${C.divider};cursor:pointer">Full detail</button>
+        <button type="button" id="v2-btn-exec" class="v2-toggle-btn" onclick="location.hash='executive'"
+        style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 12px;border:0;cursor:pointer">Executive</button>
+        <button type="button" id="v2-btn-full" class="v2-toggle-btn v2-selected" onclick="location.hash='full-detail'"
+        style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 12px;border:0;border-left:1px solid ${C.divider};cursor:pointer">Full detail</button>
       </div>
     </div>
   </div>`;
@@ -1000,6 +994,24 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${bandG}
   ${bandH}
 </div>
+<script>
+  // Executive/Full detail toggle drives the URL hash (#executive / #full-detail), so the two
+  // views are separately linkable/bookmarkable and the browser back/forward buttons work.
+  function v2SetView(view) {
+    var exec = document.getElementById('v2-btn-exec');
+    var full = document.getElementById('v2-btn-full');
+    var detail = document.getElementById('v2-band-g');
+    if (view === 'executive') {
+      exec.classList.add('v2-selected'); full.classList.remove('v2-selected'); detail.style.display = 'none';
+    } else {
+      full.classList.add('v2-selected'); exec.classList.remove('v2-selected'); detail.style.display = '';
+    }
+  }
+  if (location.hash.replace('#', '') === 'executive') v2SetView('executive');
+  window.addEventListener('hashchange', function () {
+    v2SetView(location.hash.replace('#', '') === 'executive' ? 'executive' : 'full-detail');
+  });
+</script>
 </body>
 </html>`;
 
