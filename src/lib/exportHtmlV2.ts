@@ -518,13 +518,23 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const contactPool = projectContactPool(project, contacts);
   const leftText = project.nextActionsAiSummary ?? "";
 
+  // Shared "Scheduled · Owner JR · May 1" status line — same format on the band's preview
+  // rows and every row inside the "See more" pop-up.
+  const nextActionMeta = (subtask: Subtask) => {
+    const av = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
+    const ownerLabel = av.ini || subtask.who || "";
+    const statusText = subtask.taskStatus ? TASK_STATUS_LABEL[subtask.taskStatus] : "Scheduled";
+    const dueText = fmtDateShort(subtask.due);
+    const parts = [statusText];
+    if (ownerLabel) parts.push(`Owner ${esc(ownerLabel)}`);
+    if (dueText) parts.push(dueText);
+    return parts.join(" · ");
+  };
+
   let rightHtml = "";
   if (nextRowsShown.length > 0) {
     const rowsHtml = nextRowsShown.map(({ subtask }) => {
-      const av = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
-      const ownerLabel = av.ini || subtask.who || "";
-      const statusText = subtask.taskStatus ? TASK_STATUS_LABEL[subtask.taskStatus] : "Scheduled";
-      const metaText = ownerLabel ? `${statusText} · Owner ${esc(ownerLabel)}` : statusText;
+      const metaText = nextActionMeta(subtask);
       return `
       <div style="display:flex;align-items:flex-start;gap:10px">
         ${chipFilled("Next")}
@@ -548,10 +558,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   // Pop-up listing every next action (not just the NEXT_ACTIONS_SHOWN preview above).
   const renderNextActionDialogRow = ({ subtask }: (typeof nextRows)[number]) => {
-    const av = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
-    const ownerLabel = av.ini || subtask.who || "";
-    const statusText = subtask.taskStatus ? TASK_STATUS_LABEL[subtask.taskStatus] : "Scheduled";
-    const metaText = ownerLabel ? `${statusText} · Owner ${esc(ownerLabel)}` : statusText;
+    const metaText = nextActionMeta(subtask);
     return `
       <div style="padding:10px 0;border-top:1px solid ${C.divider}">
         <div style="display:flex;align-items:flex-start;gap:10px">
