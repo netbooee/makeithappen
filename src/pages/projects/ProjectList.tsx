@@ -4,6 +4,15 @@ import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar,
 import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
+import { applyMilestoneOrder } from "../../lib/milestoneOrder";
+
+function dueDateCompare(a: { due: string }, b: { due: string }): number {
+  const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
+  if (!da && !db) return 0;
+  if (!da) return 1;
+  if (!db) return -1;
+  return da.localeCompare(db);
+}
 
 // Resizable table columns, in header order — Owner (the last column) is
 // deliberately excluded so it can flex to absorb whatever width remains.
@@ -189,7 +198,7 @@ export function ProjectList() {
                   {p.desc && <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>}
                 </div>
                 <div style={{ display: "flex", gap: 3 }}>
-                  {[...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); }).map((m) => {
+                  {applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
                     const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
                     return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
                   })}
@@ -261,7 +270,7 @@ export function ProjectList() {
               {sortedProjects.map((p) => {
                 const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
                 const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
-                const sortedMilestones = [...p.milestones].sort((a, b) => { const da = toDateInputValue(a.due), db = toDateInputValue(b.due); if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da.localeCompare(db); });
+                const sortedMilestones = applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare);
                 return (
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
                     <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>

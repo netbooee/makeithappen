@@ -12,6 +12,7 @@ import { exportProjectHtmlV2 } from "../../lib/exportHtmlV2";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
 import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
+import { applyMilestoneOrder } from "../../lib/milestoneOrder";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddMilestone } from "./AddMilestone";
@@ -46,7 +47,7 @@ export function ProjectDetail() {
   const {
     data, tweaks, all, sidebarCollapsed, workspace,
     addUpdate, updateProject, deleteProject, updateStatusUpdate, deleteStatusUpdate,
-    toggleTask, addContact,
+    toggleTask, addContact, setMilestoneOrder,
   } = useStore();
   const project = data.projects.find((p) => p.id === id);
 
@@ -578,25 +579,37 @@ export function ProjectDetail() {
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {[...project.milestones]
-              .sort((a, b) => {
+            {(() => {
+              const orderedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, (a, b) => {
                 const da = toDateInputValue(a.due);
                 const db = toDateInputValue(b.due);
                 if (!da && !db) return 0;
                 if (!da) return 1;
                 if (!db) return -1;
                 return da.localeCompare(db);
-              })
-              .map((m) => (
-              <MilestoneCard
-                key={m.id}
-                project={project}
-                m={m}
-                isOpen={!!openMap[m.id]}
-                onToggle={() => toggleOne(m.id)}
-                onEditTask={(id) => setEditingTaskId(id)}
-              />
-            ))}
+              });
+              const moveMilestone = (idx: number, delta: -1 | 1) => {
+                const ids = orderedMilestones.map((m) => m.id);
+                const j = idx + delta;
+                if (j < 0 || j >= ids.length) return;
+                [ids[idx], ids[j]] = [ids[j], ids[idx]];
+                setMilestoneOrder(project.id, ids);
+              };
+              return orderedMilestones.map((m, idx) => (
+                <MilestoneCard
+                  key={m.id}
+                  project={project}
+                  m={m}
+                  isOpen={!!openMap[m.id]}
+                  onToggle={() => toggleOne(m.id)}
+                  onEditTask={(id) => setEditingTaskId(id)}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < orderedMilestones.length - 1}
+                  onMoveUp={() => moveMilestone(idx, -1)}
+                  onMoveDown={() => moveMilestone(idx, 1)}
+                />
+              ));
+            })()}
             <AddMilestone projectId={project.id} onAdded={(newId) => setOpenMap((o) => ({ ...o, [newId]: true }))} />
             <PasteMilestones
               projectId={project.id}

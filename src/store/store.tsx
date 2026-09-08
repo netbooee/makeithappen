@@ -68,6 +68,7 @@ export interface Store {
   addMilestone: (projectId: string, milestone: Milestone) => void;
   updateMilestone: (projectId: string, milestoneId: string, patch: Partial<Milestone>) => void;
   deleteMilestone: (projectId: string, milestoneId: string) => void;
+  setMilestoneOrder: (projectId: string, order: string[]) => void;
   addSubtask: (projectId: string, milestoneId: string, title: string) => void;
   updateSubtask: (projectId: string, milestoneId: string, subtaskId: string, patch: Partial<Subtask>) => void;
   deleteSubtask: (projectId: string, milestoneId: string, subtaskId: string) => void;
@@ -262,6 +263,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!p) return;
           p.milestones = p.milestones.filter((x) => x.id !== milestoneId);
           recomputeProgress(p);
+          touch(p);
+        }),
+
+      setMilestoneOrder: (projectId, order) =>
+        mutate((d) => {
+          const p = d.projects.find((x) => x.id === projectId);
+          if (!p) return;
+          p.milestoneOrder = order;
           touch(p);
         }),
 
