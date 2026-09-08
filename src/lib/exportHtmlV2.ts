@@ -711,6 +711,20 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         </div>`;
       }).join("");
 
+  // External team
+  const externalTeam = project.externalTeam ?? [];
+  const externalTeamHtml = externalTeam.length === 0
+    ? `<div style="font-size:13px;color:${C.n700};padding:8px 0">No external team members added.</div>`
+    : externalTeam.map((mem) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid ${C.divider}">
+          <span style="width:26px;height:26px;background:${C.n300};color:${C.text};font-family:${FONT};font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${esc(initialsOf(mem.name))}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600">${esc(mem.name)}</div>
+            ${mem.company ? `<div style="font-size:12px;color:${C.n700};margin-top:1px">${esc(mem.company)}</div>` : ""}
+          </div>
+          ${mem.role ? `<span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${esc(mem.role)}</span>` : ""}
+        </div>`).join("");
+
   // Stakeholders
   const stakeholders = project.stakeholders ?? [];
   const stakeholdersHtml = stakeholders.length === 0
@@ -857,6 +871,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   // Open registers — one row per right-rail section, each a count that jumps to its section.
   const statusLogCount = project.updates.length;
   const teamCount = members.length;
+  const externalTeamCount = externalTeam.length;
   const stakeholdersCount = stakeholders.length;
   const meetingsCount = sortedAgendas.length;
   const decisionsCount = decisions.length;
@@ -883,6 +898,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const registersHtml = `
     ${registerRow("Status updates", "v2-status-log", statusLogCount)}
     ${registerRow("Team members", "v2-internal-team", teamCount)}
+    ${registerRow("External team", "v2-external-team", externalTeamCount)}
     ${registerRow("Stakeholders", "v2-stakeholders", stakeholdersCount)}
     ${registerRow("Meetings logged", "v2-meetings", meetingsCount)}
     ${registerRow("Decisions logged", "v2-decisions", decisionsCount)}
@@ -920,6 +936,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     railSection("Open registers", registersHtml, { defaultOpen: true }),
     railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
     railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
+    railSection("External team", externalTeamHtml, { id: "v2-external-team" }),
     railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders" }),
     railSection("Meetings", meetingsHtml, { id: "v2-meetings" }),
     railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
