@@ -5,6 +5,7 @@ import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
 import { applyMilestoneOrder } from "../../lib/milestoneOrder";
+import { OnboardingChecklist } from "../../components/OnboardingChecklist";
 
 function dueDateCompare(a: { due: string }, b: { due: string }): number {
   const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
@@ -169,6 +170,8 @@ export function ProjectList() {
           <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus /> New project</button>
         </div>
       </div>
+
+      <OnboardingChecklist />
 
       {viewMode === "grid" ? (
         <div className="grid-2">
