@@ -8,7 +8,7 @@ const DISMISSED_KEY = "mih_onboarding_dismissed_v1";
 const STEPS: { icon: LucideIcon; label: string; sub: string; path: string }[] = [
   { icon: FolderKanban, label: "Open a project", sub: "See milestones, risk, and updates in one place", path: "/projects" },
   { icon: ListTodo, label: "Flag a next action", sub: "Toggle \"Next action\" on a task to have it surface everywhere", path: "/tasks" },
-  { icon: Flag, label: "Log a status update", sub: "Add one from a project page, then try Export HTML", path: "/projects" },
+  { icon: Flag, label: "Log a status update", sub: "Add one from a project page, then try Export view", path: "/projects" },
 ];
 
 export function OnboardingChecklist() {
