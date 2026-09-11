@@ -62,7 +62,7 @@ export function Help() {
               Tasks, the project's "Coming up next" section, and exported reports.
             </li>
             <li>
-              Log a status update on the project, then try <b>Export HTML</b> or <b>Export v2.0</b> at the top
+              Log a status update on the project, then try <b>Export view</b> or <b>Export status</b> at the top
               of the project page to generate a shareable, client-ready report.
             </li>
           </ol>

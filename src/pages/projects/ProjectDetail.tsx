@@ -7,7 +7,7 @@ import {
 import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { TaskEditPanel } from "../../components/TaskEditPanel";
-import { exportProjectHtml, exportProjectPdf } from "../../lib/exportHtml";
+import { exportProjectHtml } from "../../lib/exportHtml";
 import { exportProjectHtmlV2 } from "../../lib/exportHtmlV2";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
@@ -432,15 +432,7 @@ export function ProjectDetail() {
               onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems, nextActionsAiSummary)}
               title="Download self-contained HTML report"
             >
-              <Download size={12} /> Export HTML
-            </button>
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectPdf(project, data.contacts)}
-              title="Print / save as PDF (landscape)"
-            >
-              <Download size={12} /> Export PDF
+              <Download size={12} /> Export view
             </button>
             <button
               className="btn btn-ghost"
@@ -448,7 +440,7 @@ export function ProjectDetail() {
               onClick={() => exportProjectHtmlV2(project, data.contacts, all.user.feedbackEmail ?? "", workspace === "work" ? "Work" : "Personal")}
               title="Download self-contained HTML report (v2.0 design)"
             >
-              <Download size={12} /> Export v2.0
+              <Download size={12} /> Export status
             </button>
           </div>
         </div>
