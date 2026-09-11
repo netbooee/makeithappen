@@ -35,6 +35,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/pages/Assistant.tsx` | Claude chat page |
 | `src/pages/ProjectSites.tsx` | Project links/sites index |
 | `src/pages/ExecutiveUpdate.tsx` | Exec snapshot page + its ordering |
+| `src/pages/Help.tsx` | Help & Getting Started page — collapsible sections explaining each part of the app |
 | `src/pages/Login.tsx` | Supabase sign-in (only shows if env-configured) |
 
 ## Project pages — `src/pages/projects/`
@@ -70,6 +71,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/components/SubtaskEditPanel.tsx` | Slide-out subtask editor |
 | `src/components/SearchModal.tsx` | Global search |
 | `src/components/TweaksPanel.tsx` | Settings / preferences panel |
+| `src/components/OnboardingChecklist.tsx` | Dismissible first-run checklist card, shown at the top of the Projects page until dismissed (`localStorage`) |
 
 ## Lib
 
