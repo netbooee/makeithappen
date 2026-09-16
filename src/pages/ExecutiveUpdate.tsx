@@ -52,8 +52,8 @@ function fmtLongDate(d: Date): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function RagChip({ rag }: { rag: Rag }) {
-  return <span style={{ width: 12, height: 12, display: "inline-block", background: RAG[rag].swatch, flexShrink: 0 }} />;
+function RagChip({ rag, style }: { rag: Rag; style?: React.CSSProperties }) {
+  return <span style={{ width: 12, height: 12, display: "inline-block", background: RAG[rag].swatch, flexShrink: 0, ...style }} />;
 }
 
 function RagScale({ active }: { active: Rag }) {
@@ -446,7 +446,7 @@ export function ExecutiveUpdate() {
                 style={{ ...rowStyle, padding: "14px 0", borderBottom: `1px solid ${DIVIDER}`, cursor: "pointer" }}
                 className="exec-matrix-row"
               >
-                <RagChip rag={row.rag} />
+                <RagChip rag={row.rag} style={{ alignSelf: "start", marginTop: 3 }} />
                 <div>
                   <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>{row.project.title}</div>
                   {row.project.desc && <div style={{ fontSize: 12, color: N700, marginTop: 2 }}>{row.project.desc}</div>}

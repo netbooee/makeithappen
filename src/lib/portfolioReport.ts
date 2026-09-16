@@ -35,9 +35,18 @@ function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
+/** Parses a leading "$1,200,000" / "$1.2M" / "$45k" out of a budget field. Unlike a strip-then-
+ *  Number() approach, this stops at the first non-numeric character instead of concatenating
+ *  every digit group in the string — so a field like "$120,000 - $150,000" reads as $120,000,
+ *  not $120,000,150,000. */
 function parseMoney(v?: string): number {
   if (!v) return 0;
-  const n = Number(String(v).replace(/[^0-9.]/g, ""));
+  const c = v.replace(/[$,\s]/g, "");
+  const k = c.match(/^([\d.]+)[kK]/);
+  const m = c.match(/^([\d.]+)[mM]/);
+  if (k) return parseFloat(k[1]) * 1_000;
+  if (m) return parseFloat(m[1]) * 1_000_000;
+  const n = parseFloat(c);
   return Number.isFinite(n) ? n : 0;
 }
 
