@@ -83,6 +83,7 @@ export interface Store {
   addContact: (contact: Contact) => void;
   addContacts: (contacts: Contact[]) => void;
   setExecUpdateOrder: (order: string[]) => void;
+  setExecPortfolioSummary: (text: string) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
   updateUser: (patch: Partial<import("../lib/types").User>) => void;
@@ -378,6 +379,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setExecUpdateOrder: (order) =>
         mutate((d) => {
           d.execUpdateOrder = order;
+        }),
+
+      setExecPortfolioSummary: (text) =>
+        mutate((d) => {
+          const trimmed = text.trim();
+          d.execPortfolioSummary = trimmed || undefined;
+          d.execPortfolioSummaryAt = trimmed ? new Date().toLocaleString() : undefined;
         }),
 
       resetDemoData: () => {

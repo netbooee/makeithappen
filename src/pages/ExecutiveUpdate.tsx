@@ -9,18 +9,7 @@ import { generateExecNarrative, localExecNext, localExecSince } from "../lib/cla
 import { safeHref } from "../lib/safeUrl";
 import { buildPortfolioReport, formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type Rag } from "../lib/portfolioReport";
 
-/* ================= Executive update — data layer (also used by the HTML export) ================= */
-
-/** Short status word shown under each milestone on the timeline rail (legacy HTML export only). */
-export const MS_LABEL: Record<string, string> = {
-  complete: "complete",
-  active: "in flight",
-  hold: "on hold",
-  waiting: "waiting",
-};
-
-/** Marker colour for complete / in-flight milestones on the rail (legacy HTML export only). */
-export const MS_ACCENT = "#0E9F6E";
+/* ================= Executive update — data layer ================= */
 
 export interface ExecEntry {
   project: Project;
@@ -45,42 +34,6 @@ export function latestExecUpdate(project: Project): StatusUpdate | null {
 export function shortDate(when: string): string {
   const m = when.match(/^([A-Za-z]{3,9} \d{1,2})/);
   return m ? m[1] : when;
-}
-
-export function formatBudgetShort(val?: string): string | null {
-  if (!val) return null;
-  const n = Number(String(val).replace(/[^0-9.]/g, ""));
-  if (!Number.isFinite(n) || n === 0) return val;
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
-  return `$${n}`;
-}
-
-/** Counts of what is still live on a project — shared by the live card and the HTML export. */
-export function execActiveCounts(project: Project): { risks: number; issues: number } {
-  return {
-    risks: (project.risks ?? []).filter((r) => r.status === "open").length,
-    issues: (project.issues ?? []).filter((i) => i.status === "open" || i.status === "in-progress")
-      .length,
-  };
-}
-
-/** "1 Risk" / "3 Risks" — pluralises the noun on the count. */
-export function countLabel(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
-}
-
-/** Provenance line under the statement — shared by the live card and the HTML export. */
-export function execMetaLine(entry: ExecEntry): string {
-  const { execUpdate, nextItems } = entry;
-  const parts: string[] = [];
-  if (nextItems.length > 0) {
-    parts.push(`${nextItems.length} next action${nextItems.length === 1 ? "" : "s"}`);
-  }
-  parts.push(
-    execUpdate ? `Update ${shortDate(execUpdate.when)} · ${execUpdate.who}` : "No executive update yet",
-  );
-  return parts.join(" · ");
 }
 
 /* ================= Modernist visual primitives ================= */
@@ -151,13 +104,15 @@ function NextChip() {
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
-  const { data, all, setExecUpdateOrder, updateProject } = useStore();
+  const { data, all, setExecUpdateOrder, setExecPortfolioSummary, updateProject } = useStore();
   const navigate = useNavigate();
   const [view, setView] = useState<"executive" | "full">("full");
   const [busy, setBusy] = useState<string | null>(null);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [editingSummary, setEditingSummary] = useState(false);
+  const [summaryDraft, setSummaryDraft] = useState("");
 
   // Every project's executive-update data, unfiltered and in the user's saved order — the
   // portfolio report draws from this so a project with nothing written yet still gets a row.
@@ -190,19 +145,13 @@ export function ExecutiveUpdate() {
     return ordered;
   }, [data]);
 
-  // Same set the old card list showed — kept as-is so the HTML export's content doesn't change.
-  const entries = useMemo(
-    () => allEntries.filter((e) => e.statement.length > 0 || e.sinceLine.length > 0),
-    [allEntries],
-  );
-
   const entriesById = useMemo(() => new Map(allEntries.map((e) => [e.project.id, e])), [allEntries]);
 
   // Pass projects in allEntries' order (already sorted by data.execUpdateOrder) so the
   // portfolio rows — and the reorder buttons on them — reflect the user's saved order.
   const report = useMemo(
-    () => buildPortfolioReport(allEntries.map((e) => e.project), data.tasks, data.contacts, entriesById),
-    [allEntries, data.tasks, data.contacts, entriesById],
+    () => buildPortfolioReport(allEntries.map((e) => e.project), data.tasks, data.contacts, entriesById, data.execPortfolioSummary),
+    [allEntries, data.tasks, data.contacts, entriesById, data.execPortfolioSummary],
   );
 
   const move = (idx: number, delta: -1 | 1) => {
@@ -257,6 +206,16 @@ export function ExecutiveUpdate() {
     setEditing(null);
   };
 
+  const startEditSummary = () => {
+    setSummaryDraft(report.summary);
+    setEditingSummary(true);
+  };
+
+  const saveSummary = () => {
+    setExecPortfolioSummary(summaryDraft);
+    setEditingSummary(false);
+  };
+
   const today = new Date();
   const rowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "14px 2fr 0.9fr 2.2fr 1fr", gap: 16, alignItems: "center" };
 
@@ -278,7 +237,7 @@ export function ExecutiveUpdate() {
           <button
             className="btn btn-ghost"
             style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            onClick={() => exportExecUpdateHtml(entries)}
+            onClick={() => exportExecUpdateHtml(report, all.user.name, all.user.feedbackEmail)}
           >
             <Download size={13} /> Export HTML
           </button>
@@ -420,43 +379,49 @@ export function ExecutiveUpdate() {
             </div>
           </div>
 
-          {/* Band D — Executive poster */}
+          {/* Band D — Executive poster (editable summary) */}
           <div style={{ background: ACCENT, color: BG, padding: "36px 32px 32px", borderBottom: `2px solid ${DIVIDER}` }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: 40, alignItems: "start" }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", opacity: 0.85, marginBottom: 16 }}>
-                  Executive summary · {fmtLongDate(today)}
-                </div>
-                <p style={{ fontFamily: FONT, fontWeight: 800, fontSize: 28, lineHeight: 1.18, letterSpacing: "-0.02em", margin: 0, maxWidth: "46ch" }}>{report.summary}</p>
-              </div>
-              <div style={{ borderLeft: "2px solid rgba(243,242,242,.45)", paddingLeft: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", opacity: 0.85, marginBottom: 10 }}>Decision asked of this group</div>
-                <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 16, lineHeight: 1.25 }}>{report.decisionAsk}</div>
-                {report.decisionMeta && <div style={{ fontSize: 13, lineHeight: 1.45, marginTop: 8, opacity: 0.9 }}>{report.decisionMeta}</div>}
-              </div>
-            </div>
-          </div>
-
-          {/* Band E — Coming up next / Next action */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", borderBottom: `2px solid ${DIVIDER}` }}>
-            <div style={{ padding: "24px 32px" }}>
-              <div style={{ ...kicker, marginBottom: 12 }}>Coming up next · portfolio</div>
-              <p style={{ fontSize: 15, lineHeight: 1.5, margin: 0, maxWidth: "62ch" }}>{report.nextNarrative}</p>
-            </div>
-            <div style={{ borderLeft: `2px solid ${DIVIDER}`, padding: "24px 32px" }}>
-              <div style={{ ...kicker, marginBottom: 12 }}>Next action</div>
-              {report.topAction ? (
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <NextChip />
-                  <div>
-                    <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15, lineHeight: 1.3 }}>{report.topAction.title}</div>
-                    <div style={{ fontSize: 12, color: N700, marginTop: 3 }}>{report.topAction.meta} · {report.topAction.project}</div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: N700 }}>Nothing flagged as a next action.</div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", opacity: 0.85 }}>
+                Executive summary · {fmtLongDate(today)}
+              </span>
+              {!editingSummary && (
+                <button
+                  onClick={startEditSummary}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: FONT, fontWeight: 800, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: BG, opacity: 0.85, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+                >
+                  <Pencil size={11} /> Edit
+                </button>
               )}
             </div>
+            {editingSummary ? (
+              <div>
+                <textarea
+                  value={summaryDraft}
+                  onChange={(e) => setSummaryDraft(e.target.value)}
+                  rows={4}
+                  autoFocus
+                  style={{ width: "100%", maxWidth: "62ch", fontFamily: FONT, fontWeight: 600, fontSize: 17, lineHeight: 1.35, color: INK, padding: "10px 12px", border: "none", background: BG, resize: "vertical" }}
+                />
+                <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "center" }}>
+                  <button
+                    onClick={saveSummary}
+                    style={{ fontFamily: FONT, fontWeight: 800, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", padding: "7px 12px", background: BG, color: INK, border: "none", cursor: "pointer" }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingSummary(false)}
+                    style={{ fontFamily: FONT, fontWeight: 800, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", padding: "7px 12px", background: "none", color: BG, border: "1px solid rgba(243,242,242,.45)", cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <span style={{ fontSize: 11, opacity: 0.8 }}>Clear the text to fall back to the auto-composed summary.</span>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontFamily: FONT, fontWeight: 800, fontSize: 28, lineHeight: 1.18, letterSpacing: "-0.02em", margin: 0, maxWidth: "62ch" }}>{report.summary}</p>
+            )}
           </div>
 
           {/* Band F — All projects matrix */}

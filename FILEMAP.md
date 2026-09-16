@@ -34,7 +34,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/pages/Contacts.tsx` | Contact list + contact detail |
 | `src/pages/Assistant.tsx` | Claude chat page |
 | `src/pages/ProjectSites.tsx` | Project links/sites index |
-| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, matrix, per-project detail), plus the legacy per-project ExecEntry data layer the HTML export still uses |
+| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, editable summary poster, matrix, per-project detail), plus the per-project ExecEntry data layer used to build the portfolio report |
 | `src/pages/Help.tsx` | Help & Getting Started page — collapsible sections explaining each part of the app |
 | `src/pages/Login.tsx` | Supabase sign-in (only shows if env-configured) |
 
@@ -79,8 +79,8 @@ A lookup so you can name the right files when opening a scoped brief.
 |---|---|
 | `src/lib/exportHtml.ts` | **All project exports** — project report HTML, PDF, agenda HTML, status CSV. Self-contained HTML strings, separate from the live UI |
 | `src/lib/exportHtmlV2.ts` | "Export v2.0" — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle. Self-contained, does not import from `exportHtml.ts` |
-| `src/lib/exportExecUpdateHtml.ts` | The (legacy, card-style) exec-snapshot HTML export — unrelated to the live Modernist portfolio view |
-| `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, phase stepper, budget/schedule aggregation, composed (templated, not AI) narrative bands |
+| `src/lib/exportExecUpdateHtml.ts` | Static HTML export of the Modernist portfolio report shown on the Executive Update page — mirrors its bands (title, metrics, summary poster, all-projects matrix, project detail, footer), always full detail, built from the shared `PortfolioSummary` in `portfolioReport.ts` |
+| `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, phase stepper, budget/schedule aggregation, composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
 | `src/lib/claude.ts` | Every AI call: draft update, draft email, summarize next actions, assistant chat, contact import |
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |

@@ -279,6 +279,9 @@ export interface WorkspaceData {
   projects: Project[];
   contacts: Contact[];
   execUpdateOrder?: string[];
+  /** Manually-edited portfolio executive summary shown on the Executive Update poster band. Falls back to an auto-composed one when unset. */
+  execPortfolioSummary?: string;
+  execPortfolioSummaryAt?: string;
 }
 
 export interface Tweaks {
