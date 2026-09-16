@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, Download, Pencil, Sparkles } from "lucide-react";
+import { Download, Pencil, Sparkles } from "lucide-react";
 import { useStore } from "../store/store";
 import { parseTimestamp } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
@@ -104,7 +104,7 @@ function NextChip() {
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
-  const { data, all, setExecUpdateOrder, setExecPortfolioSummary, updateProject } = useStore();
+  const { data, all, setExecPortfolioSummary, updateProject } = useStore();
   const navigate = useNavigate();
   const [view, setView] = useState<"executive" | "full">("full");
   const [busy, setBusy] = useState<string | null>(null);
@@ -148,19 +148,11 @@ export function ExecutiveUpdate() {
   const entriesById = useMemo(() => new Map(allEntries.map((e) => [e.project.id, e])), [allEntries]);
 
   // Pass projects in allEntries' order (already sorted by data.execUpdateOrder) so the
-  // portfolio rows — and the reorder buttons on them — reflect the user's saved order.
+  // portfolio rows reflect the user's saved order.
   const report = useMemo(
     () => buildPortfolioReport(allEntries.map((e) => e.project), data.tasks, data.contacts, entriesById, data.execPortfolioSummary),
     [allEntries, data.tasks, data.contacts, entriesById, data.execPortfolioSummary],
   );
-
-  const move = (idx: number, delta: -1 | 1) => {
-    const ids = report.rows.map((r) => r.project.id);
-    const j = idx + delta;
-    if (j < 0 || j >= ids.length) return;
-    [ids[idx], ids[j]] = [ids[j], ids[idx]];
-    setExecUpdateOrder(ids);
-  };
 
   const regenerate = async (entry: ExecEntry) => {
     const { project, execUpdate, nextItems } = entry;
@@ -217,7 +209,6 @@ export function ExecutiveUpdate() {
   };
 
   const today = new Date();
-  const rowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "14px 2fr 0.9fr 2.2fr 1fr", gap: 16, alignItems: "center" };
 
   return (
     <div style={{ background: BG, minHeight: "100%" }}>
@@ -422,47 +413,6 @@ export function ExecutiveUpdate() {
             ) : (
               <p style={{ fontFamily: FONT, fontWeight: 800, fontSize: 28, lineHeight: 1.18, letterSpacing: "-0.02em", margin: 0, maxWidth: "62ch" }}>{report.summary}</p>
             )}
-          </div>
-
-          {/* Band F — All projects matrix */}
-          <div style={{ padding: "24px 32px 0" }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, marginBottom: 16 }}>
-              <h2 style={{ fontFamily: FONT, fontSize: 24, letterSpacing: "-0.02em", margin: 0, fontWeight: 800 }}>All projects</h2>
-              <span style={label11}>{report.totalProjects} projects · {report.totalTasks} tasks</span>
-            </div>
-          </div>
-          <div style={{ margin: "0 32px 32px", borderTop: `2px solid ${DIVIDER}`, borderBottom: `2px solid ${DIVIDER}` }}>
-            <div style={{ ...rowStyle, padding: "8px 0", borderBottom: `1px solid ${DIVIDER}`, ...label11 }}>
-              <span />
-              <span>Project</span>
-              <span>Owner</span>
-              <span>Phase</span>
-              <span>Target</span>
-            </div>
-            {report.rows.map((row, idx) => (
-              <div
-                key={row.project.id}
-                onClick={() => navigate(`/projects/${row.project.id}`)}
-                style={{ ...rowStyle, padding: "14px 0", borderBottom: `1px solid ${DIVIDER}`, cursor: "pointer" }}
-                className="exec-matrix-row"
-              >
-                <RagChip rag={row.rag} style={{ alignSelf: "start", marginTop: 3 }} />
-                <div>
-                  <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>{row.project.title}</div>
-                  {row.project.desc && <div style={{ fontSize: 12, color: N700, marginTop: 2 }}>{row.project.desc}</div>}
-                </div>
-                <span style={{ fontSize: 13 }}>{row.project.owner}</span>
-                <PhaseStepper row={row} />
-                <div>
-                  <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 13 }}>{row.target}</div>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: RAG[row.rag].text }}>{RAG[row.rag].label}</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 1 }} onClick={(e) => e.stopPropagation()}>
-                  <button className="icon-btn" style={{ width: 16, height: 14, color: idx === 0 ? N300 : N600 }} disabled={idx === 0} onClick={() => move(idx, -1)} title="Move up"><ChevronUp size={11} /></button>
-                  <button className="icon-btn" style={{ width: 16, height: 14, color: idx === report.rows.length - 1 ? N300 : N600 }} disabled={idx === report.rows.length - 1} onClick={() => move(idx, 1)} title="Move down"><ChevronDown size={11} /></button>
-                </div>
-              </div>
-            ))}
           </div>
 
           {/* Band G — Project detail (Full detail view only) */}

@@ -179,39 +179,6 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     <p style="font-family:${FONT};font-weight:800;font-size:28px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:62ch">${esc(report.summary)}</p>
   </div>`;
 
-  const matrixRows = report.rows
-    .map(
-      (row) => `
-    <div style="display:grid;grid-template-columns:14px 2fr 0.9fr 2.2fr 1fr;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid ${C.divider}">
-      <span style="width:12px;height:12px;align-self:start;margin-top:3px;display:inline-block;background:${RAG[row.rag].swatch};flex-shrink:0"></span>
-      <div>
-        <div style="font-family:${FONT};font-weight:800;font-size:15px;line-height:1.2">${esc(row.project.title)}</div>
-        ${row.project.desc ? `<div style="font-size:12px;color:${C.n700};margin-top:2px">${esc(row.project.desc)}</div>` : ""}
-      </div>
-      <span style="font-size:13px">${esc(row.project.owner)}</span>
-      ${phaseStepper(row)}
-      <div>
-        <div style="font-family:${FONT};font-weight:800;font-size:13px">${esc(row.target)}</div>
-        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${RAG[row.rag].text}">${RAG[row.rag].label}</div>
-      </div>
-    </div>`,
-    )
-    .join("");
-
-  const bandF = `
-  <div style="padding:24px 32px 0">
-    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:16px">
-      <h2 style="font-family:${FONT};font-size:24px;letter-spacing:-0.02em;margin:0;font-weight:800">All projects</h2>
-      <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">${report.totalProjects} projects · ${report.totalTasks} tasks</span>
-    </div>
-  </div>
-  <div style="margin:0 32px 32px;border-top:2px solid ${C.divider};border-bottom:2px solid ${C.divider}">
-    <div style="display:grid;grid-template-columns:14px 2fr 0.9fr 2.2fr 1fr;gap:16px;padding:8px 0;border-bottom:1px solid ${C.divider};font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">
-      <span></span><span>Project</span><span>Owner</span><span>Phase</span><span>Target</span>
-    </div>
-    ${matrixRows}
-  </div>`;
-
   const detailBlocks = report.rows
     .map((row) => {
       const href = safeHref(row.project.webUrl);
@@ -293,7 +260,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
   const body =
     report.totalProjects === 0
       ? `<div style="padding:40px 32px;font-size:15px;color:${C.n700}">No active projects to report on.</div>`
-      : `${bandB}${bandC}${bandD}${bandF}${bandG}${bandH}`;
+      : `${bandB}${bandC}${bandD}${bandG}${bandH}`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
