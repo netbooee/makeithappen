@@ -101,11 +101,10 @@ export interface PortfolioSummary {
   healthNote: string;
   riskNote: string;
   scheduleNote: string;
+  /** The poster-band executive summary — a manually-edited override when set, else composed from the data. */
   summary: string;
-  decisionAsk: string;
-  decisionMeta: string;
-  nextNarrative: string;
-  topAction: { title: string; meta: string; project: string } | null;
+  /** True when `summary` came from the user's own edit rather than the auto-composed default. */
+  summaryIsStored: boolean;
 }
 
 /** Current phase (1-based), stage name, and task tally for a project's milestone list. */
@@ -174,8 +173,10 @@ export function buildPortfolioReport(
   tasks: Task[],
   contacts: Contact[],
   entriesById: Map<string, ExecEntry>,
+  manualSummary?: string,
 ): PortfolioSummary {
   const active = projects.filter((p) => p.status !== "complete");
+  const storedSummary = manualSummary?.trim();
 
   const rows: PortfolioRow[] = active.map((project) => {
     const rag = project.risk ?? "green";
@@ -219,10 +220,8 @@ export function buildPortfolioReport(
       gatesClosingSoon: 0, gatesClosingBy: "", nextMilestone: null,
       lede: "No active projects to report on.",
       healthNote: "", riskNote: "", scheduleNote: "",
-      summary: "No active projects to report on.",
-      decisionAsk: "No decision required this period.", decisionMeta: "",
-      nextNarrative: "Nothing scheduled across the portfolio.",
-      topAction: null,
+      summary: storedSummary || "No active projects to report on.",
+      summaryIsStored: Boolean(storedSummary),
     };
   }
 
@@ -299,7 +298,7 @@ export function buildPortfolioReport(
     : "All projects are tracking to their gates.";
 
   const worstRow = [...rows].sort((a, b) => RAG_SEVERITY[b.rag] - RAG_SEVERITY[a.rag])[0];
-  const summary = portfolioRag === "green"
+  const composedSummary = portfolioRag === "green"
     ? `All ${rows.length} project${rows.length === 1 ? "" : "s"} ${rows.length === 1 ? "is" : "are"} on track.`
     : (() => {
         const cats: [Rag, string][] = [
@@ -310,31 +309,14 @@ export function buildPortfolioReport(
         return `${worstRow.project.title} is the project to watch, driven by ${worstCatForRow}${worstRow.gateSlipped ? ` — its ${worstRow.stage} gate has slipped` : ""}.${rest > 0 ? ` ${rest} other project${rest === 1 ? "" : "s"} ${rest === 1 ? "is" : "are"} on track or stable.` : ""}`;
       })();
 
-  const decisionAffected = worstCat && worstCat.flagged > 0 ? worstCat.flagged : 0;
-  const decisionAsk = decisionAffected > 0
-    ? `Review ${catLabels[worstCat!.key].toLowerCase()} risk on ${decisionAffected} project${decisionAffected === 1 ? "" : "s"}`
-    : "No decision required this period";
-  const decisionMeta = decisionAffected > 0
-    ? `${catLabels[worstCat!.key]} is amber or red on ${decisionAffected} of ${rows.length} projects.${nextMilestone ? ` Needed by ${nextMilestone.date}.` : ""}`
-    : "";
-
-  const nextNarrative = rows
-    .filter((r) => r.next)
-    .map((r) => `${r.project.title}: ${r.next}`)
-    .join(" ") || "Nothing scheduled across the portfolio.";
-
-  const actionCandidates = rows
-    .filter((r) => r.actionTitle)
-    .map((r) => ({ title: r.actionTitle as string, meta: r.actionMeta as string, project: r.project.title }));
-  const topAction = actionCandidates[0] ?? null;
-
   return {
     rows, totalProjects: rows.length, needsAttention, portfolioRag, pct,
     doneTasks, totalTasks, phasesOpen, onDateCount, categoryCounts,
     approvedTotal, spentTotal, drawnPct,
     gatesClosingSoon, gatesClosingBy, nextMilestone,
     lede, healthNote, riskNote, scheduleNote,
-    summary, decisionAsk, decisionMeta, nextNarrative, topAction,
+    summary: storedSummary || composedSummary,
+    summaryIsStored: Boolean(storedSummary),
   };
 }
 
