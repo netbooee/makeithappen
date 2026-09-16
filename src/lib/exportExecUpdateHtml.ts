@@ -128,7 +128,7 @@ function cardHtml(entry: ExecEntry): string {
     .join(" ");
 
   // Header band — darker than the #F8F9FB page background so it reads as a
-  // header, not as the page showing through. Mirrors --exec-head in styles.css.
+  // header, not as the page showing through.
   return `<div style="border:0.5px solid #E2E5EA;border-radius:10px;margin-bottom:10px;background:#fff;overflow:hidden">
     <table style="width:100%;border-collapse:collapse;background:#E9ECF2;border-bottom:1px solid #DDE1E9">
       <tr>
