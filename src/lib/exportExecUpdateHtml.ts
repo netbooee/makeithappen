@@ -183,7 +183,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     .map(
       (row) => `
     <div style="display:grid;grid-template-columns:14px 2fr 0.9fr 2.2fr 1fr;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid ${C.divider}">
-      ${ragChip(row.rag)}
+      <span style="width:12px;height:12px;align-self:start;margin-top:3px;display:inline-block;background:${RAG[row.rag].swatch};flex-shrink:0"></span>
       <div>
         <div style="font-family:${FONT};font-weight:800;font-size:15px;line-height:1.2">${esc(row.project.title)}</div>
         ${row.project.desc ? `<div style="font-size:12px;color:${C.n700};margin-top:2px">${esc(row.project.desc)}</div>` : ""}
