@@ -1,4 +1,5 @@
-// Zero-dependency Netlify Function — plain CommonJS, no bundler needed.
+// Zero-dependency Netlify Function — ES module (package.json has "type": "module",
+// which Node/esbuild require .js functions here to match; no bundler needed either way).
 // Calls Supabase REST API to verify the user JWT and fetch their stored key,
 // then proxies the request to Anthropic server-side so the key never hits the browser.
 
@@ -6,7 +7,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 const MODEL = "claude-sonnet-4-20250514";
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
