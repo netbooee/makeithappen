@@ -223,11 +223,12 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     <div style="border-top:2px solid ${C.divider};padding:18px 0 24px">
       <div style="display:grid;grid-template-columns:1.85fr 1fr;gap:32px;align-items:start">
         <div>
-          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:2px">
             ${ragChip(row.rag)}
             <h3 style="font-family:${FONT};font-size:17px;letter-spacing:-0.01em;margin:0;flex:1;font-weight:800">${titleHtml}</h3>
             <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">Phase ${row.phase} of ${row.phases} · ${esc(row.stage)} · ${row.pct}%</span>
           </div>
+          <div style="font-size:12px;font-style:italic;color:${C.n600};margin-bottom:10px">${esc(row.project.owner)}${row.project.technicalLead ? ` · Tech lead: ${esc(row.project.technicalLead)}` : ""}</div>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Executive update${row.updateDate ? ` · ${esc(row.updateDate)}` : ""}</div>
           <p style="font-size:14px;line-height:1.5;margin:0 0 14px;max-width:62ch">${esc(row.update)}</p>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Coming up next</div>

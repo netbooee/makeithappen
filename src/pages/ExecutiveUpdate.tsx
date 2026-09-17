@@ -441,7 +441,7 @@ export function ExecutiveUpdate() {
                     <div key={row.project.id} style={{ borderTop: `2px solid ${DIVIDER}`, padding: "18px 0 24px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: 32, alignItems: "start" }}>
                         <div>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 2 }}>
                             <RagChip rag={row.rag} />
                             <h3
                               style={{ fontFamily: FONT, fontSize: 17, letterSpacing: "-0.01em", margin: 0, flex: 1, cursor: "pointer", fontWeight: 800 }}
@@ -452,6 +452,9 @@ export function ExecutiveUpdate() {
                             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>
                               Phase {row.phase} of {row.phases} · {row.stage} · {row.pct}%
                             </span>
+                          </div>
+                          <div style={{ fontSize: 12, fontStyle: "italic", color: N600, marginBottom: 10 }}>
+                            {row.project.owner}{row.project.technicalLead ? ` · Tech lead: ${row.project.technicalLead}` : ""}
                           </div>
                           <div style={{ ...kicker, marginBottom: 6 }}>Executive update{row.updateDate ? ` · ${shortDate(row.updateDate)}` : ""}</div>
                           <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 14px", maxWidth: "62ch" }}>{row.update}</p>

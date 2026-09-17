@@ -23,6 +23,7 @@ export function ProjectModal({
   const [due, setDue] = useState(initial.due && initial.due !== "No date" ? initial.due : "");
   const [status, setStatus] = useState<Status>(initial.status ?? "active");
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
+  const [technicalLead, setTechnicalLead] = useState(initial.technicalLead ?? "");
   const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
   const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
   const [webUrl, setWebUrl] = useState(initial.webUrl ?? "");
@@ -55,6 +56,7 @@ export function ProjectModal({
       due: due.trim() || "No date",
       status,
       owner: owner.trim() || all.user.initials,
+      technicalLead: technicalLead.trim() || undefined,
       active: status === "active",
       heroImage: heroImage || undefined,
       clientLogo: clientLogo || undefined,
@@ -97,6 +99,12 @@ export function ProjectModal({
             style={{ flex: 1 }}
           />
         </div>
+        <input
+          className="input"
+          placeholder="Technical lead (optional)"
+          value={technicalLead}
+          onChange={(e) => setTechnicalLead(e.target.value)}
+        />
         <div>
           <div className="field-label" style={{ marginBottom: 7 }}>Status</div>
           <div className="segmented" style={{ display: "flex" }}>
