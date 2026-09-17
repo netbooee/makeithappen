@@ -1087,6 +1087,28 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${riskDialogsHtml}
   ${issueDialogsHtml}`;
 
+  /* ── Business case (underneath Task detail; omitted entirely when no field is filled) ──────── */
+  const businessCaseFields: [string, string | undefined][] = [
+    ["Problem or opportunity", project.problemOpportunity],
+    ["Business justification", project.businessJustification],
+    ["Project objectives", project.projectObjectives],
+    ["Key deliverables", project.keyDeliverables],
+    ["Expected ROI", project.expectedRoi],
+  ];
+  const businessCaseFilled = businessCaseFields.filter(([, v]) => v?.trim());
+  const bandBusinessCase = businessCaseFilled.length === 0 ? "" : `
+  <div id="v2-band-businesscase" style="padding:32px;border-top:2px solid ${C.divider}">
+    <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0 0 4px">Business case</h2>
+    <p style="font-size:13px;color:${C.n700};margin:0 0 24px">Problem, justification, objectives, deliverables & ROI.</p>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      ${businessCaseFilled.map(([label, value]) => `
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">${esc(label)}</div>
+        <p style="font-size:14px;line-height:1.55;margin:0;max-width:76ch;white-space:pre-wrap">${esc(value!.trim())}</p>
+      </div>`).join("")}
+    </div>
+  </div>`;
+
   /* ── Band H — Footer ──────────────────────────────────────────────────────────────────────── */
   const feedbackHtml = feedbackEmail
     ? `<a href="${esc(safeHref(`mailto:${feedbackEmail}?subject=${encodeURIComponent(`${project.title}: Report feedback`)}`))}" class="v2-feedback-link" style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:${C.accent}">Send feedback</a>`
@@ -1150,6 +1172,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${bandE}
   ${bandF}
   ${bandG}
+  ${bandBusinessCase}
   ${bandH}
 </div>
 <script>
@@ -1159,10 +1182,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     var exec = document.getElementById('v2-btn-exec');
     var full = document.getElementById('v2-btn-full');
     var detail = document.getElementById('v2-band-g');
+    var bcase = document.getElementById('v2-band-businesscase');
     if (view === 'executive') {
-      exec.classList.add('v2-selected'); full.classList.remove('v2-selected'); detail.style.display = 'none';
+      exec.classList.add('v2-selected'); full.classList.remove('v2-selected');
+      detail.style.display = 'none';
+      if (bcase) bcase.style.display = 'none';
     } else {
-      full.classList.add('v2-selected'); exec.classList.remove('v2-selected'); detail.style.display = '';
+      full.classList.add('v2-selected'); exec.classList.remove('v2-selected');
+      detail.style.display = '';
+      if (bcase) bcase.style.display = '';
     }
   }
   if (location.hash.replace('#', '') === 'executive') v2SetView('executive');
