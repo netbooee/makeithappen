@@ -421,6 +421,9 @@ export function ProjectDetail() {
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
             <span className="chip"><UserRound /> {project.owner}</span>
+            {project.technicalLead && (
+              <span className="chip"><UserRound /> Tech lead: {project.technicalLead}</span>
+            )}
             <span className={`chip${isOverdue(project.due) ? " overdue" : ""}`}><Calendar /> Due {project.due}</span>
             <span className="chip"><CheckCircle2 /> {done}/{total} done</span>
             {project.sharepointProjectId && (

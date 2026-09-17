@@ -163,6 +163,8 @@ export interface Project {
   title: string;
   status: Status;
   owner: string;
+  /** Technical lead's name — free text, same pattern as owner. */
+  technicalLead?: string;
   due: string;
   start?: string;
   desc: string;
