@@ -30,6 +30,7 @@ import { AddProjectTaskRow } from "./AddProjectTaskRow";
 import { MeetingAgendasSection } from "./MeetingAgendasSection";
 import { ProjectNotesSection } from "./ProjectNotesSection";
 import { ProjectModal } from "./ProjectModal";
+import { BusinessCaseSection } from "./BusinessCaseSection";
 
 /* ================= Project detail ================= */
 
@@ -183,8 +184,14 @@ export function ProjectDetail() {
   const nextActionRows = nextActionSubtasks(project);
   const nextActionsOverdue = nextActionRows.some(({ subtask }) => isOverdue(subtask.due));
 
+  const businessCaseFilled = [
+    project.problemOpportunity, project.businessJustification, project.projectObjectives,
+    project.keyDeliverables, project.expectedRoi,
+  ].filter(Boolean).length;
+
   const registers: { id: string; label: string; sub: string; chip: string; amber?: boolean }[] = [
     { id: "next-actions", label: "Next Actions", sub: "Subtasks flagged as next action, across all milestones", chip: String(nextActionRows.length), amber: nextActionsOverdue },
+    { id: "business-case", label: "Business Case", sub: "Problem, justification, objectives, deliverables & ROI", chip: `${businessCaseFilled}/5` },
     { id: "decisions", label: "Decisions", sub: "Log of what was decided, when, and by whom", chip: String(decisionsList.length) },
     { id: "issues", label: "Issues", sub: issueSummary, chip: String(issuesList.length), amber: openIssues > 0 },
     { id: "risks", label: "Risks", sub: riskSummary, chip: openRisks.length > 0 ? `${openRisks.length} open` : String(risksList.length), amber: openRisks.length > 0 },
@@ -196,6 +203,7 @@ export function ProjectDetail() {
   const jumpItems: { id: string; label: string; n?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "next-actions", label: "Next Actions", n: nextActionRows.length },
+    { id: "business-case", label: "Business Case", n: businessCaseFilled },
     { id: "decisions", label: "Decisions", n: decisionsList.length },
     { id: "issues", label: "Issues", n: openIssues },
     { id: "risks", label: "Risks", n: openRisks.length },
@@ -965,6 +973,7 @@ export function ProjectDetail() {
               {openRegister === r.id && (
                 <div className="rg-body">
                   {r.id === "next-actions" && <NextActionsSection project={project} />}
+                  {r.id === "business-case" && <BusinessCaseSection project={project} />}
                   {r.id === "decisions" && <DecisionsTracker project={project} />}
                   {r.id === "issues" && <IssueTracker project={project} />}
                   {r.id === "risks" && <RiskTracker project={project} />}

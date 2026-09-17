@@ -197,6 +197,16 @@ export interface Project {
   milestones: Milestone[];
   /** Manual override of milestone display order (list of milestone ids). When unset, milestones sort by due date. */
   milestoneOrder?: string[];
+  /** The problem or opportunity driving this project — one of the five business-case fields, fillable by pasting a charter/business-case doc. */
+  problemOpportunity?: string;
+  /** Why this project is worth doing. */
+  businessJustification?: string;
+  /** What this project aims to achieve. */
+  projectObjectives?: string;
+  /** What will be delivered. */
+  keyDeliverables?: string;
+  /** Anticipated return on investment. */
+  expectedRoi?: string;
   updates: StatusUpdate[];
   nextActionsAiSummary?: string;
   /** Forward-looking "coming next" paragraph shown on the Executive update page */

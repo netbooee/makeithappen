@@ -544,6 +544,53 @@ CONTACTS:
 ${contacts}`;
 }
 
+/* ---------- business case paste-to-fill ---------- */
+
+/** The five business-case fields captured on a project, filled by pasting a charter/business-case document. */
+export interface BusinessCaseFields {
+  problemOpportunity: string;
+  businessJustification: string;
+  projectObjectives: string;
+  keyDeliverables: string;
+  expectedRoi: string;
+}
+
+function parseBusinessCaseOutput(out: string): BusinessCaseFields {
+  const clean = (s?: string) => (s ?? "").trim();
+  const labels = ["PROBLEM", "JUSTIFICATION", "OBJECTIVES", "DELIVERABLES", "ROI"];
+  const extract = (label: string, i: number) => {
+    const rest = labels.slice(i + 1).map((l) => `\\n\\s*${l}:`).join("|");
+    const re = new RegExp(`${label}:\\s*([\\s\\S]*?)(?=${rest || "$"}|$)`, "i");
+    return clean(out.match(re)?.[1]);
+  };
+  return {
+    problemOpportunity: extract(labels[0], 0),
+    businessJustification: extract(labels[1], 1),
+    projectObjectives: extract(labels[2], 2),
+    keyDeliverables: extract(labels[3], 3),
+    expectedRoi: extract(labels[4], 4),
+  };
+}
+
+/**
+ * Extracts the five business-case fields from a pasted charter/business-case document via AI.
+ * Throws if no Claude backend is configured — callers should catch this and prompt the user
+ * to add an API key in Settings, since there's no reliable non-AI fallback for free-form text.
+ */
+export async function parseBusinessCase(pastedText: string): Promise<BusinessCaseFields> {
+  const system = `You extract five fields from a pasted business case or project charter. Read the source text and output exactly five labeled lines, in this order, each starting with the exact label shown followed by a colon:
+
+PROBLEM: the problem or opportunity driving the project
+JUSTIFICATION: the business justification — why it's worth doing
+OBJECTIVES: the project's objectives
+DELIVERABLES: the key deliverables
+ROI: the expected return on investment
+
+For each field, use the source text's own wording — condense or lightly clean it up if needed, but never invent, embellish, or add information that isn't in the source. If a field isn't present in the source text, leave it blank after the label. Output only those five labeled lines, nothing else.`;
+  const out = await callClaude(system, [{ role: "user", content: pastedText }]);
+  return parseBusinessCaseOutput(out);
+}
+
 export interface ImportContact { name: string; company: string; email: string; role: string; }
 
 export function parseContactRows(text: string): ImportContact[] | null {

@@ -54,6 +54,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `ResourcesSection.tsx` | Links/resources rail card |
 | `KpiSection.tsx` | Budget / risk / progress KPI strip |
 | `NextActionsSection.tsx` | Next-action subtasks across all milestones, read-only with click-through to edit |
+| `BusinessCaseSection.tsx` | Business case register: problem/opportunity, justification, objectives, deliverables, expected ROI — each independently editable, plus a paste-to-fill box that AI-parses a pasted charter/business-case doc into the five fields |
 | `RiskTracker.tsx` | Risk register table |
 | `IssueTracker.tsx` | Issue tracker table |
 | `DecisionsTracker.tsx` | Decisions log table |
