@@ -137,6 +137,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         <span style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${RAG_NAME[report.portfolioRag]}</span>
         <span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${RAG[report.portfolioRag].label}</span>
       </div>
+      <div style="font-size:13px;color:${C.n700};margin-top:4px">${report.totalProjects - report.needsAttention} of ${report.totalProjects} project${report.totalProjects === 1 ? "" : "s"} on track</div>
       <div style="display:flex;gap:2px;margin-top:12px">${ragScale}</div>
       <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">${ragScaleLabels}</div>
       <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.healthNote)}</p>
