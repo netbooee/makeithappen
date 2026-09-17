@@ -180,7 +180,10 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     <p style="font-family:${FONT};font-weight:800;font-size:28px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:62ch">${esc(report.summary)}</p>
   </div>`;
 
-  const detailBlocks = report.rows
+  // Project detail leads with what needs attention: red, then amber, then green,
+  // preserving the saved order within each group.
+  const detailBlocks = [...report.rows]
+    .sort((a, b) => RAG_ORDER.indexOf(b.rag) - RAG_ORDER.indexOf(a.rag))
     .map((row) => {
       const href = safeHref(row.project.webUrl);
       const linked = href !== "#";

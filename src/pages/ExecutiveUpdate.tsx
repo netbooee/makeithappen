@@ -154,6 +154,13 @@ export function ExecutiveUpdate() {
     [allEntries, data.tasks, data.contacts, entriesById, data.execPortfolioSummary],
   );
 
+  // Project detail leads with what needs attention: red, then amber, then green,
+  // preserving the saved order within each group.
+  const detailRows = useMemo(
+    () => [...report.rows].sort((a, b) => RAG_ORDER.indexOf(b.rag) - RAG_ORDER.indexOf(a.rag)),
+    [report.rows],
+  );
+
   const regenerate = async (entry: ExecEntry) => {
     const { project, execUpdate, nextItems } = entry;
     setBusy(project.id);
@@ -426,7 +433,7 @@ export function ExecutiveUpdate() {
                 <p style={{ fontSize: 13, color: N700, margin: "0 0 24px" }}>Latest executive update, health, schedule, budget and next step for each project.</p>
               </div>
               <div style={{ padding: "0 32px 8px" }}>
-                {report.rows.map((row) => {
+                {detailRows.map((row) => {
                   const entry = entriesById.get(row.project.id);
                   const isEditing = editing === row.project.id;
                   const isBusy = busy === row.project.id;
