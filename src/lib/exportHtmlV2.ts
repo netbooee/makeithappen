@@ -312,6 +312,17 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const phasesOpen = project.milestones.filter((m) => m.status !== "complete").length;
   const sortedMilestones = sortMilestones(project.milestones, project.milestoneOrder);
 
+  // Computed up front (rather than alongside the Business case band itself, further down) so
+  // Band B's jump link can know whether there's a Business case band to jump to.
+  const businessCaseFields: [string, string | undefined][] = [
+    ["Problem or opportunity", project.problemOpportunity],
+    ["Business justification", project.businessJustification],
+    ["Project objectives", project.projectObjectives],
+    ["Key deliverables", project.keyDeliverables],
+    ["Expected ROI", project.expectedRoi],
+  ];
+  const businessCaseFilled = businessCaseFields.filter(([, v]) => v?.trim());
+
   /* ── Band A — Header bar ──────────────────────────────────────────────────────────────────── */
   const wsBadge = workspaceLabel ? `${esc(workspaceLabel)} · Project Report` : "Project Report";
   const bandA = `
@@ -338,11 +349,19 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const targetVal = project.due && project.due !== "No date" ? esc(project.due) : "Not set";
   const daysRemain = daysRemaining(project.due);
 
+  const descHtml = project.desc
+    ? `<p style="font-size:21px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}</p>`
+    : "";
+  const businessCaseLinkHtml = businessCaseFilled.length === 0
+    ? ""
+    : `<a href="#v2-band-businesscase" style="display:inline-block;margin-top:${project.desc ? "12px" : "0"};font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:${C.accent}">Jump to business case ↓</a>`;
+
   const bandB = `
   <div class="v2-2col v2-band-b" style="border-bottom:2px solid ${C.divider}">
     <div style="padding:40px 32px 32px">
       <h1 class="v2-h1" style="font-size:64px;line-height:1;letter-spacing:-0.03em;margin:0 0 16px">${esc(project.title)}</h1>
-      <p style="font-size:21px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}</p>
+      ${descHtml}
+      ${businessCaseLinkHtml}
     </div>
     <div class="v2-right" style="padding:40px 32px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
       <div>
@@ -1088,14 +1107,6 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${issueDialogsHtml}`;
 
   /* ── Business case (underneath Task detail; omitted entirely when no field is filled) ──────── */
-  const businessCaseFields: [string, string | undefined][] = [
-    ["Problem or opportunity", project.problemOpportunity],
-    ["Business justification", project.businessJustification],
-    ["Project objectives", project.projectObjectives],
-    ["Key deliverables", project.keyDeliverables],
-    ["Expected ROI", project.expectedRoi],
-  ];
-  const businessCaseFilled = businessCaseFields.filter(([, v]) => v?.trim());
   const bandBusinessCase = businessCaseFilled.length === 0 ? "" : `
   <div id="v2-band-businesscase" style="padding:32px;border-top:2px solid ${C.divider}">
     <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0 0 4px">Business case</h2>
