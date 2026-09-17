@@ -149,8 +149,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     </div>
     <div style="padding:20px 24px 22px;border-left:1px solid ${C.divider}">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Schedule</div>
-      <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.onDateCount} of ${report.totalProjects} on date</div>
-      <div style="font-size:13px;color:${C.n700};margin-top:2px">${report.gatesClosingSoon} gate${report.gatesClosingSoon === 1 ? "" : "s"} close before ${esc(report.gatesClosingBy)}</div>
+      <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.onDateCount} of ${report.totalProjects} on time</div>
       <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.scheduleNote)}</p>
     </div>
     <div style="padding:20px 32px 22px;border-left:1px solid ${C.divider}">

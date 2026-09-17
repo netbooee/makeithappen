@@ -1108,9 +1108,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   /* ── Business case (underneath Task detail; omitted entirely when no field is filled) ──────── */
   const bandBusinessCase = businessCaseFilled.length === 0 ? "" : `
-  <div id="v2-band-businesscase" style="padding:32px;border-top:2px solid ${C.divider}">
-    <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0 0 4px">Business case</h2>
-    <p style="font-size:13px;color:${C.n700};margin:0 0 24px">Problem, justification, objectives, deliverables & ROI.</p>
+  <details id="v2-band-businesscase" open style="padding:32px;border-top:2px solid ${C.divider}">
+    <summary style="display:flex;align-items:center;gap:10px">
+      <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0">Business case</h2>
+      <span class="v2-rail-chev" style="font-size:14px">&#9656;</span>
+    </summary>
+    <p style="font-size:13px;color:${C.n700};margin:12px 0 24px">Problem, justification, objectives, deliverables & ROI.</p>
     <div style="display:flex;flex-direction:column;gap:20px">
       ${businessCaseFilled.map(([label, value]) => `
       <div>
@@ -1118,7 +1121,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         <p style="font-size:14px;line-height:1.55;margin:0;max-width:76ch;white-space:pre-wrap">${esc(value!.trim())}</p>
       </div>`).join("")}
     </div>
-  </div>`;
+  </details>`;
 
   /* ── Band H — Footer ──────────────────────────────────────────────────────────────────────── */
   const feedbackHtml = feedbackEmail
