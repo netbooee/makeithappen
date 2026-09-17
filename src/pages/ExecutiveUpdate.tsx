@@ -319,6 +319,9 @@ export function ExecutiveUpdate() {
                 <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{RAG_NAME[report.portfolioRag]}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>{RAG[report.portfolioRag].label}</span>
               </div>
+              <div style={{ fontSize: 13, color: N700, marginTop: 4 }}>
+                {report.totalProjects - report.needsAttention} of {report.totalProjects} project{report.totalProjects === 1 ? "" : "s"} on track
+              </div>
               <RagScale active={report.portfolioRag} />
               <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.healthNote}</p>
             </div>
