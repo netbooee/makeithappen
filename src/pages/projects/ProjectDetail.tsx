@@ -122,7 +122,7 @@ export function ProjectDetail() {
   useEffect(() => {
     const sc = document.querySelector(".scroll");
     if (!sc) return;
-    const ids = ["overview", "next-actions", "decisions", "issues", "risks", "tasks", "agendas", "notes"];
+    const ids = ["overview", "business-case", "next-actions", "decisions", "issues", "risks", "tasks", "agendas", "notes"];
     const syncActive = () => {
       const barH = jumpbarRef.current?.offsetHeight ?? 0;
       const line = sc.getBoundingClientRect().top + barH + 24;
@@ -190,8 +190,8 @@ export function ProjectDetail() {
   ].filter(Boolean).length;
 
   const registers: { id: string; label: string; sub: string; chip: string; amber?: boolean }[] = [
-    { id: "next-actions", label: "Next Actions", sub: "Subtasks flagged as next action, across all milestones", chip: String(nextActionRows.length), amber: nextActionsOverdue },
     { id: "business-case", label: "Business Case", sub: "Problem, justification, objectives, deliverables & ROI", chip: `${businessCaseFilled}/5` },
+    { id: "next-actions", label: "Next Actions", sub: "Subtasks flagged as next action, across all milestones", chip: String(nextActionRows.length), amber: nextActionsOverdue },
     { id: "decisions", label: "Decisions", sub: "Log of what was decided, when, and by whom", chip: String(decisionsList.length) },
     { id: "issues", label: "Issues", sub: issueSummary, chip: String(issuesList.length), amber: openIssues > 0 },
     { id: "risks", label: "Risks", sub: riskSummary, chip: openRisks.length > 0 ? `${openRisks.length} open` : String(risksList.length), amber: openRisks.length > 0 },
@@ -202,8 +202,8 @@ export function ProjectDetail() {
 
   const jumpItems: { id: string; label: string; n?: number }[] = [
     { id: "overview", label: "Overview" },
-    { id: "next-actions", label: "Next Actions", n: nextActionRows.length },
     { id: "business-case", label: "Business Case", n: businessCaseFilled },
+    { id: "next-actions", label: "Next Actions", n: nextActionRows.length },
     { id: "decisions", label: "Decisions", n: decisionsList.length },
     { id: "issues", label: "Issues", n: openIssues },
     { id: "risks", label: "Risks", n: openRisks.length },
