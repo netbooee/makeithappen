@@ -93,14 +93,6 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
   );
 }
 
-function NextChip() {
-  return (
-    <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", padding: "3px 7px", background: ACCENT, color: BG, flexShrink: 0 }}>
-      Next
-    </span>
-  );
-}
-
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
@@ -150,8 +142,8 @@ export function ExecutiveUpdate() {
   // Pass projects in allEntries' order (already sorted by data.execUpdateOrder) so the
   // portfolio rows reflect the user's saved order.
   const report = useMemo(
-    () => buildPortfolioReport(allEntries.map((e) => e.project), data.tasks, data.contacts, entriesById, data.execPortfolioSummary),
-    [allEntries, data.tasks, data.contacts, entriesById, data.execPortfolioSummary],
+    () => buildPortfolioReport(allEntries.map((e) => e.project), entriesById, data.execPortfolioSummary),
+    [allEntries, entriesById, data.execPortfolioSummary],
   );
 
   // Project detail leads with what needs attention: red, then amber, then green,
@@ -437,6 +429,13 @@ export function ExecutiveUpdate() {
                   const entry = entriesById.get(row.project.id);
                   const isEditing = editing === row.project.id;
                   const isBusy = busy === row.project.id;
+                  const subNotes = (
+                    [
+                      ["Risk", row.project.riskNote],
+                      ["Timeline", row.project.timelineNote],
+                      ["Budget", row.project.budgetNote],
+                    ] as [string, string | undefined][]
+                  ).filter(([, note]) => note?.trim());
                   return (
                     <div key={row.project.id} style={{ borderTop: `2px solid ${DIVIDER}`, padding: "18px 0 24px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: 32, alignItems: "start" }}>
@@ -536,13 +535,14 @@ export function ExecutiveUpdate() {
                             <span style={{ color: N700 }}>Gate</span>
                             <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.gate}</span>
                           </div>
-                          {row.actionTitle && (
-                            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 14 }}>
-                              <NextChip />
-                              <div>
-                                <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>{row.actionTitle}</div>
-                                <div style={{ fontSize: 12, color: N700, marginTop: 3 }}>{row.actionMeta}</div>
-                              </div>
+                          {subNotes.length > 0 && (
+                            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                              {subNotes.map(([label, note]) => (
+                                <div key={label}>
+                                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700, marginBottom: 2 }}>{label} note</div>
+                                  <div style={{ fontSize: 13, lineHeight: 1.45, color: N800 }}>{note}</div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

@@ -3,13 +3,11 @@
  * (src/pages/ExecutiveUpdate.tsx). Kept separate from that page so the heavy per-project
  * derivation (phase stepper, RAG roll-ups, composed narrative) can be read and adjusted
  * on its own. Nothing here is fabricated — every string is built from real project data;
- * the "composed prose" bands (lede, summary, decision ask, next-narrative) are deterministic
+ * the "composed prose" bands (lede, health/risk/schedule notes, summary) are deterministic
  * templates over that data, not AI- or hand-written copy.
  */
-import type { Contact, Milestone, Project, Task } from "./types";
+import type { Milestone, Project } from "./types";
 import { fmtDue, isOverdue, toDateInputValue } from "../components/ui";
-import { assigneeAvatar, projectContactPool } from "./projectContacts";
-import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
 
 export type Rag = "green" | "amber" | "red";
@@ -83,8 +81,6 @@ export interface PortfolioRow {
   updateDate: string;
   update: string;
   next: string;
-  actionTitle: string | null;
-  actionMeta: string | null;
   phaseCells: PhaseCell[];
 }
 
@@ -148,38 +144,10 @@ function phaseCells(phase: number, phases: number, rag: Rag): PhaseCell[] {
   return cells;
 }
 
-/** Soonest-due, undone next-action across a project's flagged subtasks and standalone tasks. */
-function pickTopAction(project: Project, tasks: Task[], contacts: Contact[]) {
-  const pool = projectContactPool(project, contacts);
-  const fromSubtasks = nextActionSubtasks(project).map((r) => ({
-    title: r.subtask.t, due: r.subtask.due, who: r.subtask.who, assignee: r.subtask.assignee, done: r.subtask.done,
-  }));
-  const fromTasks = tasks
-    .filter((t) => t.project === project.title && t.next && !t.done)
-    .map((t) => ({ title: t.text, due: t.due, who: t.who, assignee: t.assignee, done: t.done }));
-  const all = [...fromSubtasks, ...fromTasks].sort((a, b) => {
-    const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da.localeCompare(db);
-  });
-  const top = all[0];
-  if (!top) return null;
-  const av = assigneeAvatar(pool, top.assignee, top.who);
-  const owner = av.ini || top.who || "";
-  const status = top.due && top.due !== "No date"
-    ? (isOverdue(top.due, top.done) ? "Overdue" : `Due ${fmtDue(top.due)}`)
-    : "Scheduled";
-  return { title: top.title, meta: owner ? `${status} · Owner ${owner}` : status, dueIso: toDateInputValue(top.due) };
-}
-
 /** Builds the full portfolio report from every non-complete project, using each project's
  *  already-computed ExecEntry (executive update, "coming next" statement) where one exists. */
 export function buildPortfolioReport(
   projects: Project[],
-  tasks: Task[],
-  contacts: Contact[],
   entriesById: Map<string, ExecEntry>,
   manualSummary?: string,
 ): PortfolioSummary {
@@ -196,7 +164,6 @@ export function buildPortfolioReport(
     const approved = parseMoney(project.budget);
     const spent = parseMoney(project.budgetSpent);
     const entry = entriesById.get(project.id);
-    const action = pickTopAction(project, tasks, contacts);
     return {
       project,
       rag, timeline, budget, resourcing,
@@ -208,8 +175,6 @@ export function buildPortfolioReport(
       updateDate: entry?.execUpdate ? entry.execUpdate.when : "",
       update: entry?.execUpdate?.text ?? "No executive update recorded yet.",
       next: entry?.statement ?? "",
-      actionTitle: action?.title ?? null,
-      actionMeta: action?.meta ?? null,
       phaseCells: phaseCells(phase, phases, rag),
     };
   });

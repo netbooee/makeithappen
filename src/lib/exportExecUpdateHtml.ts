@@ -203,16 +203,21 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         </div>`,
         )
         .join("");
-      const actionHtml = row.actionTitle
-        ? `
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-top:14px">
-          <span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;background:${C.accent};color:${C.bg};flex-shrink:0">Next</span>
+      const subNotes = (
+        [
+          ["Risk", row.project.riskNote],
+          ["Timeline", row.project.timelineNote],
+          ["Budget", row.project.budgetNote],
+        ] as [string, string | undefined][]
+      ).filter(([, note]) => note?.trim());
+      const subNotesHtml = subNotes.length === 0 ? "" : `
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+          ${subNotes.map(([label, note]) => `
           <div>
-            <div style="font-family:${FONT};font-weight:800;font-size:13px;line-height:1.3">${esc(row.actionTitle)}</div>
-            ${row.actionMeta ? `<div style="font-size:12px;color:${C.n700};margin-top:3px">${esc(row.actionMeta)}</div>` : ""}
-          </div>
-        </div>`
-        : "";
+            <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700};margin-bottom:2px">${label} note</div>
+            <div style="font-size:13px;line-height:1.45;color:${C.n800}">${esc(note!.trim())}</div>
+          </div>`).join("")}
+        </div>`;
       const remaining = row.approved - row.spent;
       const remainingLabel = `${remaining < 0 ? "-" : ""}${formatMoneyShort(Math.abs(remaining))}`;
       const spendHtml = row.project.budget
@@ -245,7 +250,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
             <span style="color:${C.n700}">Gate</span>
             <span style="font-family:${FONT};font-weight:800">${esc(row.gate)}</span>
           </div>
-          ${actionHtml}
+          ${subNotesHtml}
         </div>
       </div>
     </div>`;
