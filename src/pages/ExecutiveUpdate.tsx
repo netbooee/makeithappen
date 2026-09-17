@@ -517,7 +517,17 @@ export function ExecutiveUpdate() {
                           ))}
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
                             <span style={{ color: N700 }}>Spend</span>
-                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.spendLabel}</span>
+                            {row.project.budget ? (
+                              <span style={{ fontFamily: FONT, fontWeight: 800, whiteSpace: "nowrap" }}>
+                                {formatMoneyShort(row.approved)} − {formatMoneyShort(row.spent)} ={" "}
+                                <span style={{ color: row.approved - row.spent >= 0 ? RAG.green.text : RAG.red.text }}>
+                                  {row.approved - row.spent < 0 ? "-" : ""}
+                                  {formatMoneyShort(Math.abs(row.approved - row.spent))}
+                                </span>
+                              </span>
+                            ) : (
+                              <span style={{ fontFamily: FONT, fontWeight: 800 }}>—</span>
+                            )}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
                             <span style={{ color: N700 }}>Gate</span>

@@ -78,7 +78,6 @@ export interface PortfolioRow {
   gate: string;
   gateSlipped: boolean;
   gateIso: string;
-  spendLabel: string;
   approved: number;
   spent: number;
   updateDate: string;
@@ -196,7 +195,6 @@ export function buildPortfolioReport(
     const gate = computeGate(current);
     const approved = parseMoney(project.budget);
     const spent = parseMoney(project.budgetSpent);
-    const spendLabel = project.budget ? `${formatMoneyShort(spent)} / ${formatMoneyShort(approved)}` : "—";
     const entry = entriesById.get(project.id);
     const action = pickTopAction(project, tasks, contacts);
     return {
@@ -206,7 +204,7 @@ export function buildPortfolioReport(
       pct: total ? Math.round((done / total) * 100) : 0,
       target: project.due && project.due !== "No date" ? fmtDue(project.due) : "No date",
       gate: gate.label, gateSlipped: gate.slipped, gateIso: gate.iso,
-      spendLabel, approved, spent,
+      approved, spent,
       updateDate: entry?.execUpdate ? entry.execUpdate.when : "",
       update: entry?.execUpdate?.text ?? "No executive update recorded yet.",
       next: entry?.statement ?? "",

@@ -213,6 +213,11 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           </div>
         </div>`
         : "";
+      const remaining = row.approved - row.spent;
+      const remainingLabel = `${remaining < 0 ? "-" : ""}${formatMoneyShort(Math.abs(remaining))}`;
+      const spendHtml = row.project.budget
+        ? `${formatMoneyShort(row.approved)} − ${formatMoneyShort(row.spent)} = <span style="color:${remaining >= 0 ? RAG.green.text : RAG.red.text}">${remainingLabel}</span>`
+        : "—";
 
       return `
     <div style="border-top:2px solid ${C.divider};padding:18px 0 24px">
@@ -233,7 +238,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           ${riskRows}
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
             <span style="color:${C.n700}">Spend</span>
-            <span style="font-family:${FONT};font-weight:800">${esc(row.spendLabel)}</span>
+            <span style="font-family:${FONT};font-weight:800;white-space:nowrap">${spendHtml}</span>
           </div>
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
             <span style="color:${C.n700}">Gate</span>
