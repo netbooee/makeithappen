@@ -434,6 +434,12 @@ export function ProjectDetail() {
             )}
             <span className={`chip${isOverdue(project.due) ? " overdue" : ""}`}><Calendar /> Due {project.due}</span>
             <span className="chip"><CheckCircle2 /> {done}/{total} done</span>
+            {project.tier && (
+              <span className="chip">Tier {project.tier}</span>
+            )}
+            {project.excludeFromExecReport && (
+              <span className="chip" title="Left out of the Executive Update report">Excluded from exec report</span>
+            )}
             {project.sharepointProjectId && (
               <span className="chip" title="SharePoint Project ID">SP ID: {project.sharepointProjectId}</span>
             )}

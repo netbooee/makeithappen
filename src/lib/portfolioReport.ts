@@ -142,14 +142,15 @@ function phaseCells(phase: number, phases: number, rag: Rag): PhaseCell[] {
   return cells;
 }
 
-/** Builds the full portfolio report from every non-complete project, using each project's
- *  already-computed ExecEntry (executive update, "coming next" statement) where one exists. */
+/** Builds the full portfolio report from every non-complete project not flagged to be excluded,
+ *  using each project's already-computed ExecEntry (executive update, "coming next" statement)
+ *  where one exists. */
 export function buildPortfolioReport(
   projects: Project[],
   entriesById: Map<string, ExecEntry>,
   manualSummary?: string,
 ): PortfolioSummary {
-  const active = projects.filter((p) => p.status !== "complete");
+  const active = projects.filter((p) => p.status !== "complete" && !p.excludeFromExecReport);
   const storedSummary = manualSummary?.trim();
 
   const rows: PortfolioRow[] = active.map((project) => {
