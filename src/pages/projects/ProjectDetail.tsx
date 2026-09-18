@@ -79,6 +79,8 @@ export function ProjectDetail() {
   const [editMemberRole, setEditMemberRole] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [spUrlCopied, setSpUrlCopied] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
   const [aiBusy, setAiBusy] = useState<"draft" | "suggest" | "nextActionsSummary" | null>(null);
   const [nextActionsAiSummary, setNextActionsAiSummary] = useState<string | null>(project?.nextActionsAiSummary ?? null);
   const [editingSummary, setEditingSummary] = useState(false);
@@ -94,6 +96,15 @@ export function ProjectDetail() {
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(seed);
   useEffect(() => setOpenMap(seed), [seed]);
   useEffect(() => setNextActionsAiSummary(project?.nextActionsAiSummary ?? null), [project?.id]);
+
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (!exportMenuRef.current?.contains(e.target as Node)) setExportMenuOpen(false);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [exportMenuOpen]);
 
   // Jumpbar: measured scroll inside the app's `.scroll` container (the page scrolls there, not on window)
   const doScroll = (secId: string) => {
@@ -425,6 +436,39 @@ export function ProjectDetail() {
                 <ExternalLink size={15} />
               </button>
             )}
+            <div ref={exportMenuRef} style={{ position: "relative" }}>
+              <button
+                className="icon-btn"
+                style={{ color: "var(--ink-4)", width: "auto", padding: "0 6px", gap: 3 }}
+                onClick={() => setExportMenuOpen((o) => !o)}
+                title="Export"
+              >
+                <Download size={15} /> <ChevronDown size={13} />
+              </button>
+              {exportMenuOpen && (
+                <div
+                  className="card"
+                  style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, minWidth: 170, padding: 4, display: "flex", flexDirection: "column", gap: 1 }}
+                >
+                  <button
+                    className="btn btn-ghost"
+                    style={{ justifyContent: "flex-start", width: "100%", fontSize: 12.5, padding: "7px 10px" }}
+                    title="Download self-contained HTML report"
+                    onClick={() => { setExportMenuOpen(false); exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems, nextActionsAiSummary); }}
+                  >
+                    Export view
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ justifyContent: "flex-start", width: "100%", fontSize: 12.5, padding: "7px 10px" }}
+                    title="Download self-contained HTML report (v2.0 design)"
+                    onClick={() => { setExportMenuOpen(false); exportProjectHtmlV2(project, data.contacts, all.user.feedbackEmail ?? "", workspace === "work" ? "Work" : "Personal"); }}
+                  >
+                    Export status
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="page-sub" style={{ maxWidth: 620 }}>{project.desc}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -443,22 +487,6 @@ export function ProjectDetail() {
             {project.sharepointProjectId && (
               <span className="chip" title="SharePoint Project ID">SP ID: {project.sharepointProjectId}</span>
             )}
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectHtml(project, data.contacts, all.user.feedbackEmail ?? "", nextActionItems, nextActionsAiSummary)}
-              title="Download self-contained HTML report"
-            >
-              <Download size={12} /> Export view
-            </button>
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11.5, padding: "4px 10px", gap: 5 }}
-              onClick={() => exportProjectHtmlV2(project, data.contacts, all.user.feedbackEmail ?? "", workspace === "work" ? "Work" : "Personal")}
-              title="Download self-contained HTML report (v2.0 design)"
-            >
-              <Download size={12} /> Export status
-            </button>
           </div>
         </div>
         {total > 0 && (() => {
