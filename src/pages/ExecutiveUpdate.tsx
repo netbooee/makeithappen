@@ -346,8 +346,7 @@ export function ExecutiveUpdate() {
             </div>
             <div style={{ padding: "20px 24px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Schedule</div>
-              <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.onDateCount} of {report.totalProjects} on date</div>
-              <div style={{ fontSize: 13, color: N700, marginTop: 2 }}>{report.gatesClosingSoon} gate{report.gatesClosingSoon === 1 ? "" : "s"} close before {report.gatesClosingBy}</div>
+              <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.onDateCount} of {report.totalProjects} on time</div>
               <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.scheduleNote}</p>
             </div>
             <div style={{ padding: "20px 32px 22px", borderLeft: `1px solid ${DIVIDER}` }}>

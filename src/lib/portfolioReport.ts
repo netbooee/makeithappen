@@ -98,8 +98,6 @@ export interface PortfolioSummary {
   approvedTotal: number;
   spentTotal: number;
   drawnPct: number | null;
-  gatesClosingSoon: number;
-  gatesClosingBy: string;
   nextMilestone: { label: string; date: string; daysOut: number } | null;
   lede: string;
   healthNote: string;
@@ -189,7 +187,7 @@ export function buildPortfolioReport(
         resourcing: { green: 0, amber: 0, red: 0 },
       },
       approvedTotal: 0, spentTotal: 0, drawnPct: null,
-      gatesClosingSoon: 0, gatesClosingBy: "", nextMilestone: null,
+      nextMilestone: null,
       lede: "No active projects to report on.",
       healthNote: "", riskNote: "", scheduleNote: "",
       summary: storedSummary || "No active projects to report on.",
@@ -221,9 +219,6 @@ export function buildPortfolioReport(
   const drawnPct = approvedTotal > 0 ? Math.round((spentTotal / approvedTotal) * 100) : null;
 
   const now = new Date();
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const gatesClosingSoon = rows.filter((r) => r.gateIso && !r.gateSlipped && r.gateIso <= toDateInputValue(endOfMonth.toISOString())).length;
-  const gatesClosingBy = endOfMonth.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const upcoming = rows
     .filter((r) => r.gateIso && !r.gateSlipped)
@@ -266,7 +261,7 @@ export function buildPortfolioReport(
 
   const slipped = rows.filter((r) => r.gateSlipped);
   const scheduleNote = slipped.length
-    ? `${slipped[0].project.title} has slipped its ${slipped[0].stage} gate.`
+    ? `${slipped.length} of ${rows.length} project${rows.length === 1 ? "" : "s"} ${slipped.length === 1 ? "has" : "have"} slipped ${slipped.length === 1 ? "its" : "their"} gate.`
     : "All projects are tracking to their gates.";
 
   const worstRow = [...rows].sort((a, b) => RAG_SEVERITY[b.rag] - RAG_SEVERITY[a.rag])[0];
@@ -285,7 +280,7 @@ export function buildPortfolioReport(
     rows, totalProjects: rows.length, needsAttention, portfolioRag, pct,
     doneTasks, totalTasks, phasesOpen, onDateCount, categoryCounts,
     approvedTotal, spentTotal, drawnPct,
-    gatesClosingSoon, gatesClosingBy, nextMilestone,
+    nextMilestone,
     lede, healthNote, riskNote, scheduleNote,
     summary: storedSummary || composedSummary,
     summaryIsStored: Boolean(storedSummary),
