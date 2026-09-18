@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { DateInput } from "../../components/ui";
-import type { Project, Status } from "../../lib/types";
+import type { Project, ProjectTier, Status } from "../../lib/types";
 
 export function ProjectModal({
   initial,
@@ -24,6 +24,8 @@ export function ProjectModal({
   const [status, setStatus] = useState<Status>(initial.status ?? "active");
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
   const [technicalLead, setTechnicalLead] = useState(initial.technicalLead ?? "");
+  const [tier, setTier] = useState<ProjectTier | "">(initial.tier ?? "");
+  const [excludeFromExecReport, setExcludeFromExecReport] = useState(initial.excludeFromExecReport ?? false);
   const [heroImage, setHeroImage] = useState(initial.heroImage ?? "");
   const [clientLogo, setClientLogo] = useState(initial.clientLogo ?? "");
   const [webUrl, setWebUrl] = useState(initial.webUrl ?? "");
@@ -57,6 +59,8 @@ export function ProjectModal({
       status,
       owner: owner.trim() || all.user.initials,
       technicalLead: technicalLead.trim() || undefined,
+      tier: tier || undefined,
+      excludeFromExecReport,
       active: status === "active",
       heroImage: heroImage || undefined,
       clientLogo: clientLogo || undefined,
@@ -120,6 +124,29 @@ export function ProjectModal({
             ))}
           </div>
         </div>
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Project tier</div>
+          <div className="segmented" style={{ display: "flex" }}>
+            {(["1", "2", "3", "4"] as ProjectTier[]).map((t) => (
+              <button
+                key={t}
+                className={tier === t ? "active" : ""}
+                style={{ flex: 1 }}
+                onClick={() => setTier(tier === t ? "" : t)}
+              >
+                Tier {t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={excludeFromExecReport}
+            onChange={(e) => setExcludeFromExecReport(e.target.checked)}
+          />
+          Exclude from executive report
+        </label>
         <div>
           <div className="field-label" style={{ marginBottom: 7 }}>Client logo</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

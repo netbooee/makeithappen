@@ -5,6 +5,7 @@ export function lastNameOf(fullName: string): string {
 
 export type Workspace = "work" | "personal";
 export type Status = "active" | "waiting" | "hold" | "complete";
+export type ProjectTier = "1" | "2" | "3" | "4";
 export type TaskFlow = "delegated" | "waiting";
 export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "completed";
 
@@ -165,6 +166,10 @@ export interface Project {
   owner: string;
   /** Technical lead's name — free text, same pattern as owner. */
   technicalLead?: string;
+  /** Priority/investment tier, 1 (highest) through 4. */
+  tier?: ProjectTier;
+  /** When true, this project is left out of the Executive Update portfolio report and its export. */
+  excludeFromExecReport?: boolean;
   due: string;
   start?: string;
   desc: string;
