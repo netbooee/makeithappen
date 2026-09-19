@@ -6,7 +6,7 @@
  * the "composed prose" bands (lede, health/risk/schedule notes, summary) are deterministic
  * templates over that data, not AI- or hand-written copy.
  */
-import type { Milestone, Project } from "./types";
+import type { Milestone, Project, Status } from "./types";
 import { fmtDue, isOverdue, toDateInputValue } from "../components/ui";
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
 
@@ -19,6 +19,14 @@ export const RAG: Record<Rag, { swatch: string; text: string; label: string }> =
   red: { swatch: "#ec3013", text: "#ae1800", label: "At risk" },
 };
 export const RAG_NAME: Record<Rag, string> = { green: "Green", amber: "Amber", red: "Red" };
+
+/** Phase stepper chicklet color, keyed by the milestone's own status (not the project's RAG). */
+export const PHASE_STATUS_COLOR: Record<Status, string> = {
+  active: "#2f6fed",
+  complete: "#157f4a",
+  waiting: "#7c5cfc",
+  hold: "#8a8686",
+};
 const RAG_SEVERITY: Record<Rag, number> = { green: 0, amber: 1, red: 2 };
 const RAG_ORDER: Rag[] = ["green", "amber", "red"];
 
@@ -131,15 +139,11 @@ function computeGate(current: Milestone | undefined) {
   return { label: slipped ? `Slipped · was ${fmtDue(current.due)}` : fmtDue(current.due), slipped, iso: toDateInputValue(current.due) };
 }
 
-function phaseCells(phase: number, phases: number, rag: Rag): PhaseCell[] {
-  const cells: PhaseCell[] = [];
-  for (let i = 1; i <= phases; i++) {
-    cells.push({
-      color: i < phase ? "#201e1d" : i === phase ? RAG[rag].swatch : "#d7d3d3",
-      height: i === phase ? "12px" : "8px",
-    });
-  }
-  return cells;
+function phaseCells(milestones: Milestone[], phase: number): PhaseCell[] {
+  return milestones.map((m, i) => ({
+    color: PHASE_STATUS_COLOR[m.status],
+    height: i + 1 === phase ? "12px" : "8px",
+  }));
 }
 
 /** Builds the full portfolio report from every non-complete project not flagged to be excluded,
@@ -174,7 +178,7 @@ export function buildPortfolioReport(
       updateDate: entry?.execUpdate ? entry.execUpdate.when : "",
       update: entry?.execUpdate?.text ?? "No executive update recorded yet.",
       next: entry?.statement ?? "",
-      phaseCells: phaseCells(phase, phases, rag),
+      phaseCells: phaseCells(project.milestones, phase),
     };
   });
 
