@@ -188,7 +188,7 @@ export function ProjectList() {
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", minHeight: 44 }}>
                     {p.heroImage && (
                       <img
                         src={p.heroImage}
@@ -196,11 +196,11 @@ export function ProjectList() {
                         style={{ width: 44, height: 44, borderRadius: 7, objectFit: "cover", flexShrink: 0 }}
                       />
                     )}
-                    <div style={{ flex: 1, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", ...(compact ? { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const : {}) }}>{p.title}</div>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
                   </div>
-                  {p.desc && <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5 }}>{p.desc}</div>}
+                  <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 37.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
                 </div>
-                <div style={{ display: "flex", gap: 3 }}>
+                <div style={{ display: "flex", gap: 3, minHeight: 6 }}>
                   {applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
                     const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
                     return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
