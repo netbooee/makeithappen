@@ -4,7 +4,7 @@
  * from exportHtml.ts (the v1 export) — the two files are meant to be maintained independently,
  * so small helpers (esc, budget/date parsing, RAG styling, isSubtaskComplete) are duplicated here.
  */
-import type { Contact, Milestone, Project, Subtask, SubtaskStatus } from "./types";
+import type { Contact, DecisionStatus, Milestone, Project, Subtask, SubtaskStatus } from "./types";
 import { safeHref } from "./safeUrl";
 import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
@@ -514,19 +514,37 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const decided = [...(project.decisions ?? [])]
     .filter((d) => d.status === "decided")
     .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate))[0];
+  const OPEN_DECISIONS_IN_POSTER = 3;
+  const openDecisionsAll = [...(project.decisions ?? [])]
+    .filter((d) => d.status === "proposed")
+    .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
+  const openDecisionsShown = openDecisionsAll.slice(0, OPEN_DECISIONS_IN_POSTER);
+  const openDecisionsMore = openDecisionsAll.length - openDecisionsShown.length;
+  const hasDecisionContent = Boolean(decided) || openDecisionsAll.length > 0;
 
   const bandD = !execUpdate ? "" : `
   <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
-    <div class="v2-2col v2-band-d" style="grid-template-columns:${decided ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
+    <div class="v2-2col v2-band-d" style="grid-template-columns:${hasDecisionContent ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
       <div>
         <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}</div>
         <p class="v2-poster-stmt" style="font-family:${FONT};font-weight:800;font-size:34px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:46ch">${esc(execUpdate.text)}</p>
       </div>
-      ${decided ? `
+      ${hasDecisionContent ? `
       <div class="v2-band-d-right" style="border-left:2px solid rgba(243,242,242,.45);padding-left:24px">
+        ${decided ? `
         <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:10px">Decision on record</div>
         <div style="font-family:${FONT};font-weight:800;font-size:17px;line-height:1.25">${esc(decided.title)}</div>
         ${decided.description ? `<div style="font-size:13px;line-height:1.45;margin-top:8px;opacity:.9">${esc(decided.description)}</div>` : ""}
+        ` : ""}
+        ${openDecisionsShown.length ? `
+        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-top:${decided ? "20px" : "0"};margin-bottom:10px">Open decision${openDecisionsAll.length === 1 ? "" : "s"}</div>
+        ${openDecisionsShown.map((d) => `
+        <div style="margin-bottom:10px">
+          <div style="font-family:${FONT};font-weight:700;font-size:15px;line-height:1.3">${esc(d.title)}</div>
+          ${d.owner ? `<div style="font-size:12px;opacity:.85;margin-top:2px">Owner: ${esc(d.owner)}</div>` : ""}
+        </div>`).join("")}
+        ${openDecisionsMore > 0 ? `<a href="#v2-decisions" onclick="var d=document.getElementById('v2-decisions');if(d)d.open=true" style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:inherit;opacity:.85">+${openDecisionsMore} more ↓</a>` : ""}
+        ` : ""}
       </div>` : ""}
     </div>
   </div>`;
@@ -789,13 +807,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
         </div>`).join("");
 
   // Decisions
+  const DECISION_STATUS_LABEL: Record<DecisionStatus, string> = { proposed: "Open", decided: "Decided", reversed: "Reversed" };
   const decisions = [...(project.decisions ?? [])].sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
   const renderDecisionRow = (d: (typeof decisions)[number], withDivider: boolean) => {
     const dialogIdx = decisions.indexOf(d);
+    const statusLabel = DECISION_STATUS_LABEL[d.status];
     return `
         <div style="${withDivider ? `padding-bottom:12px;border-bottom:1px solid ${C.divider};margin-bottom:12px` : ""}">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
-            <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">${d.owner ? `Decided · ${esc(d.owner)}` : "Decided"}</span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">${d.owner ? `${statusLabel} · ${esc(d.owner)}` : statusLabel}</span>
             <span style="font-size:11px;color:${C.n700}">${esc(d.decidedDate)}</span>
           </div>
           <button type="button" onclick="document.getElementById('v2-decision-${dialogIdx}').showModal()" style="display:block;width:100%;background:none;border:none;padding:0;font-family:${FONT};font-size:14px;font-weight:600;line-height:1.4;color:${C.accent700};cursor:pointer;text-align:left;margin-top:6px">${esc(d.title)}</button>
