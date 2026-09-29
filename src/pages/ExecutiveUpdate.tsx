@@ -531,8 +531,8 @@ export function ExecutiveUpdate() {
                             )}
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
-                            <span style={{ color: N700 }}>Gate</span>
-                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.gate}</span>
+                            <span style={{ color: N700 }}>Tier</span>
+                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.project.tier ? `Tier ${row.project.tier}` : "—"}</span>
                           </div>
                           {subNotes.length > 0 && (
                             <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>

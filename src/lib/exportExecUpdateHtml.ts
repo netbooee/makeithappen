@@ -246,8 +246,8 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
             <span style="font-family:${FONT};font-weight:800;white-space:nowrap">${spendHtml}</span>
           </div>
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
-            <span style="color:${C.n700}">Gate</span>
-            <span style="font-family:${FONT};font-weight:800">${esc(row.gate)}</span>
+            <span style="color:${C.n700}">Tier</span>
+            <span style="font-family:${FONT};font-weight:800">${row.project.tier ? `Tier ${esc(row.project.tier)}` : "—"}</span>
           </div>
           ${subNotesHtml}
         </div>
