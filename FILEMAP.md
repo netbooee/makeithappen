@@ -68,6 +68,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/components/ui.tsx` | Shared primitives: `Avatar`, `StatusChip`, `Checkbox`, `DateInput`, `ProgressDial`, date formatters |
+| `src/components/MarkdownPreview.tsx` | Shared Markdown render styles (`mdComponents`) and a `MarkdownPreview` component, used by Project Notes and Meeting Agenda notes |
 | `src/components/TaskEditPanel.tsx` | Slide-out task editor |
 | `src/components/SubtaskEditPanel.tsx` | Slide-out subtask editor |
 | `src/components/SearchModal.tsx` | Global search |

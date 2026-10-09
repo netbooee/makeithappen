@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import {
-  AlignLeft, Calendar, Check, ChevronDown, ChevronUp, Copy, Download, Link2, Pencil, Plus, Sparkles, Trash2, X,
+  AlignLeft, Calendar, Check, ChevronDown, ChevronUp, Copy, Download, Eye, Link2, Pencil, Plus, Sparkles, Trash2, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { suggestAgendaItemDetailEdits } from "../../lib/claude";
 import { safeHref } from "../../lib/safeUrl";
 import { Avatar, DateInput, toDateInputValue } from "../../components/ui";
+import { MarkdownPreview } from "../../components/MarkdownPreview";
 import { exportAgendaHtml, getMeetingAgendaUrl } from "../../lib/exportHtml";
 import type { AgendaAttendee, AgendaItem, MeetingAgenda, Project } from "../../lib/types";
 import { contactLabel, contactRefValue, findProjectContact, parseContactRef, projectContactPool } from "../../lib/projectContacts";
@@ -44,6 +45,8 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
   const [detailDrafts, setDetailDrafts] = useState<Record<string, string>>({});
   const [aiDetailKey, setAiDetailKey] = useState<string | null>(null);
   const [linkExcluded, setLinkExcluded] = useState<Set<string>>(new Set());
+  const [notesDrafts, setNotesDrafts] = useState<Record<string, string>>({});
+  const [notesPreview, setNotesPreview] = useState<Set<string>>(new Set());
 
   const agendas = useMemo(
     () => [...(project.agendas ?? [])].sort((a, b) => {
@@ -118,6 +121,9 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
 
   const toggleAgendaOpen = (id: string) =>
     setOpenAgendas((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const toggleNotesPreview = (id: string) =>
+    setNotesPreview((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
   const addLink = (agendaId: string) => {
     const inp = linkInputs[agendaId];
@@ -419,11 +425,27 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
                     </div>
                     {/* Meeting notes */}
                     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4, display: "flex", flexDirection: "column", gap: 5 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-4)" }}>Meeting notes</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-4)" }}>Meeting notes</span>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ marginLeft: "auto", fontSize: 11, padding: "3px 8px", display: "flex", alignItems: "center", gap: 4 }}
+                          onClick={() => toggleNotesPreview(agenda.id)}
+                        >
+                          <Eye size={11} /> {notesPreview.has(agenda.id) ? "Edit" : "Preview"}
+                        </button>
+                      </div>
+                      {notesPreview.has(agenda.id) ? (
+                        <MarkdownPreview
+                          text={notesDrafts[agenda.id] ?? agenda.notes ?? ""}
+                          style={{ fontSize: 13, border: "1px solid var(--border)", borderRadius: 5, padding: "7px 10px" }}
+                        />
+                      ) : (
                       <textarea
                         key={agenda.id + "-notes"}
-                        defaultValue={agenda.notes ?? ""}
-                        placeholder="Paste meeting minutes or summarize key decisions and action items…"
+                        value={notesDrafts[agenda.id] ?? agenda.notes ?? ""}
+                        onChange={(e) => setNotesDrafts((p) => ({ ...p, [agenda.id]: e.target.value }))}
+                        placeholder="Paste meeting minutes or summarize key decisions and action items… (Markdown supported)"
                         onBlur={(e) => {
                           const val = e.target.value;
                           updateProject(project.id, {
@@ -433,6 +455,7 @@ export function MeetingAgendasSection({ project }: { project: Project }) {
                         rows={5}
                         style={{ fontSize: 13, color: "var(--ink-2)", resize: "vertical", border: "1px solid var(--border)", borderRadius: 5, padding: "7px 10px", background: "transparent", outline: "none", lineHeight: 1.55, fontFamily: "inherit" }}
                       />
+                      )}
                     </div>
                     {/* Resources */}
                     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4, display: "flex", flexDirection: "column", gap: 5 }}>
