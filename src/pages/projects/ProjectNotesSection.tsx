@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { ChevronDown, Link2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useStore } from "../../store/store";
 import { safeHref } from "../../lib/safeUrl";
-import { mdComponents } from "../../components/MarkdownPreview";
+import { MarkdownPreview } from "../../components/MarkdownPreview";
 import type { Project, ProjectNote, ProjectResource } from "../../lib/types";
 
 function fmtNoteDate(iso?: string): string {
@@ -172,7 +171,7 @@ export function ProjectNotesSection({ project }: { project: Project }) {
                       </div>
                     </div>
                   ) : note.body.trim() ? (
-                    <div><ReactMarkdown components={mdComponents}>{note.body}</ReactMarkdown></div>
+                    <MarkdownPreview text={note.body} />
                   ) : (
                     <div style={{ fontSize: 13, color: "var(--ink-4)" }}>No content yet — click the pencil to add some.</div>
                   )}
