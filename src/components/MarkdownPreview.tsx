@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import { safeHref } from "../lib/safeUrl";
 
@@ -24,6 +25,19 @@ export const mdComponents: Components = {
   blockquote: ({ children }) => (
     <blockquote style={{ margin: "0 0 8px", paddingLeft: 10, borderLeft: "2px solid var(--border)", color: "var(--ink-3)" }}>{children}</blockquote>
   ),
+  table: ({ children }) => (
+    <div style={{ overflowX: "auto", margin: "0 0 8px" }}>
+      <table style={{ borderCollapse: "collapse", fontSize: 13, width: "100%" }}>{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead style={{ background: "var(--surface-2)" }}>{children}</thead>,
+  tr: ({ children }) => <tr style={{ borderBottom: "1px solid var(--border)" }}>{children}</tr>,
+  th: ({ children }) => (
+    <th style={{ textAlign: "left", padding: "6px 10px", fontWeight: 650, color: "var(--ink)", border: "1px solid var(--border)" }}>{children}</th>
+  ),
+  td: ({ children }) => (
+    <td style={{ padding: "6px 10px", color: "var(--ink-2)", border: "1px solid var(--border)" }}>{children}</td>
+  ),
 };
 
 /** Renders Markdown text with the shared styles, or a placeholder when there's nothing to show. */
@@ -33,7 +47,7 @@ export function MarkdownPreview({ text, style }: { text: string; style?: React.C
   }
   return (
     <div style={style}>
-      <ReactMarkdown components={mdComponents}>{text}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
     </div>
   );
 }
