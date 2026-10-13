@@ -46,6 +46,8 @@ export function Tasks() {
   const [who, setWho] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubtask, setEditingSubtask] = useState<{ projectId: string; milestoneId: string; subtaskId: string } | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState<Set<string>>(new Set());
+  const [quickAddDrafts, setQuickAddDrafts] = useState<Record<string, { text: string; due: string }>>({});
 
   const taskAvatar = (t: Task) => {
     const proj = t.project ? data.projects.find((p) => p.title === t.project) : null;
@@ -93,6 +95,25 @@ export function Tasks() {
     setMilestoneId("");
     setWho("");
     setNextFlag(false);
+  };
+
+  const toggleQuickAdd = (projectTitle: string) =>
+    setQuickAddOpen((prev) => { const next = new Set(prev); next.has(projectTitle) ? next.delete(projectTitle) : next.add(projectTitle); return next; });
+
+  const quickAdd = (projectTitle: string) => {
+    const draft = quickAddDrafts[projectTitle];
+    const text = draft?.text.trim();
+    if (!text) return;
+    addTask({
+      id: "t" + Date.now(),
+      text,
+      done: false,
+      next: true,
+      context: "",
+      project: projectTitle,
+      ...(draft?.due ? { due: draft.due } : {}),
+    });
+    setQuickAddDrafts((p) => ({ ...p, [projectTitle]: { text: "", due: "" } }));
   };
 
   const milestoneMap = useMemo(() => {
@@ -146,9 +167,37 @@ export function Tasks() {
     return result;
   }, [data.projects, nextTasksByProject, milestoneMap]);
 
+  // Projects with zero next-action rows above — listed separately so they aren't just silently omitted.
+  const emptyProjects = useMemo(() => {
+    const withTasks = new Set(groups.filter((g) => g.projectId).map((g) => g.projectId));
+    return [...data.projects]
+      .filter((p) => !withTasks.has(p.id))
+      .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+  }, [data.projects, groups]);
+
   // Kept in sync with the sidebar nav badge via the shared `nextActionCount` helper —
   // both count the same thing (undone next-action Tasks + Subtasks across the app).
   const totalCount = useMemo(() => nextActionCount(data), [data]);
+
+  const renderQuickAdd = (projectTitle: string) => (
+    <div style={{ display: "flex", gap: 7, padding: "8px 4px", alignItems: "center" }}>
+      <input
+        className="input"
+        autoFocus
+        placeholder="Add task…"
+        value={quickAddDrafts[projectTitle]?.text ?? ""}
+        onChange={(e) => setQuickAddDrafts((p) => ({ ...p, [projectTitle]: { text: e.target.value, due: p[projectTitle]?.due ?? "" } }))}
+        onKeyDown={(e) => e.key === "Enter" && quickAdd(projectTitle)}
+        style={{ flex: 1, fontSize: 12.5 }}
+      />
+      <DateInput
+        value={quickAddDrafts[projectTitle]?.due ?? ""}
+        onChange={(v) => setQuickAddDrafts((p) => ({ ...p, [projectTitle]: { text: p[projectTitle]?.text ?? "", due: v } }))}
+        style={{ width: 130, fontSize: 12 }}
+      />
+      <button className="btn btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => quickAdd(projectTitle)}>Add</button>
+    </div>
+  );
 
   return (
     <div className="page fade">
@@ -237,6 +286,16 @@ export function Tasks() {
               g.title
             )}{" "}
             <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-4)" }}>{g.rows.length}</span>
+            {g.projectId && (
+              <button
+                className="icon-btn"
+                title="Add task to this project"
+                style={{ marginLeft: "auto", width: 22, height: 22, color: "var(--ink-4)" }}
+                onClick={() => toggleQuickAdd(g.title)}
+              >
+                <Plus size={13} />
+              </button>
+            )}
           </div>
           <div className="card" style={{ padding: "6px 10px 8px" }}>
             <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
@@ -297,9 +356,46 @@ export function Tasks() {
                 </button>
               );
             })}
+            {g.projectId && quickAddOpen.has(g.title) && renderQuickAdd(g.title)}
           </div>
         </div>
       ))}
+
+      {emptyProjects.length > 0 && (
+        <div style={{ marginBottom: 22 }}>
+          <div
+            className="section-h"
+            style={{ fontSize: 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", color: "var(--ink)" }}
+          >
+            No upcoming tasks
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-4)" }}>{emptyProjects.length}</span>
+          </div>
+          <div className="card" style={{ padding: "6px 10px 8px" }}>
+            {emptyProjects.map((p) => (
+              <div key={p.id}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: "1px solid var(--border)" }}>
+                  <span
+                    onClick={() => navigate(`/projects/${p.id}`)}
+                    title="Open project"
+                    style={{ flex: 1, fontSize: 13, fontWeight: 500, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+                  >
+                    {p.title}
+                  </span>
+                  <button
+                    className="icon-btn"
+                    title="Add task to this project"
+                    style={{ width: 22, height: 22, color: "var(--ink-4)" }}
+                    onClick={() => toggleQuickAdd(p.title)}
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+                {quickAddOpen.has(p.title) && renderQuickAdd(p.title)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {editingId && <TaskEditPanel taskId={editingId} close={() => setEditingId(null)} />}
       {editingSubtask && (
