@@ -185,6 +185,7 @@ export const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
   "not-started": "Not started",
   "scheduled": "Scheduled",
   "in-progress": "In progress",
+  "ongoing": "Ongoing",
   "completed": "Completed",
 };
 

@@ -670,6 +670,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     "not-started": undefined,
     "scheduled": RAG.amber.text,
     "in-progress": C.accent700,
+    "ongoing": C.accent700,
   };
   const taskRow = (s: Subtask): string => {
     const complete = isSubtaskComplete(s);

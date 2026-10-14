@@ -7,7 +7,7 @@ export type Workspace = "work" | "personal";
 export type Status = "active" | "waiting" | "hold" | "complete";
 export type ProjectTier = "1" | "2" | "3" | "4";
 export type TaskFlow = "delegated" | "waiting";
-export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "completed";
+export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "ongoing" | "completed";
 
 /** Which per-project roster an officially entered contact lives on. */
 export type ContactKind = "internal" | "external" | "stakeholder";

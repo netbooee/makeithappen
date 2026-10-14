@@ -184,6 +184,7 @@ function SubtaskRow({
                 <option value="not-started">Not started</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="in-progress">In progress</option>
+                <option value="ongoing">Ongoing</option>
                 <option value="completed">Completed</option>
               </select>
             ) : (
