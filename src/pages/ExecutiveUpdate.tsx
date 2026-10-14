@@ -87,7 +87,7 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 6, fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>
         <span style={{ color: RAG[row.rag].text }}>Phase {row.phase} of {row.phases} · {row.stage}</span>
-        <span style={{ color: N700, flexShrink: 0 }}>{row.done} / {row.total} tasks</span>
+        <span style={{ color: N700, flexShrink: 0 }}>{row.done} / {row.total} tasks · {row.pct}%</span>
       </div>
     </div>
   );
@@ -447,15 +447,12 @@ export function ExecutiveUpdate() {
                             >
                               {row.project.title}
                             </h3>
-                            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>
-                              Phase {row.phase} of {row.phases} · {row.stage} · {row.pct}%
-                            </span>
                           </div>
                           <div style={{ fontSize: 12, fontStyle: "italic", color: N600, marginBottom: 10 }}>
                             {row.project.owner}{row.project.technicalLead ? ` · Tech lead: ${row.project.technicalLead}` : ""}
                           </div>
                           <div style={{ ...kicker, marginBottom: 6 }}>Executive update{row.updateDate ? ` · ${shortDate(row.updateDate)}` : ""}</div>
-                          <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 14px", maxWidth: "62ch" }}>{row.update}</p>
+                          <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 14px" }}>{row.update}</p>
 
                           <div style={{ ...kicker, marginBottom: 6 }}>Coming up next</div>
                           {isEditing ? (
@@ -465,7 +462,7 @@ export function ExecutiveUpdate() {
                                 onChange={(e) => setDraft(e.target.value)}
                                 rows={3}
                                 autoFocus
-                                style={{ width: "100%", maxWidth: "62ch", fontSize: 13, lineHeight: 1.5, color: INK, padding: "8px 10px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
+                                style={{ width: "100%", fontSize: 13, lineHeight: 1.5, color: INK, padding: "8px 10px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
                               />
                               <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
                                 <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => saveEdit(row.project)}>Save</button>
@@ -475,7 +472,7 @@ export function ExecutiveUpdate() {
                             </div>
                           ) : (
                             <>
-                              <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0, maxWidth: "62ch", color: N800, opacity: isBusy ? 0.5 : 1 }}>
+                              <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0, color: N800, opacity: isBusy ? 0.5 : 1 }}>
                                 {row.next || "No upcoming step recorded."}
                               </p>
                               {entry && (
@@ -506,6 +503,10 @@ export function ExecutiveUpdate() {
                           <div style={{ paddingBottom: 14, borderBottom: `1px solid ${DIVIDER}`, marginBottom: 4 }}>
                             <PhaseStepper row={row} tall />
                           </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
+                            <span style={{ color: N700 }}>Tier</span>
+                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.project.tier ? `Tier ${row.project.tier}` : "—"}</span>
+                          </div>
                           {([
                             ["Timeline", row.timeline],
                             ["Budget", row.budget],
@@ -529,10 +530,6 @@ export function ExecutiveUpdate() {
                             ) : (
                               <span style={{ fontFamily: FONT, fontWeight: 800 }}>—</span>
                             )}
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
-                            <span style={{ color: N700 }}>Tier</span>
-                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.project.tier ? `Tier ${row.project.tier}` : "—"}</span>
                           </div>
                           {subNotes.length > 0 && (
                             <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
