@@ -6,6 +6,12 @@ import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimest
 import { ProjectModal } from "./ProjectModal";
 import { applyMilestoneOrder } from "../../lib/milestoneOrder";
 import { OnboardingChecklist } from "../../components/OnboardingChecklist";
+import type { Project } from "../../lib/types";
+
+/** Complete and on-hold projects move to their own section beneath the active ones, in both views. */
+function isArchived(p: Project): boolean {
+  return p.status === "complete" || p.status === "hold";
+}
 
 function dueDateCompare(a: { due: string }, b: { due: string }): number {
   const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
@@ -130,12 +136,140 @@ export function ProjectList() {
     const cmp = av < bv ? -1 : av > bv ? 1 : 0;
     return sortDir === "asc" ? cmp : -cmp;
   }) : projects;
+  const tableActiveProjects = sortedProjects.filter((p) => !isArchived(p));
+  const tableArchivedProjects = sortedProjects.filter(isArchived);
 
   // Grid view always shows most-recently-updated first; projects with no updates sort last
-  const gridProjects = [...projects].sort((a, b) => {
+  const gridSorted = [...projects].sort((a, b) => {
     const ta = lastActivity(a), tb = lastActivity(b);
     return ta < tb ? 1 : ta > tb ? -1 : 0;
   });
+  const gridActiveProjects = gridSorted.filter((p) => !isArchived(p));
+  const gridArchivedProjects = gridSorted.filter(isArchived);
+
+  const renderCard = (p: Project) => {
+    const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
+    const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
+    return (
+      <button
+        key={p.id}
+        className="card card-pad"
+        onClick={() => navigate(`/projects/${p.id}`)}
+        style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: compact ? 8 : 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s", padding: compact ? "12px 14px" : undefined, minWidth: compact ? 0 : undefined }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", minHeight: 44 }}>
+            {p.heroImage && (
+              <img
+                src={p.heroImage}
+                alt=""
+                style={{ width: 44, height: 44, borderRadius: 7, objectFit: "cover", flexShrink: 0 }}
+              />
+            )}
+            <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 37.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
+        </div>
+        <div style={{ display: "flex", gap: 3, minHeight: 6 }}>
+          {applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
+            const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
+            return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
+          })}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <ProgressDial value={p.progress} color={riskColor(p.risk)} />
+          {p.risk ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
+              {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
+            </span>
+          ) : (
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <CheckCircle2 size={13} /> {done}/{total} subtasks
+            </span>
+          )}
+          <span style={{ display: "flex", alignItems: "center", gap: 5, color: isOverdue(p.due) ? "var(--danger)" : undefined }}>
+            <Calendar size={13} /> {p.due}
+          </span>
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+            <UserRound size={13} /> {resolveOwner(p.owner)}
+          </span>
+          <StatusChip status={p.status} />
+        </div>
+      </button>
+    );
+  };
+
+  const renderRow = (p: Project) => {
+    const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
+    const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
+    const sortedMilestones = applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare);
+    return (
+      <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
+        <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            {p.heroImage ? (
+              <img
+                src={p.heroImage}
+                alt=""
+                style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+              />
+            ) : (
+              <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--surface-2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--ink-3)" }}>
+                {p.title.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <div style={{ fontWeight: 600, fontSize: 13, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
+          </div>
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
+          <StatusChip status={p.status} />
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
+          <div style={{ display: "flex", gap: 3, alignItems: "center", minWidth: 0, overflow: "hidden" }}>
+            {sortedMilestones.map((m) => {
+              const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
+              return <div key={m.id} style={{ height: 6, width: 20, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
+            })}
+            {sortedMilestones.length === 0 && <span style={{ color: "var(--ink-4)", fontSize: 12 }}>—</span>}
+          </div>
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px" }}>
+          <Bar value={p.progress} color={riskColor(p.risk)} />
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
+          {p.risk ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, minWidth: 0, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}</span>
+            </span>
+          ) : (
+            <span style={{ fontSize: 12, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+              <CheckCircle2 size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{done}/{total}</span>
+            </span>
+          )}
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+            <Calendar size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.due}</span>
+          </span>
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: 12, color: "var(--ink-3)" }}>
+          {(() => {
+            const t = lastActivity(p);
+            return Number.isFinite(t) ? new Date(t).toLocaleDateString() : "—";
+          })()}
+        </td>
+        <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: "var(--ink-3)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+            <UserRound size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{resolveOwner(p.owner)}</span>
+          </span>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="page fade" style={{ maxWidth: sidebarCollapsed ? 1224 : undefined, transition: "max-width .18s ease" }}>
@@ -174,62 +308,21 @@ export function ProjectList() {
       <OnboardingChecklist />
 
       {viewMode === "grid" ? (
-        <div className="grid-2">
-          {gridProjects.map((p) => {
-            const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
-            const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
-            return (
-              <button
-                key={p.id}
-                className="card card-pad"
-                onClick={() => navigate(`/projects/${p.id}`)}
-                style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: compact ? 8 : 12, cursor: "pointer", transition: "border-color .14s, box-shadow .14s", padding: compact ? "12px 14px" : undefined, minWidth: compact ? 0 : undefined }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.boxShadow = "var(--shadow)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center", minHeight: 44 }}>
-                    {p.heroImage && (
-                      <img
-                        src={p.heroImage}
-                        alt=""
-                        style={{ width: 44, height: 44, borderRadius: 7, objectFit: "cover", flexShrink: 0 }}
-                      />
-                    )}
-                    <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
-                  </div>
-                  <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 37.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
-                </div>
-                <div style={{ display: "flex", gap: 3, minHeight: 6 }}>
-                  {applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
-                    const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
-                    return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
-                  })}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--ink-3)", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                  <ProgressDial value={p.progress} color={riskColor(p.risk)} />
-                  {p.risk ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 500, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
-                      {p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}
-                    </span>
-                  ) : (
-                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <CheckCircle2 size={13} /> {done}/{total} subtasks
-                    </span>
-                  )}
-                  <span style={{ display: "flex", alignItems: "center", gap: 5, color: isOverdue(p.due) ? "var(--danger)" : undefined }}>
-                    <Calendar size={13} /> {p.due}
-                  </span>
-                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
-                    <UserRound size={13} /> {resolveOwner(p.owner)}
-                  </span>
-                  <StatusChip status={p.status} />
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="grid-2">
+            {gridActiveProjects.map(renderCard)}
+          </div>
+          {gridArchivedProjects.length > 0 && (
+            <>
+              <div className="section-h" style={{ marginTop: 28 }}>
+                Completed &amp; on hold <span style={{ color: "var(--ink-4)", fontWeight: 500 }}>{gridArchivedProjects.length}</span>
+              </div>
+              <div className="grid-2">
+                {gridArchivedProjects.map(renderCard)}
+              </div>
+            </>
+          )}
+        </>
       ) : (
         <div className="data-table-wrap">
           <table className="data-table" style={{ tableLayout: "fixed" }}>
@@ -270,74 +363,17 @@ export function ProjectList() {
               </tr>
             </thead>
             <tbody>
-              {sortedProjects.map((p) => {
-                const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
-                const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
-                const sortedMilestones = applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare);
-                return (
-                  <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                        {p.heroImage ? (
-                          <img
-                            src={p.heroImage}
-                            alt=""
-                            style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
-                          />
-                        ) : (
-                          <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--surface-2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--ink-3)" }}>
-                            {p.title.slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
-                        <div style={{ fontWeight: 600, fontSize: 13, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</div>
-                      </div>
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
-                      <StatusChip status={p.status} />
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>
-                      <div style={{ display: "flex", gap: 3, alignItems: "center", minWidth: 0, overflow: "hidden" }}>
-                        {sortedMilestones.map((m) => {
-                          const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
-                          return <div key={m.id} style={{ height: 6, width: 20, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
-                        })}
-                        {sortedMilestones.length === 0 && <span style={{ color: "var(--ink-4)", fontSize: 12 }}>—</span>}
-                      </div>
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px" }}>
-                      <Bar value={p.progress} color={riskColor(p.risk)} />
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden" }}>
-                      {p.risk ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, minWidth: 0, color: p.risk === "green" ? "var(--next)" : p.risk === "amber" ? "#F59E0B" : "var(--danger)" }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor(p.risk), display: "inline-block", flexShrink: 0 }} />
-                          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.risk === "green" ? "On track" : p.risk === "amber" ? "At risk" : "Off track"}</span>
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: 12, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                          <CheckCircle2 size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{done}/{total}</span>
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: isOverdue(p.due) ? "var(--danger)" : "var(--ink-3)" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                        <Calendar size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{p.due}</span>
-                      </span>
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: 12, color: "var(--ink-3)" }}>
-                      {(() => {
-                        const t = lastActivity(p);
-                        return Number.isFinite(t) ? new Date(t).toLocaleDateString() : "—";
-                      })()}
-                    </td>
-                    <td style={{ padding: compact ? "4px 12px" : "10px 12px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, color: "var(--ink-3)" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                        <UserRound size={12} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{resolveOwner(p.owner)}</span>
-                      </span>
+              {tableActiveProjects.map(renderRow)}
+              {tableArchivedProjects.length > 0 && (
+                <>
+                  <tr>
+                    <td colSpan={RESIZABLE_COLS.length + 1} style={{ padding: "16px 12px 6px", fontSize: 12, fontWeight: 600, color: "var(--ink-4)" }}>
+                      Completed &amp; on hold <span style={{ fontWeight: 500 }}>{tableArchivedProjects.length}</span>
                     </td>
                   </tr>
-                );
-              })}
+                  {tableArchivedProjects.map(renderRow)}
+                </>
+              )}
             </tbody>
           </table>
         </div>
