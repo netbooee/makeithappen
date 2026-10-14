@@ -9,7 +9,7 @@ import { safeHref } from "./safeUrl";
 import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
 import { assigneeAvatar, findProjectContact, projectContactPool } from "./projectContacts";
-import { applyMilestoneOrder } from "./milestoneOrder";
+import { applyManualOrder } from "./manualOrder";
 
 /* ── Design tokens (Modernist, from the handoff's styles.css + README RAG additions) ───────── */
 const C = {
@@ -265,10 +265,11 @@ function toDateInputValue(str: string | undefined): string {
   }
   return "";
 }
-/** Same subtask ordering as exportHtml.ts (v1): not-done before done, then soonest-due-first
- *  within each group, undated last. Uses raw `.done` (not isSubtaskComplete) to match v1 exactly. */
-function sortSubtasksLikeV1(subtasks: Subtask[]): Subtask[] {
-  return [...subtasks].sort((a, b) => {
+/** Manual `milestone.subtaskOrder` on top, falling back to the same default ordering as
+ *  exportHtml.ts (v1): not-done before done, then soonest-due-first within each group, undated
+ *  last. Uses raw `.done` (not isSubtaskComplete) to match v1 exactly. */
+function sortSubtasksLikeV1(subtasks: Subtask[], order: string[] | undefined): Subtask[] {
+  return applyManualOrder(subtasks, order, (a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
     const da = parseExportDate(a.due), db = parseExportDate(b.due);
     if (!da && !db) return 0;
@@ -278,7 +279,7 @@ function sortSubtasksLikeV1(subtasks: Subtask[]): Subtask[] {
   });
 }
 function sortMilestones(milestones: Milestone[], order: string[] | undefined): Milestone[] {
-  return applyMilestoneOrder(milestones, order, (a, b) => {
+  return applyManualOrder(milestones, order, (a, b) => {
     const da = toDateInputValue(a.due), db = toDateInputValue(b.due);
     if (!da && !db) return 0;
     if (!da) return 1;
@@ -719,7 +720,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ${phaseComplete ? chipOutline("Completed", RAG.green.text) : ""}
         </summary>
         <div style="padding:0 14px">
-          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks).map(taskRow).join("")}
+          ${m.subtasks.length === 0 ? `<div style="font-size:13px;color:${C.n700};padding:10px 0;border-top:1px solid ${C.divider}">No tasks in this phase.</div>` : sortSubtasksLikeV1(m.subtasks, m.subtaskOrder).map(taskRow).join("")}
         </div>
       </details>`;
   }).join("");

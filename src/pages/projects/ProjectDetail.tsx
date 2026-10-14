@@ -12,7 +12,7 @@ import { exportProjectHtmlV2 } from "../../lib/exportHtmlV2";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
 import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
-import { applyMilestoneOrder } from "../../lib/milestoneOrder";
+import { applyManualOrder } from "../../lib/manualOrder";
 import { KpiSection } from "./KpiSection";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddMilestone } from "./AddMilestone";
@@ -617,7 +617,7 @@ export function ProjectDetail() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {(() => {
-              const orderedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, (a, b) => {
+              const orderedMilestones = applyManualOrder(project.milestones, project.milestoneOrder, (a, b) => {
                 const da = toDateInputValue(a.due);
                 const db = toDateInputValue(b.due);
                 if (!da && !db) return 0;

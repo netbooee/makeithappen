@@ -50,6 +50,8 @@ export interface Milestone {
   due: string;
   status: Status;
   subtasks: Subtask[];
+  /** Manual override of task display order within this milestone (list of subtask ids). When unset, tasks sort by done/due date. */
+  subtaskOrder?: string[];
 }
 
 export type UpdateType = "update" | "heads-up" | "blocked" | "win" | "executive";
