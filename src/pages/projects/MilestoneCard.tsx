@@ -95,6 +95,26 @@ function SubtaskRow({
   return (
     <>
       <div className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
+        <div className="subtask-reorder-btns" style={{ display: "flex", flexDirection: "column", flexShrink: 0, marginTop: 2 }}>
+          <button
+            className="icon-btn"
+            style={{ width: 15, height: 13, color: "var(--ink-4)", opacity: canMoveUp ? 1 : 0.3, cursor: canMoveUp ? "pointer" : "default" }}
+            disabled={!canMoveUp}
+            onClick={onMoveUp}
+            title="Move up"
+          >
+            <ChevronUp size={10} />
+          </button>
+          <button
+            className="icon-btn"
+            style={{ width: 15, height: 13, color: "var(--ink-4)", opacity: canMoveDown ? 1 : 0.3, cursor: canMoveDown ? "pointer" : "default" }}
+            disabled={!canMoveDown}
+            onClick={onMoveDown}
+            title="Move down"
+          >
+            <ChevronDown size={10} />
+          </button>
+        </div>
         <span className="subtask-check-pad">
           <TaskMarker task={s} onClick={() => toggleSubtask(projectId, milestoneId, s.id)} />
         </span>
@@ -212,24 +232,6 @@ function SubtaskRow({
               </span>
             )}
             </span>
-            <button
-              className="icon-btn"
-              style={{ color: "var(--ink-4)", opacity: canMoveUp ? 1 : 0.35, cursor: canMoveUp ? "pointer" : "default" }}
-              disabled={!canMoveUp}
-              onClick={onMoveUp}
-              title="Move up"
-            >
-              <ChevronUp size={12} />
-            </button>
-            <button
-              className="icon-btn"
-              style={{ color: "var(--ink-4)", opacity: canMoveDown ? 1 : 0.35, cursor: canMoveDown ? "pointer" : "default" }}
-              disabled={!canMoveDown}
-              onClick={onMoveDown}
-              title="Move down"
-            >
-              <ChevronDown size={12} />
-            </button>
             <button
               className="icon-btn subtask-delete-btn"
               style={{ color: "var(--ink-4)" }}
