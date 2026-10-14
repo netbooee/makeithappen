@@ -105,6 +105,8 @@ export function ExecutiveUpdate() {
   const [draft, setDraft] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState("");
+  const [editingBudgetNote, setEditingBudgetNote] = useState<string | null>(null);
+  const [budgetNoteDraft, setBudgetNoteDraft] = useState("");
 
   // Every project's executive-update data, unfiltered and in the user's saved order — the
   // portfolio report draws from this so a project with nothing written yet still gets a row.
@@ -195,6 +197,16 @@ export function ExecutiveUpdate() {
       execStatementAt: text ? new Date().toLocaleString() : undefined,
     });
     setEditing(null);
+  };
+
+  const startEditBudgetNote = (project: Project) => {
+    setEditingBudgetNote(project.id);
+    setBudgetNoteDraft(project.budgetNote ?? "");
+  };
+
+  const saveBudgetNote = (project: Project) => {
+    updateProject(project.id, { budgetNote: budgetNoteDraft.trim() || undefined });
+    setEditingBudgetNote(null);
   };
 
   const startEditSummary = () => {
@@ -432,9 +444,9 @@ export function ExecutiveUpdate() {
                     [
                       ["Risk", row.project.riskNote],
                       ["Timeline", row.project.timelineNote],
-                      ["Budget", row.project.budgetNote],
                     ] as [string, string | undefined][]
                   ).filter(([, note]) => note?.trim());
+                  const isEditingBudgetNote = editingBudgetNote === row.project.id;
                   return (
                     <div key={row.project.id} style={{ borderTop: `2px solid ${DIVIDER}`, padding: "18px 0 24px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: 32, alignItems: "start" }}>
@@ -531,16 +543,50 @@ export function ExecutiveUpdate() {
                               <span style={{ fontFamily: FONT, fontWeight: 800 }}>—</span>
                             )}
                           </div>
-                          {subNotes.length > 0 && (
-                            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                              {subNotes.map(([label, note]) => (
-                                <div key={label}>
-                                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700, marginBottom: 2 }}>{label} note</div>
-                                  <div style={{ fontSize: 13, lineHeight: 1.45, color: N800 }}>{note}</div>
+                          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                            {subNotes.map(([label, note]) => (
+                              <div key={label}>
+                                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700, marginBottom: 2 }}>{label} note</div>
+                                <div style={{ fontSize: 13, lineHeight: 1.45, color: N800 }}>{note}</div>
+                              </div>
+                            ))}
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>Budget note</span>
+                                {!isEditingBudgetNote && (
+                                  <button
+                                    onClick={() => startEditBudgetNote(row.project)}
+                                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: N700, display: "inline-flex", alignItems: "center" }}
+                                    title="Edit budget note"
+                                  >
+                                    <Pencil size={10} />
+                                  </button>
+                                )}
+                              </div>
+                              {isEditingBudgetNote ? (
+                                <div>
+                                  <textarea
+                                    value={budgetNoteDraft}
+                                    onChange={(e) => setBudgetNoteDraft(e.target.value)}
+                                    rows={2}
+                                    autoFocus
+                                    style={{ width: "100%", fontSize: 13, lineHeight: 1.45, color: INK, padding: "6px 8px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
+                                  />
+                                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                                    <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => saveBudgetNote(row.project)}>Save</button>
+                                    <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setEditingBudgetNote(null)}>Cancel</button>
+                                  </div>
                                 </div>
-                              ))}
+                              ) : (
+                                <div
+                                  onClick={() => startEditBudgetNote(row.project)}
+                                  style={{ fontSize: 13, lineHeight: 1.45, color: row.project.budgetNote ? N800 : N600, fontStyle: row.project.budgetNote ? "normal" : "italic", cursor: "pointer" }}
+                                >
+                                  {row.project.budgetNote || "No budget note — click to add one."}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </div>
