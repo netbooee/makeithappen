@@ -53,7 +53,7 @@ function phaseStepper(row: PortfolioRow): string {
       <div style="display:flex;align-items:flex-end;gap:2px;height:12px">${cells}</div>
       <div style="display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">
         <span style="color:${RAG[row.rag].text}">Phase ${row.phase} of ${row.phases} · ${esc(row.stage)}</span>
-        <span style="color:${C.n700};flex-shrink:0">${row.done} / ${row.total} tasks</span>
+        <span style="color:${C.n700};flex-shrink:0">${row.done} / ${row.total} tasks · ${row.pct}%</span>
       </div>
     </div>`;
 }
@@ -230,24 +230,23 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:2px">
             ${ragChip(row.rag)}
             <h3 style="font-family:${FONT};font-size:17px;letter-spacing:-0.01em;margin:0;flex:1;font-weight:800">${titleHtml}</h3>
-            <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">Phase ${row.phase} of ${row.phases} · ${esc(row.stage)} · ${row.pct}%</span>
           </div>
           <div style="font-size:12px;font-style:italic;color:${C.n600};margin-bottom:10px">${esc(row.project.owner)}${row.project.technicalLead ? ` · Tech lead: ${esc(row.project.technicalLead)}` : ""}</div>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Executive update${row.updateDate ? ` · ${esc(row.updateDate)}` : ""}</div>
-          <p style="font-size:14px;line-height:1.5;margin:0 0 14px;max-width:62ch">${esc(row.update)}</p>
+          <p style="font-size:14px;line-height:1.5;margin:0 0 14px">${esc(row.update)}</p>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Coming up next</div>
-          <p style="font-size:13px;line-height:1.5;margin:0;max-width:62ch;color:${C.n800}">${esc(row.next || "No upcoming step recorded.")}</p>
+          <p style="font-size:13px;line-height:1.5;margin:0;color:${C.n800}">${esc(row.next || "No upcoming step recorded.")}</p>
         </div>
         <div style="border-left:2px solid ${C.divider};padding-left:24px">
           <div style="padding-bottom:14px;border-bottom:1px solid ${C.divider};margin-bottom:4px">${phaseStepper(row)}</div>
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
+            <span style="color:${C.n700}">Tier</span>
+            <span style="font-family:${FONT};font-weight:800">${row.project.tier ? `Tier ${esc(row.project.tier)}` : "—"}</span>
+          </div>
           ${riskRows}
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
             <span style="color:${C.n700}">Spend</span>
             <span style="font-family:${FONT};font-weight:800;white-space:nowrap">${spendHtml}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
-            <span style="color:${C.n700}">Tier</span>
-            <span style="font-family:${FONT};font-weight:800">${row.project.tier ? `Tier ${esc(row.project.tier)}` : "—"}</span>
           </div>
           ${subNotesHtml}
         </div>
