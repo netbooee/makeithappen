@@ -2,7 +2,7 @@ import type { Contact, MeetingAgenda, Project, StatusUpdate, SubtaskStatus } fro
 import { toDateInputValue } from "../components/ui";
 import { localNextActionsSummary } from "./claude";
 import { safeHref } from "./safeUrl";
-import { applyMilestoneOrder } from "./milestoneOrder";
+import { applyManualOrder } from "./manualOrder";
 
 function dueDateCompare(a: { due: string }, b: { due: string }): number {
   const da = toDateInputValue(a.due);
@@ -301,7 +301,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
   const ragLabel = project.risk ? { green: "Green", amber: "Amber", red: "Red" }[project.risk] : "Not set";
 
   // ── Milestones ─────────────────────────────────────────────────────────────
-  const sortedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, dueDateCompare);
+  const sortedMilestones = applyManualOrder(project.milestones, project.milestoneOrder, dueDateCompare);
 
   const milestonesHtml = sortedMilestones.length === 0
     ? `<div style="font-size:12.5px;color:#6B7280">No milestones yet.</div>`
@@ -310,7 +310,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
         const statusDot = m.status === "complete"
           ? `<span style="font-size:13px;line-height:1;flex-shrink:0;align-self:flex-start;margin-top:2px">✅</span>`
           : `<div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;align-self:flex-start;margin-top:4px"></div>`;
-        const sorted = [...m.subtasks].sort((a, b) => {
+        const sorted = applyManualOrder(m.subtasks, m.subtaskOrder, (a, b) => {
           if (a.done !== b.done) return a.done ? 1 : -1;
           if (!a.due && !b.due) return 0;
           if (!a.due) return 1;
@@ -793,7 +793,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
     ? `${esc(project.start)} → ${esc(project.due)}`
     : project.due !== "No date" ? esc(project.due) : "—";
 
-  const sortedMilestones = applyMilestoneOrder(project.milestones, project.milestoneOrder, dueDateCompare);
+  const sortedMilestones = applyManualOrder(project.milestones, project.milestoneOrder, dueDateCompare);
 
   const msHtml = sortedMilestones.length === 0
     ? `<div style="font-size:10px;color:#6B7280">No milestones.</div>`

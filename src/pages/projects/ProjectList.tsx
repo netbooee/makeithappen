@@ -4,7 +4,7 @@ import { LayoutGrid, List, Plus, ChevronUp, ChevronDown, CheckCircle2, Calendar,
 import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
-import { applyMilestoneOrder } from "../../lib/milestoneOrder";
+import { applyManualOrder } from "../../lib/manualOrder";
 import { OnboardingChecklist } from "../../components/OnboardingChecklist";
 import type { Project } from "../../lib/types";
 
@@ -173,7 +173,7 @@ export function ProjectList() {
           <div style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.5, minHeight: 37.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.desc}</div>
         </div>
         <div style={{ display: "flex", gap: 3, minHeight: 6 }}>
-          {applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
+          {applyManualOrder(p.milestones, p.milestoneOrder, dueDateCompare).map((m) => {
             const bg = m.status === "complete" ? "var(--next)" : m.status === "active" ? "var(--accent)" : m.status === "waiting" ? "var(--ink-4)" : "#F59E0B";
             return <div key={m.id} style={{ height: 6, width: 28, borderRadius: 3, background: bg, flexShrink: 0 }} title={`${m.title} — ${m.status}`} />;
           })}
@@ -205,7 +205,7 @@ export function ProjectList() {
   const renderRow = (p: Project) => {
     const total = p.milestones.reduce((a, m) => a + m.subtasks.length, 0);
     const done = p.milestones.reduce((a, m) => a + m.subtasks.filter((s) => s.done).length, 0);
-    const sortedMilestones = applyMilestoneOrder(p.milestones, p.milestoneOrder, dueDateCompare);
+    const sortedMilestones = applyManualOrder(p.milestones, p.milestoneOrder, dueDateCompare);
     return (
       <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
         <td className="td-primary" style={{ padding: compact ? "4px 12px" : "10px 12px", overflow: "hidden" }}>

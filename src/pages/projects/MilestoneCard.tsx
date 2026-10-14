@@ -5,6 +5,7 @@ import { Avatar, DateInput, DueChip, StateTag, StatusChip, TaskMarker, fmtDue, i
 import { SubtaskEditPanel } from "../../components/SubtaskEditPanel";
 import type { Milestone, Project, Status, Subtask } from "../../lib/types";
 import { assigneeAvatar, projectContactPool } from "../../lib/projectContacts";
+import { applyManualOrder } from "../../lib/manualOrder";
 
 function AddSubtaskRow({ projectId, milestoneId }: { projectId: string; milestoneId: string }) {
   const { addSubtask } = useStore();
@@ -51,7 +52,12 @@ function AddSubtaskRow({ projectId, milestoneId }: { projectId: string; mileston
 
 /* ================= Subtask row (click-to-edit + delete) ================= */
 
-function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; milestoneId: string; s: Subtask }) {
+function SubtaskRow({
+  projectId, milestoneId, s, canMoveUp, canMoveDown, onMoveUp, onMoveDown,
+}: {
+  projectId: string; milestoneId: string; s: Subtask;
+  canMoveUp: boolean; canMoveDown: boolean; onMoveUp: () => void; onMoveDown: () => void;
+}) {
   const { data, toggleSubtask, deleteSubtask, updateSubtask } = useStore();
   const pool = projectContactPool(data.projects.find((p) => p.id === projectId), data.contacts);
   const avatar = assigneeAvatar(pool, s.assignee, s.who);
@@ -207,6 +213,24 @@ function SubtaskRow({ projectId, milestoneId, s }: { projectId: string; mileston
             )}
             </span>
             <button
+              className="icon-btn"
+              style={{ color: "var(--ink-4)", opacity: canMoveUp ? 1 : 0.35, cursor: canMoveUp ? "pointer" : "default" }}
+              disabled={!canMoveUp}
+              onClick={onMoveUp}
+              title="Move up"
+            >
+              <ChevronUp size={12} />
+            </button>
+            <button
+              className="icon-btn"
+              style={{ color: "var(--ink-4)", opacity: canMoveDown ? 1 : 0.35, cursor: canMoveDown ? "pointer" : "default" }}
+              disabled={!canMoveDown}
+              onClick={onMoveDown}
+              title="Move down"
+            >
+              <ChevronDown size={12} />
+            </button>
+            <button
               className="icon-btn subtask-delete-btn"
               style={{ color: "var(--ink-4)" }}
               onClick={() => deleteSubtask(projectId, milestoneId, s.id)}
@@ -245,7 +269,7 @@ export function MilestoneCard({
   project: Project; m: Milestone; isOpen: boolean; onToggle: () => void; onEditTask: (id: string) => void;
   canMoveUp: boolean; canMoveDown: boolean; onMoveUp: () => void; onMoveDown: () => void;
 }) {
-  const { tweaks, updateMilestone, deleteMilestone, data, toggleTask } = useStore();
+  const { tweaks, updateMilestone, deleteMilestone, data, toggleTask, setSubtaskOrder } = useStore();
 
   // Standalone tasks assigned to this milestone
   const linkedTasks = data.tasks.filter((task) => task.milestoneId === m.id);
@@ -416,17 +440,34 @@ export function MilestoneCard({
       </div>
       {shown && (
         <div style={{ padding: "6px 10px 8px" }}>
-          {[...m.subtasks]
-            .sort((a, b) => {
+          {(() => {
+            const orderedSubtasks = applyManualOrder(m.subtasks, m.subtaskOrder, (a, b) => {
               if (a.done !== b.done) return a.done ? 1 : -1;
               if (!a.due && !b.due) return 0;
               if (!a.due) return 1;
               if (!b.due) return -1;
               return new Date(a.due).getTime() - new Date(b.due).getTime();
-            })
-            .map((s) => (
-              <SubtaskRow key={s.id} projectId={project.id} milestoneId={m.id} s={s} />
-            ))}
+            });
+            const moveSubtask = (idx: number, delta: -1 | 1) => {
+              const ids = orderedSubtasks.map((s) => s.id);
+              const j = idx + delta;
+              if (j < 0 || j >= ids.length) return;
+              [ids[idx], ids[j]] = [ids[j], ids[idx]];
+              setSubtaskOrder(project.id, m.id, ids);
+            };
+            return orderedSubtasks.map((s, idx) => (
+              <SubtaskRow
+                key={s.id}
+                projectId={project.id}
+                milestoneId={m.id}
+                s={s}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < orderedSubtasks.length - 1}
+                onMoveUp={() => moveSubtask(idx, -1)}
+                onMoveDown={() => moveSubtask(idx, 1)}
+              />
+            ));
+          })()}
           {linkedTasks.map((t) => (
             <div key={t.id} className="task-row" style={{ gap: 8, alignItems: "flex-start" }}>
               <TaskMarker task={t} onClick={() => toggleTask(t.id)} />
