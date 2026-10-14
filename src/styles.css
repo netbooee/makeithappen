@@ -257,6 +257,7 @@ a.chip:hover { text-decoration: underline; }
 .chip.ts-not-started { background: var(--surface-2); color: var(--ink-3); border-color: var(--border); }
 .chip.ts-scheduled { background: #FBF3E3; color: #97650B; border-color: transparent; }
 .chip.ts-in-progress { background: var(--work-soft); color: var(--work-ink); border-color: transparent; }
+.chip.ts-ongoing { background: var(--delegate-soft); color: var(--delegate-ink); border-color: transparent; }
 .chip.ts-completed { background: var(--next-soft); color: var(--next-ink); border-color: transparent; }
 .chip.work { background: var(--work-soft); color: var(--work-ink); border-color: transparent; }
 .chip.personal { background: var(--personal-soft); color: var(--personal-ink); border-color: transparent; }

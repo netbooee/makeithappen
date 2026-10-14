@@ -338,6 +338,7 @@ type AssignedRow = { key: string; text: string; due?: string; done: boolean; not
 function assignedChip(t: { done: boolean; state?: string; next?: boolean; taskStatus?: string }): AssignedChip | null {
   if (t.done) return null;
   if (t.taskStatus === "in-progress") return { label: "In progress", bg: "#FEF3C7", color: "#B45309" };
+  if (t.taskStatus === "ongoing") return { label: "Ongoing", bg: "#F0EDFE", color: "#5B3FD6" };
   if (t.state === "waiting") return { label: "Waiting", bg: "#DBEAFE", color: "#1D4ED8" };
   if (t.state === "delegated") return { label: "Delegated", bg: "var(--surface-2)", color: "var(--ink-3)" };
   if (t.next) return { label: "Next", bg: "var(--accent-soft)", color: "var(--accent-ink)" };

@@ -162,12 +162,14 @@ function taskStatusPill(status: SubtaskStatus | undefined): string {
     "not-started": ["#F6F7F9", "#8A909B"],
     "scheduled":   ["#FBF3E3", "#97650B"],
     "in-progress": ["#EEF1FD", "#2E45B8"],
+    "ongoing":     ["#F0EDFE", "#5B3FD6"],
     "completed":   ["#E7F7F1", "#0A7D58"],
   };
   const labels: Record<string, string> = {
     "not-started": "Not started",
     "scheduled":   "Scheduled",
     "in-progress": "In progress",
+    "ongoing":     "Ongoing",
     "completed":   "Completed",
   };
   const [bg, color] = styles[status] ?? ["#F6F7F9", "#8A909B"];
