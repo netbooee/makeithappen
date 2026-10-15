@@ -121,7 +121,7 @@ export function ExecutiveUpdate() {
           .map((t) => ({ text: t.text, source: t.context })),
       ];
       const stored = project.execStatement?.trim();
-      const statement = stored || localExecNext(nextItems, project.nextActionsAiSummary?.trim() || null);
+      const statement = stored || localExecNext(project.nextActionsAiSummary?.trim() || null);
       const sinceLine = project.execSince?.trim() || localExecSince(execUpdate?.text ?? null);
       return { project, execUpdate, nextItems, statement, sinceLine, statementIsStored: Boolean(stored) };
     });

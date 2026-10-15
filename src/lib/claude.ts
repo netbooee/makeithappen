@@ -344,18 +344,12 @@ export interface ExecNarrative {
   since: string;
 }
 
-/** Deterministic forward-looking paragraph used before AI runs, and as the offline fallback. */
-export function localExecNext(
-  items: { text: string; source?: string }[],
-  nextSummary?: string | null,
-): string {
+/** The project's own "Coming up next" summary, as written there — used before AI runs, and as
+ *  the offline fallback. Never composed from raw next-flagged items; that would be a rewrite. */
+export function localExecNext(nextSummary?: string | null): string {
   const next = nextSummary?.trim();
-  if (next) return /[.!?]$/.test(next) ? next : `${next}.`;
-  if (!items.length) return "";
-  const list = items.map((n) => n.text.trim().replace(/[.;]$/, ""));
-  const tail =
-    list.length === 1 ? list[0] : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-  return `Next up: ${tail}.`;
+  if (!next) return "";
+  return /[.!?]$/.test(next) ? next : `${next}.`;
 }
 
 /** Deterministic one-sentence compression of the latest executive update. */
@@ -402,7 +396,7 @@ export async function generateExecNarrative(
   nextSummary?: string | null,
 ): Promise<ExecNarrative> {
   const fallback: ExecNarrative = {
-    statement: localExecNext(items, nextSummary),
+    statement: localExecNext(nextSummary),
     since: localExecSince(latestExecutiveUpdate?.text ?? null),
   };
   if (!fallback.statement && !fallback.since) return fallback;
