@@ -6,7 +6,7 @@ export function lastNameOf(fullName: string): string {
 export type Workspace = "work" | "personal";
 export type Status = "active" | "waiting" | "hold" | "complete";
 export type ProjectTier = "1" | "2" | "3" | "4";
-export type ProjectCategory = "strategic" | "continuous-improvement" | "significant-event";
+export type ProjectCategory = "strategic" | "continuous-improvement" | "significant-event" | "new-service-software";
 export type TaskFlow = "delegated" | "waiting";
 export type SubtaskStatus = "not-started" | "scheduled" | "in-progress" | "ongoing" | "blocked" | "completed" | "canceled";
 

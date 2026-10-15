@@ -185,6 +185,7 @@ export const PROJECT_TYPE_LABEL: Record<ProjectCategory, string> = {
   "strategic": "Strategic project",
   "continuous-improvement": "Continuous improvement",
   "significant-event": "Significant Event",
+  "new-service-software": "New service / software",
 };
 
 export const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {

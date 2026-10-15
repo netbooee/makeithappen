@@ -113,18 +113,16 @@ export function ProjectModal({
         />
         <div>
           <div className="field-label" style={{ marginBottom: 7 }}>Project type</div>
-          <div className="segmented" style={{ display: "flex" }}>
-            {(["strategic", "continuous-improvement", "significant-event"] as ProjectCategory[]).map((t) => (
-              <button
-                key={t}
-                className={projectType === t ? "active" : ""}
-                style={{ flex: 1 }}
-                onClick={() => setProjectType(projectType === t ? "" : t)}
-              >
-                {PROJECT_TYPE_LABEL[t]}
-              </button>
+          <select
+            className="input"
+            value={projectType}
+            onChange={(e) => setProjectType(e.target.value as ProjectCategory | "")}
+          >
+            <option value="">— None —</option>
+            {(["strategic", "continuous-improvement", "significant-event", "new-service-software"] as ProjectCategory[]).map((t) => (
+              <option key={t} value={t}>{PROJECT_TYPE_LABEL[t]}</option>
             ))}
-          </div>
+          </select>
         </div>
         <div>
           <div className="field-label" style={{ marginBottom: 7 }}>Status</div>
@@ -154,6 +152,13 @@ export function ProjectModal({
                 Tier {t}
               </button>
             ))}
+            <button
+              className={tier === "" ? "active" : ""}
+              style={{ flex: 1 }}
+              onClick={() => setTier("")}
+            >
+              No tier
+            </button>
           </div>
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
