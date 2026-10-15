@@ -89,6 +89,9 @@ export interface PortfolioRow {
   updateDate: string;
   update: string;
   next: string;
+  /** Next-action item texts pulled from milestone subtasks and the task lists — same data the
+   *  "coming next" statement draws from, kept as a raw list for the Next Actions column. */
+  nextItems: { text: string; source?: string }[];
   phaseCells: PhaseCell[];
 }
 
@@ -178,6 +181,7 @@ export function buildPortfolioReport(
       updateDate: entry?.execUpdate ? entry.execUpdate.when : "",
       update: entry?.execUpdate?.text ?? "No executive update recorded yet.",
       next: entry?.statement ?? "",
+      nextItems: entry?.nextItems ?? [],
       phaseCells: phaseCells(project.milestones, phase),
     };
   });

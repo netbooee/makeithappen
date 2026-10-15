@@ -2,8 +2,7 @@
  * Static HTML export of the Modernist portfolio report shown on the Executive Update page
  * (src/pages/ExecutiveUpdate.tsx). Mirrors that page's bands — title, metrics, editable
  * summary poster (rendered here as static text), all-projects matrix, per-project detail,
- * footer — but always renders full detail (no Executive/Full-detail toggle) and omits the
- * "Coming up next / Next action" band, which the live page no longer shows either.
+ * footer — but always renders full detail (no Executive/Full-detail toggle).
  * Reuses the shared PortfolioSummary/PortfolioRow computation and RAG styling from
  * portfolioReport.ts rather than recomputing it, per this codebase's precedent of importing
  * shared pure-logic modules into export files (see exportHtmlV2.ts).
@@ -32,6 +31,9 @@ const C = {
   accent700: "#ae1800",
 };
 const FONT = "'Archivo', system-ui, sans-serif";
+
+/** How many next-action items show inline before collapsing into a <details> "see more". */
+const NEXT_ACTIONS_VISIBLE = 5;
 
 function fmtLongDate(d: Date): string {
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -223,10 +225,28 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
       const spendHtml = row.project.budget
         ? `${formatMoneyShort(row.approved)} − ${formatMoneyShort(row.spent)} = <span style="color:${remaining >= 0 ? RAG.green.text : RAG.red.text}">${remainingLabel}</span>`
         : "—";
+      const renderNextItem = (item: { text: string; source?: string }) => `
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
+            <span style="width:5px;height:5px;border-radius:50%;background:${C.n600};flex-shrink:0;margin-top:6px"></span>
+            <div style="min-width:0">
+              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${esc(item.text)}</div>
+              ${item.source ? `<div style="font-size:11px;color:${C.n600};margin-top:1px">${esc(item.source)}</div>` : ""}
+            </div>
+          </div>`;
+      const visibleNextItems = row.nextItems.slice(0, NEXT_ACTIONS_VISIBLE);
+      const moreNextItems = row.nextItems.slice(NEXT_ACTIONS_VISIBLE);
+      const nextActionsHtml = row.nextItems.length === 0
+        ? `<p style="font-size:13px;color:${C.n600};font-style:italic;margin:0">Nothing flagged as next action.</p>`
+        : `<div>${visibleNextItems.map(renderNextItem).join("")}</div>`
+          + (moreNextItems.length === 0 ? "" : `
+          <details style="margin-top:0">
+            <summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.accent700}">See ${moreNextItems.length} more</summary>
+            <div style="margin-top:10px">${moreNextItems.map(renderNextItem).join("")}</div>
+          </details>`);
 
       return `
     <div style="border-top:2px solid ${C.divider};padding:18px 0 24px">
-      <div style="display:grid;grid-template-columns:1.85fr 1fr;gap:32px;align-items:start">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;align-items:start">
         <div>
           <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:2px">
             ${ragChip(row.rag)}
@@ -237,6 +257,10 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           <p style="font-size:14px;line-height:1.5;margin:0 0 14px">${esc(row.update)}</p>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Coming up next</div>
           <p style="font-size:13px;line-height:1.5;margin:0;color:${C.n800}">${esc(row.next || "No upcoming step recorded.")}</p>
+        </div>
+        <div style="border-left:2px solid ${C.divider};padding-left:24px">
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Next actions</div>
+          ${nextActionsHtml}
         </div>
         <div style="border-left:2px solid ${C.divider};padding-left:24px">
           <div style="padding-bottom:14px;border-bottom:1px solid ${C.divider};margin-bottom:4px">${phaseStepper(row)}</div>
