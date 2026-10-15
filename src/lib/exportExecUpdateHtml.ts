@@ -10,6 +10,7 @@
  */
 import { formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
 import { safeHref } from "./safeUrl";
+import { PROJECT_TYPE_LABEL } from "../components/ui";
 
 function esc(s: string): string {
   return s
@@ -239,6 +240,10 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         </div>
         <div style="border-left:2px solid ${C.divider};padding-left:24px">
           <div style="padding-bottom:14px;border-bottom:1px solid ${C.divider};margin-bottom:4px">${phaseStepper(row)}</div>
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
+            <span style="color:${C.n700}">Type</span>
+            <span style="font-family:${FONT};font-weight:800">${row.project.projectType ? esc(PROJECT_TYPE_LABEL[row.project.projectType]) : "—"}</span>
+          </div>
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
             <span style="color:${C.n700}">Tier</span>
             <span style="font-family:${FONT};font-weight:800">${row.project.tier ? `Tier ${esc(row.project.tier)}` : "—"}</span>
