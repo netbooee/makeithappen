@@ -1,6 +1,6 @@
 import { Calendar, Check, ChevronDown, ChevronUp, Hourglass, UserRound } from "lucide-react";
 import { Fragment, type CSSProperties } from "react";
-import type { Project, Status, Subtask, SubtaskStatus, Task } from "../lib/types";
+import type { Project, ProjectCategory, Status, Subtask, SubtaskStatus, Task } from "../lib/types";
 
 /** Shared green/amber/red risk color mapping, reused anywhere a project's RAG status needs a color. */
 export const RAG = { green: "#10B981", amber: "#F59E0B", red: "#EF4444" } as const;
@@ -180,6 +180,12 @@ export function TaskMarker({ task, onClick }: { task: Task | Subtask; onClick?: 
   }
   return <Checkbox done={task.done} onClick={onClick} />;
 }
+
+export const PROJECT_TYPE_LABEL: Record<ProjectCategory, string> = {
+  "strategic": "Strategic project",
+  "continuous-improvement": "Continuous improvement",
+  "significant-event": "Significant Event",
+};
 
 export const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
   "not-started": "Not started",

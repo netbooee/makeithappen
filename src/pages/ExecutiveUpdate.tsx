@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Download, Pencil, Sparkles } from "lucide-react";
 import { useStore } from "../store/store";
-import { parseTimestamp } from "../components/ui";
+import { parseTimestamp, PROJECT_TYPE_LABEL } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
 import { generateExecNarrative, localExecNext, localExecSince } from "../lib/claude";
@@ -502,6 +502,10 @@ export function ExecutiveUpdate() {
                         <div style={{ borderLeft: `2px solid ${DIVIDER}`, paddingLeft: 24 }}>
                           <div style={{ paddingBottom: 14, borderBottom: `1px solid ${DIVIDER}`, marginBottom: 4 }}>
                             <PhaseStepper row={row} tall />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
+                            <span style={{ color: N700 }}>Type</span>
+                            <span style={{ fontFamily: FONT, fontWeight: 800 }}>{row.project.projectType ? PROJECT_TYPE_LABEL[row.project.projectType] : "—"}</span>
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
                             <span style={{ color: N700 }}>Tier</span>

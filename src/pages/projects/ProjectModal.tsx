@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useStore } from "../../store/store";
-import { DateInput } from "../../components/ui";
-import type { Project, ProjectTier, Status } from "../../lib/types";
+import { DateInput, PROJECT_TYPE_LABEL } from "../../components/ui";
+import type { Project, ProjectCategory, ProjectTier, Status } from "../../lib/types";
 
 export function ProjectModal({
   initial,
@@ -22,6 +22,7 @@ export function ProjectModal({
   const [desc, setDesc] = useState(initial.desc ?? "");
   const [due, setDue] = useState(initial.due && initial.due !== "No date" ? initial.due : "");
   const [status, setStatus] = useState<Status>(initial.status ?? "active");
+  const [projectType, setProjectType] = useState<ProjectCategory | "">(initial.projectType ?? "");
   const [owner, setOwner] = useState(initial.owner ?? all.user.initials);
   const [technicalLead, setTechnicalLead] = useState(initial.technicalLead ?? "");
   const [tier, setTier] = useState<ProjectTier | "">(initial.tier ?? "");
@@ -57,6 +58,7 @@ export function ProjectModal({
       desc: desc.trim(),
       due: due.trim() || "No date",
       status,
+      projectType: projectType || undefined,
       owner: owner.trim() || all.user.initials,
       technicalLead: technicalLead.trim() || undefined,
       tier: tier || undefined,
@@ -109,6 +111,21 @@ export function ProjectModal({
           value={technicalLead}
           onChange={(e) => setTechnicalLead(e.target.value)}
         />
+        <div>
+          <div className="field-label" style={{ marginBottom: 7 }}>Project type</div>
+          <div className="segmented" style={{ display: "flex" }}>
+            {(["strategic", "continuous-improvement", "significant-event"] as ProjectCategory[]).map((t) => (
+              <button
+                key={t}
+                className={projectType === t ? "active" : ""}
+                style={{ flex: 1 }}
+                onClick={() => setProjectType(projectType === t ? "" : t)}
+              >
+                {PROJECT_TYPE_LABEL[t]}
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <div className="field-label" style={{ marginBottom: 7 }}>Status</div>
           <div className="segmented" style={{ display: "flex" }}>
