@@ -186,7 +186,9 @@ export const TASK_STATUS_LABEL: Record<SubtaskStatus, string> = {
   "scheduled": "Scheduled",
   "in-progress": "In progress",
   "ongoing": "Ongoing",
+  "blocked": "Blocked",
   "completed": "Completed",
+  "canceled": "Canceled",
 };
 
 /** Next / Delegated / Waiting tag, matching the prototype's StateTag. */

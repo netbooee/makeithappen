@@ -179,7 +179,9 @@ export function SubtaskEditPanel({
               <option value="scheduled">Scheduled</option>
               <option value="in-progress">In progress</option>
               <option value="ongoing">Ongoing</option>
+              <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
+              <option value="canceled">Canceled</option>
             </select>
           </div>
 
