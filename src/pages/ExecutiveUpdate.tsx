@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Download, Pencil, Sparkles, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { parseTimestamp, PROJECT_TYPE_LABEL } from "../components/ui";
-import type { Project, StatusUpdate } from "../lib/types";
+import type { Project, ProjectContactRef, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
 import { generateExecNarrative, localExecNext, localExecSince } from "../lib/claude";
 import { safeHref } from "../lib/safeUrl";
 import { buildPortfolioReport, formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type Rag } from "../lib/portfolioReport";
+import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
 /* ================= Executive update — data layer ================= */
 
@@ -16,7 +17,7 @@ export interface ExecEntry {
   project: Project;
   execUpdate: StatusUpdate | null;
   /** Next-action item texts pulled from milestone subtasks and the task lists. */
-  nextItems: { text: string; source?: string }[];
+  nextItems: { text: string; source?: string; owner?: string }[];
   /** The forward-looking "coming next" paragraph shown on the card. */
   statement: string;
   /** One-sentence recap of the latest executive update, shown under the paragraph. Empty when there is none. */
@@ -102,7 +103,7 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
 function NextActionsPopup({
   projectTitle, items, close,
 }: {
-  projectTitle: string; items: { text: string; source?: string }[]; close: () => void;
+  projectTitle: string; items: { text: string; source?: string; owner?: string }[]; close: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
@@ -129,7 +130,10 @@ function NextActionsPopup({
             >
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-4)", flexShrink: 0, marginTop: 6 }} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, lineHeight: 1.45 }}>{item.text}</div>
+                <div style={{ fontSize: 13.5, lineHeight: 1.45 }}>
+                  {item.text}
+                  {item.owner && <span style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-4)" }}> @{item.owner}</span>}
+                </div>
                 {item.source && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 2 }}>{item.source}</div>}
               </div>
             </div>
@@ -163,13 +167,18 @@ export function ExecutiveUpdate() {
     const taskPool = data.tasks;
     const raw = data.projects.map((project) => {
       const execUpdate = latestExecUpdate(project);
+      const pool = projectContactPool(project, data.contacts);
+      const ownerOf = (assignee: ProjectContactRef | undefined, who: string | undefined) => {
+        const avatar = assigneeAvatar(pool, assignee, who);
+        return avatar.ini || undefined;
+      };
       const nextItems = [
         ...project.milestones.flatMap((m) =>
-          m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title })),
+          m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title, owner: ownerOf(s.assignee, s.who) })),
         ),
         ...taskPool
           .filter((t) => t.project === project.title && t.next && !t.done)
-          .map((t) => ({ text: t.text, source: t.context })),
+          .map((t) => ({ text: t.text, source: t.context, owner: ownerOf(t.assignee, t.who) })),
       ];
       const stored = project.execStatement?.trim();
       const statement = stored || localExecNext(project.nextActionsAiSummary?.trim() || null);
@@ -571,7 +580,10 @@ export function ExecutiveUpdate() {
                                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: N600, flexShrink: 0, marginTop: 6 }} />
                                     <div style={{ minWidth: 0 }}>
-                                      <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}>{item.text}</div>
+                                      <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}>
+                                        {item.text}
+                                        {item.owner && <span style={{ fontSize: 11, fontStyle: "italic", color: N600 }}> @{item.owner}</span>}
+                                      </div>
                                       {item.source && <div style={{ fontSize: 11, color: N600, marginTop: 1 }}>{item.source}</div>}
                                     </div>
                                   </div>

@@ -225,11 +225,11 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
       const spendHtml = row.project.budget
         ? `${formatMoneyShort(row.approved)} − ${formatMoneyShort(row.spent)} = <span style="color:${remaining >= 0 ? RAG.green.text : RAG.red.text}">${remainingLabel}</span>`
         : "—";
-      const renderNextItem = (item: { text: string; source?: string }) => `
+      const renderNextItem = (item: { text: string; source?: string; owner?: string }) => `
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <span style="width:5px;height:5px;border-radius:50%;background:${C.n600};flex-shrink:0;margin-top:6px"></span>
             <div style="min-width:0">
-              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${esc(item.text)}</div>
+              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${esc(item.text)}${item.owner ? ` <span style="font-size:11px;font-style:italic;color:${C.n600}">@${esc(item.owner)}</span>` : ""}</div>
               ${item.source ? `<div style="font-size:11px;color:${C.n600};margin-top:1px">${esc(item.source)}</div>` : ""}
             </div>
           </div>`;

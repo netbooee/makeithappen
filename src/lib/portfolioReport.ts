@@ -91,7 +91,7 @@ export interface PortfolioRow {
   next: string;
   /** Next-action item texts pulled from milestone subtasks and the task lists — same data the
    *  "coming next" statement draws from, kept as a raw list for the Next Actions column. */
-  nextItems: { text: string; source?: string }[];
+  nextItems: { text: string; source?: string; owner?: string }[];
   phaseCells: PhaseCell[];
 }
 
