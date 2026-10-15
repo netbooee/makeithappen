@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Download, Pencil, Sparkles } from "lucide-react";
+import { Download, Pencil, Sparkles, X } from "lucide-react";
 import { useStore } from "../store/store";
 import { parseTimestamp, PROJECT_TYPE_LABEL } from "../components/ui";
 import type { Project, StatusUpdate } from "../lib/types";
@@ -46,6 +47,9 @@ const ACCENT = "#ec3013", ACCENT700 = "#ae1800", BG = "#f3f2f2";
 
 const kicker: React.CSSProperties = { fontSize: 10, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: N600 };
 const label11: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N600 };
+
+/** How many next-action items show inline in the right rail before collapsing behind "See all". */
+const NEXT_ACTIONS_VISIBLE = 5;
 
 function fmtLongDate(d: Date): string {
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -93,6 +97,50 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
   );
 }
 
+/** Full next-action list for one project, opened from the "See all" link in the right rail
+ *  when there are more items than fit inline. */
+function NextActionsPopup({
+  projectTitle, items, close,
+}: {
+  projectTitle: string; items: { text: string; source?: string }[]; close: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
+  return createPortal(
+    <div className="overlay-center" role="dialog" aria-modal="true" aria-label={`Next actions — ${projectTitle}`}>
+      <div className="overlay-bg" onClick={close} />
+      <div className="popup-card">
+        <div className="popup-card-head">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Next actions</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{projectTitle}</div>
+          </div>
+          <button className="icon-btn" onClick={close}><X /></button>
+        </div>
+        <div className="popup-card-body">
+          {items.map((item, i) => (
+            <div
+              key={i}
+              style={{ display: "flex", gap: 8, alignItems: "flex-start", paddingBottom: 12, borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none" }}
+            >
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-4)", flexShrink: 0, marginTop: 6 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, lineHeight: 1.45 }}>{item.text}</div>
+                {item.source && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 2 }}>{item.source}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
@@ -107,6 +155,7 @@ export function ExecutiveUpdate() {
   const [summaryDraft, setSummaryDraft] = useState("");
   const [editingBudgetNote, setEditingBudgetNote] = useState<string | null>(null);
   const [budgetNoteDraft, setBudgetNoteDraft] = useState("");
+  const [nextActionsPopupId, setNextActionsPopupId] = useState<string | null>(null);
 
   // Every project's executive-update data, unfiltered and in the user's saved order — the
   // portfolio report draws from this so a project with nothing written yet still gets a row.
@@ -449,7 +498,7 @@ export function ExecutiveUpdate() {
                   const isEditingBudgetNote = editingBudgetNote === row.project.id;
                   return (
                     <div key={row.project.id} style={{ borderTop: `2px solid ${DIVIDER}`, padding: "18px 0 24px" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: 32, alignItems: "start" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 28, alignItems: "start" }}>
                         <div>
                           <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 2 }}>
                             <RagChip rag={row.rag} />
@@ -506,6 +555,36 @@ export function ExecutiveUpdate() {
                                     <Pencil size={11} /> Edit
                                   </button>
                                 </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        <div style={{ borderLeft: `2px solid ${DIVIDER}`, paddingLeft: 24 }}>
+                          <div style={{ ...kicker, marginBottom: 6 }}>Next actions</div>
+                          {row.nextItems.length === 0 ? (
+                            <p style={{ fontSize: 13, color: N600, fontStyle: "italic", margin: 0 }}>Nothing flagged as next action.</p>
+                          ) : (
+                            <>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {row.nextItems.slice(0, NEXT_ACTIONS_VISIBLE).map((item, i) => (
+                                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: N600, flexShrink: 0, marginTop: 6 }} />
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}>{item.text}</div>
+                                      {item.source && <div style={{ fontSize: 11, color: N600, marginTop: 1 }}>{item.source}</div>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {row.nextItems.length > NEXT_ACTIONS_VISIBLE && (
+                                <button
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, padding: "3px 8px", marginTop: 10 }}
+                                  onClick={() => setNextActionsPopupId(row.project.id)}
+                                >
+                                  See all {row.nextItems.length}
+                                </button>
                               )}
                             </>
                           )}
@@ -610,6 +689,18 @@ export function ExecutiveUpdate() {
               </a>
             )}
           </div>
+
+          {nextActionsPopupId && (() => {
+            const popupEntry = entriesById.get(nextActionsPopupId);
+            if (!popupEntry) return null;
+            return (
+              <NextActionsPopup
+                projectTitle={popupEntry.project.title}
+                items={popupEntry.nextItems}
+                close={() => setNextActionsPopupId(null)}
+              />
+            );
+          })()}
         </>
       )}
     </div>
