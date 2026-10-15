@@ -518,7 +518,7 @@ export function ExecutiveUpdate() {
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${DIVIDER}`, fontSize: 13 }}>
                             <span style={{ color: N700 }}>Type / Tier</span>
                             <span style={{ fontFamily: FONT, fontWeight: 800 }}>
-                              {row.project.projectType ? PROJECT_TYPE_LABEL[row.project.projectType] : "—"} / {row.project.tier ? `Tier ${row.project.tier}` : "—"}
+                              {row.project.projectType ? PROJECT_TYPE_LABEL[row.project.projectType] : "—"} / {row.project.tier ? `Tier ${row.project.tier}` : "No tier"}
                             </span>
                           </div>
                           {([

@@ -242,7 +242,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           <div style="padding-bottom:14px;border-bottom:1px solid ${C.divider};margin-bottom:4px">${phaseStepper(row)}</div>
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
             <span style="color:${C.n700}">Type / Tier</span>
-            <span style="font-family:${FONT};font-weight:800">${row.project.projectType ? esc(PROJECT_TYPE_LABEL[row.project.projectType]) : "—"} / ${row.project.tier ? `Tier ${esc(row.project.tier)}` : "—"}</span>
+            <span style="font-family:${FONT};font-weight:800">${row.project.projectType ? esc(PROJECT_TYPE_LABEL[row.project.projectType]) : "—"} / ${row.project.tier ? `Tier ${esc(row.project.tier)}` : "No tier"}</span>
           </div>
           ${riskRows}
           <div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid ${C.divider};font-size:13px">
