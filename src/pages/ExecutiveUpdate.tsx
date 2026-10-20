@@ -148,7 +148,7 @@ function NextActionsPopup({
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
-  const { data, all, setExecPortfolioSummary, updateProject } = useStore();
+  const { data, all, setExecPortfolioSummary, updateProject, updateStatusUpdate, addUpdate } = useStore();
   const navigate = useNavigate();
   const [view, setView] = useState<"executive" | "full">("full");
   const [busy, setBusy] = useState<string | null>(null);
@@ -160,6 +160,8 @@ export function ExecutiveUpdate() {
   const [editingBudgetNote, setEditingBudgetNote] = useState<string | null>(null);
   const [budgetNoteDraft, setBudgetNoteDraft] = useState("");
   const [nextActionsPopupId, setNextActionsPopupId] = useState<string | null>(null);
+  const [editingExecUpdate, setEditingExecUpdate] = useState<string | null>(null);
+  const [execUpdateDraft, setExecUpdateDraft] = useState("");
 
   // Every project's executive-update data, unfiltered and in the user's saved order — the
   // portfolio report draws from this so a project with nothing written yet still gets a row.
@@ -265,6 +267,23 @@ export function ExecutiveUpdate() {
   const saveBudgetNote = (project: Project) => {
     updateProject(project.id, { budgetNote: budgetNoteDraft.trim() || undefined });
     setEditingBudgetNote(null);
+  };
+
+  const startEditExecUpdate = (entry: ExecEntry) => {
+    setEditingExecUpdate(entry.project.id);
+    setExecUpdateDraft(entry.execUpdate?.text ?? "");
+  };
+
+  const saveExecUpdate = (entry: ExecEntry) => {
+    const text = execUpdateDraft.trim();
+    if (text) {
+      if (entry.execUpdate) {
+        updateStatusUpdate(entry.project.id, entry.execUpdate.id, text, "executive");
+      } else {
+        addUpdate(entry.project.id, text, "executive");
+      }
+    }
+    setEditingExecUpdate(null);
   };
 
   const startEditSummary = () => {
@@ -505,6 +524,7 @@ export function ExecutiveUpdate() {
                     ] as [string, string | undefined][]
                   ).filter(([, note]) => note?.trim());
                   const isEditingBudgetNote = editingBudgetNote === row.project.id;
+                  const isEditingExecUpdate = editingExecUpdate === row.project.id;
                   return (
                     <div key={row.project.id} style={{ borderTop: `2px solid ${DIVIDER}`, padding: "18px 0 24px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 28, alignItems: "start" }}>
@@ -522,7 +542,34 @@ export function ExecutiveUpdate() {
                             {row.project.owner}{row.project.technicalLead ? ` · Tech lead: ${row.project.technicalLead}` : ""}
                           </div>
                           <div style={{ ...kicker, marginBottom: 6 }}>Executive update{row.updateDate ? ` · ${shortDate(row.updateDate)}` : ""}</div>
-                          <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 14px" }}>{row.update}</p>
+                          {isEditingExecUpdate ? (
+                            <div style={{ marginBottom: 14 }}>
+                              <textarea
+                                value={execUpdateDraft}
+                                onChange={(e) => setExecUpdateDraft(e.target.value)}
+                                rows={3}
+                                autoFocus
+                                style={{ width: "100%", fontSize: 14, lineHeight: 1.5, color: INK, padding: "8px 10px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
+                              />
+                              <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+                                <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => entry && saveExecUpdate(entry)}>Save</button>
+                                <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setEditingExecUpdate(null)}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 6px" }}>{row.update}</p>
+                              {entry && (
+                                <button
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, padding: "2px 8px", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14 }}
+                                  onClick={() => startEditExecUpdate(entry)}
+                                >
+                                  <Pencil size={11} /> Edit
+                                </button>
+                              )}
+                            </>
+                          )}
 
                           <div style={{ ...kicker, marginBottom: 6 }}>Coming up next</div>
                           {isEditing ? (
