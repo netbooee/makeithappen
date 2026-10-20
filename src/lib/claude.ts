@@ -292,6 +292,27 @@ Improve clarity and concision without changing the meaning or adding new facts. 
   }
 }
 
+/** Suggests corrections/improvements to the "coming up next" statement on the Executive Update page. */
+export async function suggestExecNextEdits(project: Project, currentText: string): Promise<string> {
+  if (!currentText.trim()) return currentText;
+  if (!devApiKey && !supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 900));
+    return currentText.trim();
+  }
+  const system = `You lightly edit forward-looking "what's coming next" statements for an executive portfolio update. Preserve the author's meaning, facts, and tone — do not invent new information. Plain text, no greeting or sign-off, no headers, no commentary. Output only the corrected text.`;
+  const prompt = `Project: "${project.title}"
+
+Here is a draft "coming up next" statement the author typed:
+"${currentText}"
+
+Improve clarity and concision without changing the meaning or adding new facts. Output only the corrected statement text.`;
+  try {
+    return await callClaude(system, [{ role: "user", content: prompt }]);
+  } catch {
+    return currentText.trim();
+  }
+}
+
 /* ---------- next actions summary ---------- */
 
 export function localNextActionsSummary(items: { text: string; source?: string }[]): string {

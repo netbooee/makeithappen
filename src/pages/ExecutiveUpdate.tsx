@@ -6,7 +6,7 @@ import { useStore } from "../store/store";
 import { parseTimestamp, PROJECT_TYPE_LABEL } from "../components/ui";
 import type { Project, ProjectContactRef, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
-import { generateExecNarrative, localExecNext, localExecSince } from "../lib/claude";
+import { generateExecNarrative, localExecNext, localExecSince, suggestExecNextEdits, suggestStatusUpdateEdits } from "../lib/claude";
 import { safeHref } from "../lib/safeUrl";
 import { buildPortfolioReport, formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type Rag } from "../lib/portfolioReport";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
@@ -162,6 +162,8 @@ export function ExecutiveUpdate() {
   const [nextActionsPopupId, setNextActionsPopupId] = useState<string | null>(null);
   const [editingExecUpdate, setEditingExecUpdate] = useState<string | null>(null);
   const [execUpdateDraft, setExecUpdateDraft] = useState("");
+  const [suggestingExecUpdate, setSuggestingExecUpdate] = useState(false);
+  const [suggestingNext, setSuggestingNext] = useState(false);
 
   // Every project's executive-update data, unfiltered and in the user's saved order — the
   // portfolio report draws from this so a project with nothing written yet still gets a row.
@@ -172,7 +174,7 @@ export function ExecutiveUpdate() {
       const pool = projectContactPool(project, data.contacts);
       const ownerOf = (assignee: ProjectContactRef | undefined, who: string | undefined) => {
         const avatar = assigneeAvatar(pool, assignee, who);
-        return avatar.ini || undefined;
+        return avatar.title || undefined;
       };
       const nextItems = [
         ...project.milestones.flatMap((m) =>
@@ -284,6 +286,26 @@ export function ExecutiveUpdate() {
       }
     }
     setEditingExecUpdate(null);
+  };
+
+  const handleSuggestExecUpdate = async (project: Project) => {
+    if (!execUpdateDraft.trim()) return;
+    setSuggestingExecUpdate(true);
+    try {
+      setExecUpdateDraft(await suggestStatusUpdateEdits(project, execUpdateDraft));
+    } finally {
+      setSuggestingExecUpdate(false);
+    }
+  };
+
+  const handleSuggestNext = async (project: Project) => {
+    if (!draft.trim()) return;
+    setSuggestingNext(true);
+    try {
+      setDraft(await suggestExecNextEdits(project, draft));
+    } finally {
+      setSuggestingNext(false);
+    }
   };
 
   const startEditSummary = () => {
@@ -554,6 +576,14 @@ export function ExecutiveUpdate() {
                               <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
                                 <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => entry && saveExecUpdate(entry)}>Save</button>
                                 <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setEditingExecUpdate(null)}>Cancel</button>
+                                <button
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  disabled={suggestingExecUpdate || !execUpdateDraft.trim()}
+                                  onClick={() => handleSuggestExecUpdate(row.project)}
+                                >
+                                  <Sparkles size={11} /> {suggestingExecUpdate ? "Improving…" : "Suggest corrections"}
+                                </button>
                               </div>
                             </div>
                           ) : (
@@ -581,9 +611,17 @@ export function ExecutiveUpdate() {
                                 autoFocus
                                 style={{ width: "100%", fontSize: 13, lineHeight: 1.5, color: INK, padding: "8px 10px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
                               />
-                              <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+                              <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
                                 <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => saveEdit(row.project)}>Save</button>
                                 <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setEditing(null)}>Cancel</button>
+                                <button
+                                  className="btn btn-ghost"
+                                  style={{ fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  disabled={suggestingNext || !draft.trim()}
+                                  onClick={() => handleSuggestNext(row.project)}
+                                >
+                                  <Sparkles size={11} /> {suggestingNext ? "Improving…" : "Suggest corrections"}
+                                </button>
                                 <span style={{ fontSize: 11, color: N600 }}>Clear the text to fall back to the auto-composed statement.</span>
                               </div>
                             </div>
