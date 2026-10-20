@@ -29,7 +29,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/pages/Today.tsx` | Today dashboard |
-| `src/pages/Tasks.tsx` | Task list / groups |
+| `src/pages/Tasks.tsx` | Task list / groups, plus an "Orphaned Tasks" section at the bottom listing every task (any status) with no project assigned |
 | `src/pages/Updates.tsx` | Cross-project status updates feed |
 | `src/pages/Contacts.tsx` | Contact list + contact detail |
 | `src/pages/Assistant.tsx` | Claude chat page |
@@ -83,7 +83,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/exportHtmlV2.ts` | "Export v2.0" — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle. Self-contained, does not import from `exportHtml.ts` |
 | `src/lib/exportExecUpdateHtml.ts` | Static HTML export of the Modernist portfolio report shown on the Executive Update page — mirrors its bands (title, metrics, summary poster, project detail, footer), built from the shared `PortfolioSummary` in `portfolioReport.ts` |
 | `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, phase stepper, budget/schedule aggregation, composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
-| `src/lib/claude.ts` | Every AI call: draft update, draft email, summarize next actions, assistant chat, contact import |
+| `src/lib/claude.ts` | Every AI call: draft/suggest-edits for status updates, agenda notes, and the exec "coming up next" line, draft email, summarize next actions, write the executive narrative, assistant chat, business-case + contact import parsing |
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
