@@ -355,7 +355,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     : "";
   const businessCaseLinkHtml = businessCaseFilled.length === 0
     ? ""
-    : `<a href="#v2-band-businesscase" style="display:inline-block;margin-top:${project.desc ? "12px" : "0"};font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:${C.accent}">Jump to business case ↓</a>`;
+    : `<a href="#v2-band-businesscase" onclick="var d=document.getElementById('v2-band-businesscase');if(d)d.open=true" style="display:inline-block;margin-top:${project.desc ? "12px" : "0"};font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:${C.accent}">Jump to business case ↓</a>`;
 
   const bandB = `
   <div class="v2-2col v2-band-b" style="border-bottom:2px solid ${C.divider}">
@@ -1080,7 +1080,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     ${registerRow("Risks logged", "v2-risk-register", risksCount)}
     ${registerRow("Issues logged", "v2-issues", issuesCount)}
     ${registerRow("Resources attached", "v2-resources", resourcesCount)}
+    ${businessCaseFilled.length > 0 ? registerRow("Business case fields", "v2-band-businesscase", businessCaseFilled.length) : ""}
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
+
+  // Business case — a rail register like the others, omitted entirely when no field is filled.
+  const businessCaseHtml = businessCaseFilled.map(([label, value]) => `
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">${esc(label)}</div>
+        <p style="font-size:14px;line-height:1.55;margin:0;white-space:pre-wrap">${esc(value!.trim())}</p>
+      </div>`).join("");
 
   /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
    *  (same font/style/underline, plus a background tint) so sections don't blend together. */
@@ -1117,7 +1125,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
     railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
     railSection("Issues", issuesHtml, { id: "v2-issues" }),
-    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
+    railSection("Resources", resourcesHtml, { id: "v2-resources" }),
+    businessCaseFilled.length > 0 ? railSection("Business case", businessCaseHtml, { marginBottom: 0, id: "v2-band-businesscase" }) : "",
   ].join("");
 
   const bandG = `
@@ -1129,23 +1138,6 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${decisionDialogsHtml}
   ${riskDialogsHtml}
   ${issueDialogsHtml}`;
-
-  /* ── Business case (underneath Task detail; omitted entirely when no field is filled) ──────── */
-  const bandBusinessCase = businessCaseFilled.length === 0 ? "" : `
-  <details id="v2-band-businesscase" open style="padding:32px;border-top:2px solid ${C.divider}">
-    <summary style="display:flex;align-items:center;gap:10px">
-      <h2 style="font-size:26px;letter-spacing:-0.02em;margin:0">Business case</h2>
-      <span class="v2-rail-chev" style="font-size:14px">&#9656;</span>
-    </summary>
-    <p style="font-size:13px;color:${C.n700};margin:12px 0 24px">Problem, justification, objectives, deliverables & ROI.</p>
-    <div style="display:flex;flex-direction:column;gap:20px">
-      ${businessCaseFilled.map(([label, value]) => `
-      <div>
-        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">${esc(label)}</div>
-        <p style="font-size:14px;line-height:1.55;margin:0;max-width:76ch;white-space:pre-wrap">${esc(value!.trim())}</p>
-      </div>`).join("")}
-    </div>
-  </details>`;
 
   /* ── Band H — Footer ──────────────────────────────────────────────────────────────────────── */
   const feedbackHtml = feedbackEmail
@@ -1210,7 +1202,6 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   ${bandE}
   ${bandF}
   ${bandG}
-  ${bandBusinessCase}
   ${bandH}
 </div>
 <script>
@@ -1220,15 +1211,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     var exec = document.getElementById('v2-btn-exec');
     var full = document.getElementById('v2-btn-full');
     var detail = document.getElementById('v2-band-g');
-    var bcase = document.getElementById('v2-band-businesscase');
     if (view === 'executive') {
       exec.classList.add('v2-selected'); full.classList.remove('v2-selected');
       detail.style.display = 'none';
-      if (bcase) bcase.style.display = 'none';
     } else {
       full.classList.add('v2-selected'); exec.classList.remove('v2-selected');
       detail.style.display = '';
-      if (bcase) bcase.style.display = '';
     }
   }
   if (location.hash.replace('#', '') === 'executive') v2SetView('executive');
