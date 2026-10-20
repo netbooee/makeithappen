@@ -175,9 +175,70 @@ export function Tasks() {
       .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
   }, [data.projects, groups]);
 
+  // Every Task (any status, not just next-action) with no project assigned — a hygiene list
+  // for the bottom of the page, separate from the "No project" next-actions group above.
+  const orphanedTasks = useMemo(() => {
+    const rows: Row[] = data.tasks
+      .filter((t) => !t.project)
+      .map((t) => ({ kind: "task", task: t, milestoneName: t.milestoneId ? (milestoneMap.get(t.milestoneId) ?? null) : null }));
+    return sortRows(rows);
+  }, [data.tasks, milestoneMap]);
+
   // Kept in sync with the sidebar nav badge via the shared `nextActionCount` helper —
   // both count the same thing (undone next-action Tasks + Subtasks across the app).
   const totalCount = useMemo(() => nextActionCount(data), [data]);
+
+  const renderRow = (row: Row) => {
+    const isTask = row.kind === "task";
+    const name = isTask ? row.task.text : row.subtask.t;
+    const notesVal = isTask ? row.task.notes : row.subtask.notes;
+    const milestoneName = isTask ? row.milestoneName : row.milestone.title;
+    const dueVal = isTask ? row.task.due : row.subtask.due;
+    const doneVal = isTask ? row.task.done : row.subtask.done;
+    const avatar = isTask ? taskAvatar(row.task) : subtaskAvatar(row.projectId, row.subtask);
+    const ownerLabel = avatar.title || "—";
+    const key = isTask ? row.task.id : row.subtask.id;
+    return (
+      <button
+        key={key}
+        onClick={() =>
+          isTask
+            ? setEditingId(row.task.id)
+            : setEditingSubtask({ projectId: row.projectId, milestoneId: row.milestone.id, subtaskId: row.subtask.id })
+        }
+        title="Open task details"
+        style={{
+          display: "flex", width: "100%", gap: 10, padding: "7px 4px",
+          borderBottom: "1px solid var(--border)", alignItems: "center", flexWrap: "wrap",
+          textAlign: "left", cursor: "pointer",
+        }}
+      >
+        <div className="row-title-flex" style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
+          {notesVal && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+              {notesVal}
+            </div>
+          )}
+        </div>
+        <span style={{ width: 130, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {milestoneName ?? "—"}
+        </span>
+        <span style={{ width: 78, flexShrink: 0 }}>
+          {dueVal ? <DueChip due={dueVal} done={doneVal} /> : <span style={{ fontSize: 11.5, color: "var(--ink-4)" }}>—</span>}
+        </span>
+        <span style={{ width: 120, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+          {avatar.ini && <Avatar who={avatar.ini} size={20} color={avatar.color ?? "var(--ink-3)"} />}
+          <span style={{ fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {ownerLabel}
+          </span>
+        </span>
+        <span style={{ width: 110, flexShrink: 0 }}>
+          <StateTag task={isTask ? row.task : row.subtask} />
+        </span>
+      </button>
+    );
+  };
 
   const renderQuickAdd = (projectTitle: string) => (
     <div style={{ display: "flex", gap: 7, padding: "8px 4px", alignItems: "center" }}>
@@ -305,57 +366,7 @@ export function Tasks() {
               <span style={{ width: 120, flexShrink: 0, ...colHead }}>Owner</span>
               <span style={{ width: 110, flexShrink: 0, ...colHead }}>Status</span>
             </div>
-            {g.rows.map((row) => {
-              const isTask = row.kind === "task";
-              const name = isTask ? row.task.text : row.subtask.t;
-              const notesVal = isTask ? row.task.notes : row.subtask.notes;
-              const milestoneName = isTask ? row.milestoneName : row.milestone.title;
-              const dueVal = isTask ? row.task.due : row.subtask.due;
-              const doneVal = isTask ? row.task.done : row.subtask.done;
-              const avatar = isTask ? taskAvatar(row.task) : subtaskAvatar(row.projectId, row.subtask);
-              const ownerLabel = avatar.title || "—";
-              const key = isTask ? row.task.id : row.subtask.id;
-              return (
-                <button
-                  key={key}
-                  onClick={() =>
-                    isTask
-                      ? setEditingId(row.task.id)
-                      : setEditingSubtask({ projectId: row.projectId, milestoneId: row.milestone.id, subtaskId: row.subtask.id })
-                  }
-                  title="Open task details"
-                  style={{
-                    display: "flex", width: "100%", gap: 10, padding: "7px 4px",
-                    borderBottom: "1px solid var(--border)", alignItems: "center", flexWrap: "wrap",
-                    textAlign: "left", cursor: "pointer",
-                  }}
-                >
-                  <div className="row-title-flex" style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
-                    {notesVal && (
-                      <div style={{ fontSize: 11.5, color: "var(--ink-4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
-                        {notesVal}
-                      </div>
-                    )}
-                  </div>
-                  <span style={{ width: 130, flexShrink: 0, fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {milestoneName ?? "—"}
-                  </span>
-                  <span style={{ width: 78, flexShrink: 0 }}>
-                    {dueVal ? <DueChip due={dueVal} done={doneVal} /> : <span style={{ fontSize: 11.5, color: "var(--ink-4)" }}>—</span>}
-                  </span>
-                  <span style={{ width: 120, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
-                    {avatar.ini && <Avatar who={avatar.ini} size={20} color={avatar.color ?? "var(--ink-3)"} />}
-                    <span style={{ fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {ownerLabel}
-                    </span>
-                  </span>
-                  <span style={{ width: 110, flexShrink: 0 }}>
-                    <StateTag task={isTask ? row.task : row.subtask} />
-                  </span>
-                </button>
-              );
-            })}
+            {g.rows.map((row) => renderRow(row))}
             {g.projectId && quickAddOpen.has(g.title) && renderQuickAdd(g.title)}
           </div>
         </div>
@@ -393,6 +404,28 @@ export function Tasks() {
                 {quickAddOpen.has(p.title) && renderQuickAdd(p.title)}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {orphanedTasks.length > 0 && (
+        <div style={{ marginBottom: 22 }}>
+          <div
+            className="section-h"
+            style={{ fontSize: 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", color: "var(--ink)" }}
+          >
+            Orphaned Tasks
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-4)" }}>{orphanedTasks.length}</span>
+          </div>
+          <div className="card" style={{ padding: "6px 10px 8px" }}>
+            <div style={{ display: "flex", gap: 10, padding: "4px 4px 6px", borderBottom: "1px solid var(--border)", marginBottom: 2 }}>
+              <span style={{ flex: 1, ...colHead }}>Task</span>
+              <span style={{ width: 130, flexShrink: 0, ...colHead }}>Milestone</span>
+              <span style={{ width: 78, flexShrink: 0, ...colHead }}>Due</span>
+              <span style={{ width: 120, flexShrink: 0, ...colHead }}>Owner</span>
+              <span style={{ width: 110, flexShrink: 0, ...colHead }}>Status</span>
+            </div>
+            {orphanedTasks.map((row) => renderRow(row))}
           </div>
         </div>
       )}
