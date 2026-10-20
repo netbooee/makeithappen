@@ -1071,6 +1071,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       <span>${esc(label)}</span>${jumpLink(targetId, count)}
     </div>`;
   const registersHtml = `
+    ${businessCaseFilled.length > 0 ? registerRow("Business case fields", "v2-band-businesscase", businessCaseFilled.length) : ""}
     ${registerRow("Status updates", "v2-status-log", statusLogCount)}
     ${registerRow("Team members", "v2-internal-team", teamCount)}
     ${registerRow("External team", "v2-external-team", externalTeamCount)}
@@ -1080,7 +1081,6 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     ${registerRow("Risks logged", "v2-risk-register", risksCount)}
     ${registerRow("Issues logged", "v2-issues", issuesCount)}
     ${registerRow("Resources attached", "v2-resources", resourcesCount)}
-    ${businessCaseFilled.length > 0 ? registerRow("Business case fields", "v2-band-businesscase", businessCaseFilled.length) : ""}
     ${registerNote ? `<div style="font-size:13px;color:${C.n700};margin-top:10px;line-height:1.45">${esc(registerNote)}</div>` : ""}`;
 
   // Business case — a rail register like the others, omitted entirely when no field is filled.
@@ -1117,6 +1117,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
+    businessCaseFilled.length > 0 ? railSection("Business case", businessCaseHtml, { id: "v2-band-businesscase" }) : "",
     railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
     railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
     railSection("External team", externalTeamHtml, { id: "v2-external-team" }),
@@ -1125,8 +1126,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
     railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
     railSection("Issues", issuesHtml, { id: "v2-issues" }),
-    railSection("Resources", resourcesHtml, { id: "v2-resources" }),
-    businessCaseFilled.length > 0 ? railSection("Business case", businessCaseHtml, { marginBottom: 0, id: "v2-band-businesscase" }) : "",
+    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
   ].join("");
 
   const bandG = `
