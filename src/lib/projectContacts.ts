@@ -71,3 +71,21 @@ export function assigneeAvatar(
   if (c) return { ini: c.ini, color: c.color, title: c.name };
   return { ini: who ?? "", title: who };
 }
+
+/** The email on file for an assignee ref, if any. Internal members resolve through their
+ *  Contact record; external team members carry their own `.email`. Stakeholders have no
+ *  email field, so they (and an unlinked `who` string) always resolve to "". */
+export function assigneeEmail(
+  project: Project | null | undefined,
+  contacts: Contact[],
+  assignee: ProjectContactRef | undefined,
+): string {
+  if (!assignee || !project) return "";
+  if (assignee.kind === "internal") {
+    return contacts.find((c) => c.id === assignee.id)?.email ?? "";
+  }
+  if (assignee.kind === "external") {
+    return (project.externalTeam ?? []).find((m) => m.id === assignee.id)?.email ?? "";
+  }
+  return "";
+}

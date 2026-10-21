@@ -1,14 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ListTodo, Trash2, X } from "lucide-react";
+import { Eye, ListTodo, Mail, Pencil, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
-import { DateInput } from "./ui";
+import { DateInput, fmtDue, isOverdue } from "./ui";
+import { MarkdownPreview } from "./MarkdownPreview";
+import { TaskStatusEmailPanel } from "./TaskStatusEmailPanel";
 import type { Task } from "../lib/types";
-import { contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
+import type { TaskEmailInfo } from "../lib/taskStatusEmail";
+import { assigneeAvatar, assigneeEmail, contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
+import { progressStatusLabel } from "../lib/tasks";
 
 export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => void }) {
-  const { data, updateTask, deleteTask } = useStore();
+  const { data, all, updateTask, deleteTask } = useStore();
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [notesPreview, setNotesPreview] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const task = data.tasks.find((t) => t.id === taskId);
 
@@ -24,7 +30,21 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
   const set = (patch: Partial<Task>) => updateTask(task!.id, patch);
   const taskProject = task.project ? data.projects.find((p) => p.title === task!.project) : null;
   const contactPool = projectContactPool(taskProject, data.contacts);
+  const milestone = taskProject && task.milestoneId ? taskProject.milestones.find((m) => m.id === task.milestoneId) : undefined;
   const flow = task.state ?? "normal";
+
+  const ownerAvatar = assigneeAvatar(contactPool, task.assignee, task.who);
+  const ownerLabel = ownerAvatar.title || "Unassigned";
+  const ownerEmail = assigneeEmail(taskProject, data.contacts, task.assignee);
+  const emailInfo: TaskEmailInfo = {
+    taskName: task.text,
+    projectLabel: taskProject ? (milestone ? `${taskProject.title} · ${milestone.title}` : taskProject.title) : "No project",
+    ownerLabel,
+    dueLabel: task.due ? fmtDue(task.due) : "No due date",
+    isLate: Boolean(task.late) || isOverdue(task.due, task.done),
+    progressLabel: progressStatusLabel(task),
+    notes: task.notes ?? "",
+  };
   const setFlow = (f: "normal" | "delegated" | "waiting") => {
     if (f === "normal") set({ state: undefined, to: undefined, waitFor: undefined });
     else if (f === "delegated") set({ state: "delegated", waitFor: undefined, next: false });
@@ -122,15 +142,30 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label className="field-label">Notes</label>
-            <textarea
-              className="input"
-              rows={3}
-              placeholder="Add notes…"
-              value={task.notes ?? ""}
-              onChange={(e) => set({ notes: e.target.value || undefined })}
-              style={{ resize: "vertical", lineHeight: 1.55 }}
-            />
+            <div className="field-label" style={{ display: "flex", alignItems: "center" }}>
+              Notes
+              <button
+                type="button"
+                onClick={() => setNotesPreview((v) => !v)}
+                style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, color: "var(--accent-ink)", fontSize: 11, fontWeight: 550, textTransform: "none", letterSpacing: 0, background: "none", border: "none", cursor: "pointer" }}
+              >
+                {notesPreview ? <><Pencil size={11} /> Edit</> : <><Eye size={11} /> Preview</>}
+              </button>
+            </div>
+            {notesPreview ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "8px 10px", minHeight: 62 }}>
+                <MarkdownPreview text={task.notes ?? ""} />
+              </div>
+            ) : (
+              <textarea
+                className="input"
+                rows={3}
+                placeholder="Add notes… (Markdown supported: **bold**, _italic_, [links](https://…), - lists)"
+                value={task.notes ?? ""}
+                onChange={(e) => set({ notes: e.target.value || undefined })}
+                style={{ resize: "vertical", lineHeight: 1.55 }}
+              />
+            )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -194,10 +229,22 @@ export function TaskEditPanel({ taskId, close }: { taskId: string; close: () => 
             >
               <Trash2 /> Delete
             </button>
+            <button className="btn btn-ghost" onClick={() => setEmailOpen(true)}>
+              <Mail /> Email status
+            </button>
             <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={close}>Done</button>
           </div>
         </div>
       </div>
+
+      {emailOpen && (
+        <TaskStatusEmailPanel
+          info={emailInfo}
+          ownerEmail={ownerEmail}
+          pmEmail={all.user.email}
+          close={() => setEmailOpen(false)}
+        />
+      )}
     </div>,
     document.body,
   );

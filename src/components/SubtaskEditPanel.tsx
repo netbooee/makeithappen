@@ -1,10 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ListTodo, Trash2, X } from "lucide-react";
+import { Eye, ListTodo, Mail, Pencil, Trash2, X } from "lucide-react";
 import { useStore } from "../store/store";
-import { DateInput } from "./ui";
+import { DateInput, fmtDue, isOverdue } from "./ui";
+import { MarkdownPreview } from "./MarkdownPreview";
+import { TaskStatusEmailPanel } from "./TaskStatusEmailPanel";
 import type { Subtask, SubtaskStatus } from "../lib/types";
-import { contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
+import type { TaskEmailInfo } from "../lib/taskStatusEmail";
+import { assigneeAvatar, assigneeEmail, contactLabel, contactRefValue, parseContactRef, projectContactPool } from "../lib/projectContacts";
+import { progressStatusLabel } from "../lib/tasks";
 
 export function SubtaskEditPanel({
   projectId,
@@ -17,8 +21,10 @@ export function SubtaskEditPanel({
   subtaskId: string;
   close: () => void;
 }) {
-  const { data, updateSubtask, deleteSubtask, moveSubtask } = useStore();
+  const { data, all, updateSubtask, deleteSubtask, moveSubtask } = useStore();
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [notesPreview, setNotesPreview] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const proj = data.projects.find((p) => p.id === projectId);
   const mile = proj?.milestones.find((m) => m.id === milestoneId);
@@ -37,6 +43,19 @@ export function SubtaskEditPanel({
   const set = (patch: Partial<Subtask>) => updateSubtask(projectId, milestoneId, subtaskId, patch);
 
   const flow = subtask.state ?? "normal";
+
+  const ownerAvatar = assigneeAvatar(contactPool, subtask.assignee, subtask.who);
+  const ownerLabel = ownerAvatar.title || "Unassigned";
+  const ownerEmail = assigneeEmail(proj, data.contacts, subtask.assignee);
+  const emailInfo: TaskEmailInfo = {
+    taskName: subtask.t,
+    projectLabel: proj ? (mile ? `${proj.title} · ${mile.title}` : proj.title) : "No project",
+    ownerLabel,
+    dueLabel: subtask.due ? fmtDue(subtask.due) : "No due date",
+    isLate: Boolean(subtask.late) || isOverdue(subtask.due, subtask.done),
+    progressLabel: progressStatusLabel(subtask),
+    notes: subtask.notes ?? "",
+  };
 
   const setFlow = (f: "normal" | "delegated" | "waiting") => {
     if (f === "normal") set({ state: undefined, to: undefined, waitFor: undefined });
@@ -124,15 +143,30 @@ export function SubtaskEditPanel({
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label className="field-label">Notes</label>
-            <textarea
-              className="input"
-              rows={3}
-              placeholder="Add notes…"
-              value={subtask.notes ?? ""}
-              onChange={(e) => set({ notes: e.target.value || undefined })}
-              style={{ resize: "vertical", lineHeight: 1.55 }}
-            />
+            <div className="field-label" style={{ display: "flex", alignItems: "center" }}>
+              Notes
+              <button
+                type="button"
+                onClick={() => setNotesPreview((v) => !v)}
+                style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, color: "var(--accent-ink)", fontSize: 11, fontWeight: 550, textTransform: "none", letterSpacing: 0, background: "none", border: "none", cursor: "pointer" }}
+              >
+                {notesPreview ? <><Pencil size={11} /> Edit</> : <><Eye size={11} /> Preview</>}
+              </button>
+            </div>
+            {notesPreview ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "8px 10px", minHeight: 62 }}>
+                <MarkdownPreview text={subtask.notes ?? ""} />
+              </div>
+            ) : (
+              <textarea
+                className="input"
+                rows={3}
+                placeholder="Add notes… (Markdown supported: **bold**, _italic_, [links](https://…), - lists)"
+                value={subtask.notes ?? ""}
+                onChange={(e) => set({ notes: e.target.value || undefined })}
+                style={{ resize: "vertical", lineHeight: 1.55 }}
+              />
+            )}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -232,12 +266,24 @@ export function SubtaskEditPanel({
             >
               <Trash2 /> Delete
             </button>
+            <button className="btn btn-ghost" onClick={() => setEmailOpen(true)}>
+              <Mail /> Email status
+            </button>
             <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={close}>
               Done
             </button>
           </div>
         </div>
       </div>
+
+      {emailOpen && (
+        <TaskStatusEmailPanel
+          info={emailInfo}
+          ownerEmail={ownerEmail}
+          pmEmail={all.user.email}
+          close={() => setEmailOpen(false)}
+        />
+      )}
     </div>,
     document.body,
   );

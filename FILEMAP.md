@@ -74,6 +74,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/components/SearchModal.tsx` | Global search |
 | `src/components/TweaksPanel.tsx` | Settings / preferences panel |
 | `src/components/OnboardingChecklist.tsx` | Dismissible first-run checklist card, shown at the top of the Projects page until dismissed (`localStorage`) |
+| `src/components/TaskStatusEmailPanel.tsx` | "Email status request" side panel — previews the Outlook-safe HTML email built by `taskStatusEmail.ts` and offers Outlook/Gmail deep links plus rich/plain clipboard copy. Opened from `TaskEditPanel`/`SubtaskEditPanel` |
 
 ## Lib
 
@@ -84,10 +85,11 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/exportExecUpdateHtml.ts` | Static HTML export of the Modernist portfolio report shown on the Executive Update page — mirrors its bands (title, metrics, summary poster, project detail, footer), built from the shared `PortfolioSummary` in `portfolioReport.ts` |
 | `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, phase stepper, budget/schedule aggregation, composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
 | `src/lib/claude.ts` | Every AI call: draft/suggest-edits for status updates, agenda notes, and the exec "coming up next" line, draft email, summarize next actions, write the executive narrative, assistant chat, business-case + contact import parsing |
-| `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge |
+| `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge; `progressStatusLabel` — one-string progress status for a Task/Subtask |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
 | `src/lib/constants.ts` | Context lists per workspace |
-| `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution |
+| `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution, assignee email lookup |
 | `src/lib/parseMilestonePaste.ts` | Pure parser: plain-text outline → ordered `{ title, tasks[] }[]` for the paste-milestones feature |
 | `src/lib/manualOrder.ts` | `applyManualOrder` — generic helper that applies a manual id-list reorder (`project.milestoneOrder`, `milestone.subtaskOrder`) on top of a default comparator, falling back to the default entirely when unset. Shared by ProjectDetail, ProjectList, `exportHtml.ts`, and `exportHtmlV2.ts` so manual order stays consistent everywhere |
+| `src/lib/taskStatusEmail.ts` | Builds the Outlook-safe HTML (and matching plain-text block) for a task's "email status request" — a `Provide Status` call-to-action button that drafts a reply back to the project manager. Self-contained, same duplicated-helpers convention as the export files |
