@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SEED } from "../data/seed";
 import { supabase, supabaseConfigured, saveTweaks, loadUserData, saveUserData } from "../lib/supabase";
+import { safeGetItem, safeRemoveItem, safeSetItem } from "../lib/safeStorage";
 import type {
   AppData, Contact, ContactTouch, Milestone, Project, StatusUpdate, Subtask, Task, Tweaks, Workspace, WorkspaceData,
 } from "../lib/types";
@@ -19,7 +20,7 @@ const TWEAK_DEFAULTS: Tweaks = { collapsible: true, defaultState: "active", show
 
 function load<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = safeGetItem(key);
     return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
   } catch {
     return fallback;
@@ -95,10 +96,10 @@ const Ctx = createContext<Store | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [all, setAll] = useState<AppData>(() => migrateAppData(load(DATA_KEY, SEED)));
   const [workspace, setWorkspace] = useState<Workspace>(
-    () => (localStorage.getItem(WS_KEY) as Workspace) || "work",
+    () => (safeGetItem(WS_KEY) as Workspace) || "work",
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
-    () => localStorage.getItem(SIDEBAR_KEY) === "1",
+    () => safeGetItem(SIDEBAR_KEY) === "1",
   );
   const [tweaks, setTweaks] = useState<Tweaks>(() => load(TWEAKS_KEY, TWEAK_DEFAULTS));
   const [dataLoading, setDataLoading] = useState(supabaseConfigured);
@@ -135,11 +136,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.body.setAttribute("data-workspace", workspace);
-    localStorage.setItem(WS_KEY, workspace);
+    safeSetItem(WS_KEY, workspace);
   }, [workspace]);
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? "1" : "0");
+    safeSetItem(SIDEBAR_KEY, sidebarCollapsed ? "1" : "0");
   }, [sidebarCollapsed]);
 
   useEffect(() => {
@@ -147,14 +148,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [tweaks.darkMode]);
 
   useEffect(() => {
-    localStorage.setItem(DATA_KEY, JSON.stringify(all));
+    safeSetItem(DATA_KEY, JSON.stringify(all));
     if (!supabaseConfigured || !initialLoadDone.current) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveUserData(all), 1500);
   }, [all]);
 
   useEffect(() => {
-    localStorage.setItem(TWEAKS_KEY, JSON.stringify(tweaks));
+    safeSetItem(TWEAKS_KEY, JSON.stringify(tweaks));
     saveTweaks(tweaks); // no-op unless Supabase is configured
   }, [tweaks]);
 
@@ -399,7 +400,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
 
       resetDemoData: () => {
-        localStorage.removeItem(DATA_KEY);
+        safeRemoveItem(DATA_KEY);
         setAll(JSON.parse(JSON.stringify(SEED)));
       },
 

@@ -74,6 +74,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/components/SearchModal.tsx` | Global search |
 | `src/components/TweaksPanel.tsx` | Settings / preferences panel |
 | `src/components/OnboardingChecklist.tsx` | Dismissible first-run checklist card, shown at the top of the Projects page until dismissed (`localStorage`) |
+| `src/components/ErrorBoundary.tsx` | Top-level React error boundary — catches any uncaught render error and shows a message + reload button instead of a blank page. Wraps `<App />` in `main.tsx` |
 | `src/components/TaskStatusEmailPanel.tsx` | "Email status request" side panel — previews the Outlook-safe HTML email built by `taskStatusEmail.ts` and offers Outlook/Gmail deep links plus rich/plain clipboard copy. Opened from `TaskEditPanel`/`SubtaskEditPanel` |
 
 ## Lib
@@ -88,6 +89,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge; `progressStatusLabel` — one-string progress status for a Task/Subtask |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
+| `src/lib/safeStorage.ts` | `safeGetItem`/`safeSetItem`/`safeRemoveItem` — localStorage wrappers that swallow a thrown access (Safari Private Browsing, blocked site data) instead of crashing render |
 | `src/lib/constants.ts` | Context lists per workspace |
 | `src/lib/projectContacts.ts` | Per-project contact pool (members + external team + stakeholders) for task assignment: option list, `kind:id` ref encode/parse, initials, avatar resolution, assignee email lookup |
 | `src/lib/parseMilestonePaste.ts` | Pure parser: plain-text outline → ordered `{ title, tasks[] }[]` for the paste-milestones feature |
