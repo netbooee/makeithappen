@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, ChevronRight, Flag, FolderKanban, ListTodo, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { safeGetItem, safeSetItem } from "../lib/safeStorage";
 
 const DISMISSED_KEY = "mih_onboarding_dismissed_v1";
 
@@ -13,12 +14,12 @@ const STEPS: { icon: LucideIcon; label: string; sub: string; path: string }[] = 
 
 export function OnboardingChecklist() {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === "1");
+  const [dismissed, setDismissed] = useState(() => safeGetItem(DISMISSED_KEY) === "1");
 
   if (dismissed) return null;
 
   const dismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, "1");
+    safeSetItem(DISMISSED_KEY, "1");
     setDismissed(true);
   };
 

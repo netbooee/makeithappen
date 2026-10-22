@@ -5,6 +5,7 @@ import { useStore } from "../../store/store";
 import { Bar, ProgressDial, StatusChip, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
 import { ProjectModal } from "./ProjectModal";
 import { applyManualOrder } from "../../lib/manualOrder";
+import { safeGetItem, safeSetItem } from "../../lib/safeStorage";
 import { OnboardingChecklist } from "../../components/OnboardingChecklist";
 import type { Project } from "../../lib/types";
 
@@ -42,15 +43,15 @@ export function ProjectList() {
   const navigate = useNavigate();
   const projects = data.projects;
   const [adding, setAdding] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "table">(() => (localStorage.getItem("projects-view") as "grid" | "table") ?? "grid");
-  const [compact, setCompact] = useState(() => localStorage.getItem("projects-compact") === "1");
+  const [viewMode, setViewMode] = useState<"grid" | "table">(() => (safeGetItem("projects-view") as "grid" | "table") ?? "grid");
+  const [compact, setCompact] = useState(() => safeGetItem("projects-compact") === "1");
   const [sortCol, setSortCol] = useState<string | null>("activity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   // Column widths are one shared, persisted state — the compact toggle only
   // changes padding/truncation, never the widths a user has dragged.
   const [columnWidths, setColumnWidths] = useState<Record<ColKey, number>>(() => {
     try {
-      const raw = localStorage.getItem(COL_WIDTHS_KEY);
+      const raw = safeGetItem(COL_WIDTHS_KEY);
       if (raw) return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) };
     } catch {
       // malformed stored JSON — fall back to defaults
@@ -71,11 +72,7 @@ export function ProjectList() {
     window.removeEventListener("mouseup", handleResizeEnd);
     resizeRef.current = null;
     setColumnWidths((prev) => {
-      try {
-        localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(prev));
-      } catch {
-        // storage unavailable — resize still works for this session
-      }
+      safeSetItem(COL_WIDTHS_KEY, JSON.stringify(prev));
       return prev;
     });
   }, [handleResizeMove]);
@@ -284,20 +281,20 @@ export function ProjectList() {
           <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 7, overflow: "hidden" }}>
             <button
               className="btn"
-              onClick={() => { setViewMode("grid"); localStorage.setItem("projects-view", "grid"); }}
+              onClick={() => { setViewMode("grid"); safeSetItem("projects-view", "grid"); }}
               style={{ borderRadius: 0, border: "none", padding: "6px 10px", background: viewMode === "grid" ? "var(--surface-2)" : "transparent", color: viewMode === "grid" ? "var(--ink)" : "var(--ink-3)" }}
               title="Grid view"
             ><LayoutGrid size={15} /></button>
             <button
               className="btn"
-              onClick={() => { setViewMode("table"); localStorage.setItem("projects-view", "table"); }}
+              onClick={() => { setViewMode("table"); safeSetItem("projects-view", "table"); }}
               style={{ borderRadius: 0, border: "none", borderLeft: "1px solid var(--border)", padding: "6px 10px", background: viewMode === "table" ? "var(--surface-2)" : "transparent", color: viewMode === "table" ? "var(--ink)" : "var(--ink-3)" }}
               title="Table view"
             ><List size={15} /></button>
           </div>
           <button
             className="btn"
-            onClick={() => { const next = !compact; setCompact(next); localStorage.setItem("projects-compact", next ? "1" : "0"); }}
+            onClick={() => { const next = !compact; setCompact(next); safeSetItem("projects-compact", next ? "1" : "0"); }}
             style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "6px 10px", background: compact ? "var(--surface-2)" : "transparent", color: compact ? "var(--ink)" : "var(--ink-3)" }}
             title={`Compact view: ${compact ? "on" : "off"}`}
           ><Rows3 size={15} /></button>

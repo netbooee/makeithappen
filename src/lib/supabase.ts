@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { safeRemoveItem } from "./safeStorage";
 import type { Tweaks } from "./types";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -20,7 +21,7 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   if (!supabase) return;
-  localStorage.removeItem("mih_data_v1"); // clear cached data so next user starts fresh
+  safeRemoveItem("mih_data_v1"); // clear cached data so next user starts fresh
   await supabase.auth.signOut();
 }
 

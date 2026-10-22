@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, ChevronRight, ChevronUp, ChevronDown, Circle, LayoutGrid, Linkedin, Mail, Pencil, Phone, Plus, Search, Table2, Trash2 } from "lucide-react";
 import { useStore } from "../store/store";
 import { Avatar, DateInput } from "../components/ui";
+import { safeGetItem, safeSetItem } from "../lib/safeStorage";
 import type { Contact, ContactTouch, ProjectContactRef, Relationship } from "../lib/types";
 import { CONTACT_COLORS } from "../lib/types";
 
@@ -81,14 +82,14 @@ export function ContactList() {
   const [newCompany, setNewCompany] = useState("");
   const [newRel, setNewRel] = useState<Relationship>("Colleague");
   const [view, setView] = useState<"cards" | "table">(() =>
-    (localStorage.getItem("mih_contacts_view") as "cards" | "table") ?? "cards"
+    (safeGetItem("mih_contacts_view") as "cards" | "table") ?? "cards"
   );
   const [sortCol, setSortCol] = useState<SortCol>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const changeView = (v: "cards" | "table") => {
     setView(v);
-    localStorage.setItem("mih_contacts_view", v);
+    safeSetItem("mih_contacts_view", v);
   };
 
   const toggleSort = (col: SortCol) => {
