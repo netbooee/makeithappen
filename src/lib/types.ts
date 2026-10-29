@@ -198,6 +198,9 @@ export interface Project {
   heroImage?: string;
   clientLogo?: string;
   members?: ProjectMember[];
+  /** contactId of the internal team member tagged as this project's manager — the recipient
+   *  for the per-section "email the PM" pencil links on the status export. */
+  projectManagerContactId?: string;
   externalTeam?: ExternalTeamMember[];
   agendas?: MeetingAgenda[];
   notes?: ProjectNote[];

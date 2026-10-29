@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp,
-  Copy, Download, ExternalLink, Pencil, Plus, Sparkles, Trash2, UserRound, X,
+  Copy, Crown, Download, ExternalLink, Pencil, Plus, Sparkles, Trash2, UserRound, X,
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { Avatar, StateTag, StatusChip, TaskMarker, fmtDue, isOverdue, toDateInputValue, parseTimestamp, riskColor } from "../../components/ui";
@@ -846,10 +846,25 @@ export function ProjectDetail() {
                     </div>
                     <Avatar who={who} size={24} color={contact.color} />
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{contact.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                        {contact.name}
+                        {project.projectManagerContactId === mem.contactId && (
+                          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.04em", color: "var(--accent)" }}>PM</span>
+                        )}
+                      </span>
                       {mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{mem.role}</span>}
                       {contact.company && !mem.role && <span style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{contact.company}</span>}
                     </div>
+                    <button
+                      className="icon-btn"
+                      style={{ width: 24, height: 24, color: project.projectManagerContactId === mem.contactId ? "var(--accent)" : "var(--ink-4)" }}
+                      title={project.projectManagerContactId === mem.contactId ? "Project manager — click to unset" : "Set as project manager"}
+                      onClick={() => updateProject(project.id, {
+                        projectManagerContactId: project.projectManagerContactId === mem.contactId ? undefined : mem.contactId,
+                      })}
+                    >
+                      <Crown size={12} fill={project.projectManagerContactId === mem.contactId ? "currentColor" : "none"} />
+                    </button>
                     <button
                       className="icon-btn"
                       style={{ width: 24, height: 24, color: "var(--ink-4)" }}
@@ -862,6 +877,7 @@ export function ProjectDetail() {
                       style={{ width: 24, height: 24, color: "var(--ink-4)" }}
                       onClick={() => updateProject(project.id, {
                         members: (project.members ?? []).filter((x) => x.contactId !== mem.contactId),
+                        ...(project.projectManagerContactId === mem.contactId ? { projectManagerContactId: undefined } : {}),
                       })}
                     >
                       <X size={13} />
