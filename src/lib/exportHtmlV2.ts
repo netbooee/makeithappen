@@ -331,16 +331,21 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     : undefined;
   const pmEmail = pmContact?.email ?? "";
   const PENCIL_SVG = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
+  const CHECK_SVG = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
   /** Small pencil next to a section header — emails that section's content to the project
-   *  manager to edit and send back. Disabled (grey, no link) with no PM tagged. */
-  const sectionMailLink = (sectionLabel: string, bodyText: string): string => {
+   *  manager to edit and send back. Disabled (grey, no link) with no PM tagged. A bare
+   *  mailto: link does nothing visible when the browser has no mail client registered, so the
+   *  click also copies the body to the clipboard and flashes a checkmark — a visible result
+   *  either way, and a fallback the recipient can paste in by hand if mail never opens. */
+  const sectionMailLink = (sectionLabel: string, bodyText: string, idSuffix: string): string => {
     if (!pmEmail) {
       return `<span title="Tag a project manager on the Internal team to enable this" style="display:inline-flex;margin-left:6px;opacity:.35;vertical-align:middle;color:inherit">${PENCIL_SVG}</span>`;
     }
     const subject = `${project.title} — ${sectionLabel}`;
     const body = `Edit the section below to provide an update to the project manager.\n\n---\n\n${bodyText}`;
     const href = safeHref(`mailto:${pmEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    return `<a href="${href}" title="Email this section to ${esc(pmContact?.name ?? "the project manager")}" style="display:inline-flex;margin-left:6px;vertical-align:middle;color:inherit;text-decoration:none">${PENCIL_SVG}</a>`;
+    const onclick = `try{navigator.clipboard.writeText(${JSON.stringify(body)})}catch(e){}this.innerHTML=${JSON.stringify(CHECK_SVG)};setTimeout(function(a){a.innerHTML=${JSON.stringify(PENCIL_SVG)}},1500,this)`;
+    return `<a id="v2-pencil-${idSuffix}" href="${href}" onclick="${esc(onclick)}" title="Email this section to ${esc(pmContact?.name ?? "the project manager")} (also copies the text)" style="display:inline-flex;margin-left:6px;vertical-align:middle;color:inherit;text-decoration:none">${PENCIL_SVG}</a>`;
   };
 
   /* ── Band A — Header bar ──────────────────────────────────────────────────────────────────── */
@@ -370,7 +375,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const daysRemain = daysRemaining(project.due);
 
   const descHtml = project.desc
-    ? `<p style="font-size:21px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}${sectionMailLink("Project description", project.desc)}</p>`
+    ? `<p style="font-size:21px;line-height:1.45;max-width:56ch;margin:0">${esc(project.desc)}${sectionMailLink("Project description", project.desc, "desc")}</p>`
     : "";
   const businessCaseLinkHtml = businessCaseFilled.length === 0
     ? ""
@@ -546,7 +551,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
     <div class="v2-2col v2-band-d" style="grid-template-columns:${hasDecisionContent ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
       <div>
-        <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}${sectionMailLink("Executive update", execUpdate.text)}</div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}${sectionMailLink("Executive update", execUpdate.text, "exec")}</div>
         <p class="v2-poster-stmt" style="font-family:${FONT};font-weight:800;font-size:34px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:46ch">${esc(execUpdate.text)}</p>
       </div>
       ${hasDecisionContent ? `
@@ -610,7 +615,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       ${seeMoreBtn}`;
   }
   const leftHtml = leftText
-    ? `<div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Coming up next${sectionMailLink("Coming up next", leftText)}</div>
+    ? `<div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:12px">Coming up next${sectionMailLink("Coming up next", leftText, "next")}</div>
        <p style="font-size:17px;line-height:1.5;margin:0;max-width:62ch">${esc(leftText)}</p>`
     : "";
 
