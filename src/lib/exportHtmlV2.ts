@@ -342,8 +342,23 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       return `<span title="Tag a project manager on the Internal team to enable this" style="display:inline-flex;margin-left:6px;opacity:.35;vertical-align:middle;color:inherit">${PENCIL_SVG}</span>`;
     }
     const subject = `${project.title} — ${sectionLabel}`;
-    const body = `Edit the section below to provide an update to the project manager.\n\n---\n\n${bodyText}`;
-    const href = safeHref(`mailto:${pmEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    const intro = "Edit the section below to provide an update to the project manager.\n\n---\n\n";
+    const body = `${intro}${bodyText}`;
+    const mailtoFor = (text: string) =>
+      `mailto:${pmEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    // Windows (and so Outlook Classic) silently drops mailto: URLs past ~2,000 characters, so a
+    // long section is trimmed in the email body; the clipboard copy below always gets it all.
+    const MAX_MAILTO = 1900;
+    let mailto = mailtoFor(body);
+    if (mailto.length > MAX_MAILTO) {
+      const note = "\n\n…(trimmed — the full section was copied to your clipboard; paste it here)";
+      let keep = bodyText.length;
+      while (keep > 0 && mailto.length > MAX_MAILTO) {
+        keep = Math.floor(keep * 0.85);
+        mailto = mailtoFor(`${intro}${bodyText.slice(0, keep)}${note}`);
+      }
+    }
+    const href = safeHref(mailto);
     const onclick = `try{navigator.clipboard.writeText(${JSON.stringify(body)})}catch(e){}this.innerHTML=${JSON.stringify(CHECK_SVG)};setTimeout(function(a){a.innerHTML=${JSON.stringify(PENCIL_SVG)}},1500,this)`;
     return `<a id="v2-pencil-${idSuffix}" href="${href}" onclick="${esc(onclick)}" title="Email this section to ${esc(pmContact?.name ?? "the project manager")} (also copies the text)" style="display:inline-flex;margin-left:6px;vertical-align:middle;color:inherit;text-decoration:none">${PENCIL_SVG}</a>`;
   };
@@ -1139,6 +1154,26 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       " style="font-family:${FONT};font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border:1px solid ${C.divider};cursor:pointer;flex-shrink:0">Expand all</button>
     </div>`;
 
+  // Plain-text versions of each rail register, for the "email the PM" pencil in its header.
+  const textOrNone = (lines: string[]) => (lines.length ? lines.join("\n") : "(None yet)");
+  const statusLogText = textOrNone(project.updates.map((u) => `- ${u.when} [${u.type ?? "update"}]: ${u.text}`));
+  const teamText = textOrNone(members.flatMap((mem) => {
+    const c = contacts.find((x) => x.id === mem.contactId);
+    return c ? [`- ${c.name}${mem.role ? ` — ${mem.role}` : ""}`] : [];
+  }));
+  const externalTeamText = textOrNone(externalTeam.map((m) =>
+    `- ${m.name}${m.company ? ` (${m.company})` : ""}${m.role ? ` — ${m.role}` : ""}`));
+  const stakeholdersText = textOrNone(stakeholders.map((s) => `- ${s.name}${s.role ? ` — ${s.role}` : ""}`));
+  const meetingsText = textOrNone(sortedAgendas.map((ag) =>
+    `- ${ag.title}${ag.date ? ` (${ag.date})` : ""}${ag.items.length ? `\n${ag.items.map((it) => `    • ${it.text}`).join("\n")}` : ""}`));
+  const decisionsText = textOrNone(decisions.map((d) =>
+    `- ${d.title} [${DECISION_STATUS_LABEL[d.status]}${d.owner ? `, ${d.owner}` : ""}${d.decidedDate ? `, ${d.decidedDate}` : ""}]${d.description ? `\n    ${d.description}` : ""}`));
+  const risksText = textOrNone(risks.map((r) =>
+    `- ${r.description} [${SEV_MATRIX[r.probability]?.[r.impact] ?? "low"}, ${r.status}${r.owner ? `, ${r.owner}` : ""}]${r.mitigation ? `\n    Mitigation: ${r.mitigation}` : ""}`));
+  const issuesText = textOrNone(issues.map((iss) =>
+    `- ${iss.title} [${iss.severity}, ${iss.status}${iss.owner ? `, ${iss.owner}` : ""}]${iss.description ? `\n    ${iss.description}` : ""}${iss.resolution ? `\n    Resolution: ${iss.resolution}` : ""}`));
+  const resourcesText = textOrNone(resourcesList.map((r) => `- ${r.label}: ${r.url}`));
+
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
     businessCaseFilled.length > 0
@@ -1151,15 +1186,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
           ),
         })
       : "",
-    railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
-    railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
-    railSection("External team", externalTeamHtml, { id: "v2-external-team" }),
-    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders" }),
-    railSection("Meetings", meetingsHtml, { id: "v2-meetings" }),
-    railSection("Decisions", decisionsHtml, { id: "v2-decisions" }),
-    railSection("Risk register", risksHtml, { id: "v2-risk-register" }),
-    railSection("Issues", issuesHtml, { id: "v2-issues" }),
-    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources" }),
+    railSection("Status log", statusLogHtml, { id: "v2-status-log", headerExtra: sectionMailLink("Status log", statusLogText, "statuslog") }),
+    railSection("Internal team", teamHtml, { id: "v2-internal-team", headerExtra: sectionMailLink("Internal team", teamText, "team") }),
+    railSection("External team", externalTeamHtml, { id: "v2-external-team", headerExtra: sectionMailLink("External team", externalTeamText, "extteam") }),
+    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders", headerExtra: sectionMailLink("Stakeholders", stakeholdersText, "stakeholders") }),
+    railSection("Meetings", meetingsHtml, { id: "v2-meetings", headerExtra: sectionMailLink("Meetings", meetingsText, "meetings") }),
+    railSection("Decisions", decisionsHtml, { id: "v2-decisions", headerExtra: sectionMailLink("Decisions", decisionsText, "decisions") }),
+    railSection("Risk register", risksHtml, { id: "v2-risk-register", headerExtra: sectionMailLink("Risk register", risksText, "risks") }),
+    railSection("Issues", issuesHtml, { id: "v2-issues", headerExtra: sectionMailLink("Issues", issuesText, "issues") }),
+    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources", headerExtra: sectionMailLink("Resources", resourcesText, "resources") }),
   ].join("");
 
   const bandG = `
