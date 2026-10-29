@@ -1116,12 +1116,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
    *  (same font/style/underline, plus a background tint) so sections don't blend together. */
-  const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string } = {}) => {
-    const { marginBottom = 28, defaultOpen = false, id } = opts;
+  const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string; headerExtra?: string } = {}) => {
+    const { marginBottom = 28, defaultOpen = false, id, headerExtra = "" } = opts;
     return `
       <details data-v2-rail${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
         <summary style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">
-          <span>${esc(label)}</span>
+          <span style="display:inline-flex;align-items:center">${esc(label)}${headerExtra}</span>
           <span class="v2-rail-chev">&#9656;</span>
         </summary>
         ${body}
@@ -1141,7 +1141,16 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
-    businessCaseFilled.length > 0 ? railSection("Business case", businessCaseHtml, { id: "v2-band-businesscase" }) : "",
+    businessCaseFilled.length > 0
+      ? railSection("Business case", businessCaseHtml, {
+          id: "v2-band-businesscase",
+          headerExtra: sectionMailLink(
+            "Business case",
+            businessCaseFilled.map(([label, value]) => `${label}:\n${value!.trim()}`).join("\n\n"),
+            "bizcase",
+          ),
+        })
+      : "",
     railSection("Status log", statusLogHtml, { id: "v2-status-log" }),
     railSection("Internal team", teamHtml, { id: "v2-internal-team" }),
     railSection("External team", externalTeamHtml, { id: "v2-external-team" }),
