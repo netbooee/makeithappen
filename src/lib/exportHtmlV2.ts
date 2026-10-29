@@ -337,9 +337,12 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
    *  mailto: link does nothing visible when the browser has no mail client registered, so the
    *  click also copies the body to the clipboard and flashes a checkmark — a visible result
    *  either way, and a fallback the recipient can paste in by hand if mail never opens. */
-  const sectionMailLink = (sectionLabel: string, bodyText: string, idSuffix: string): string => {
+  const sectionMailLink = (sectionLabel: string, bodyText: string, idSuffix: string, linkText?: string): string => {
+    // linkText renders a labelled link (used inside the collapsible rail sections, where a bare
+    // icon in the <summary> would have its click swallowed by the expand/collapse toggle).
+    const textStyle = "gap:5px;margin-left:0;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase";
     if (!pmEmail) {
-      return `<span title="Tag a project manager on the Internal team to enable this" style="display:inline-flex;margin-left:6px;opacity:.35;vertical-align:middle;color:inherit">${PENCIL_SVG}</span>`;
+      return `<span title="Tag a project manager on the Internal team to enable this" style="display:inline-flex;align-items:center;margin-left:6px;opacity:.35;vertical-align:middle;color:inherit${linkText ? `;${textStyle}` : ""}"><span>${PENCIL_SVG}</span>${linkText ? `<span>${esc(linkText)} — tag a PM first</span>` : ""}</span>`;
     }
     const subject = `${project.title} — ${sectionLabel}`;
     const intro = "Edit the section below to provide an update to the project manager.\n\n---\n\n";
@@ -359,8 +362,8 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
       }
     }
     const href = safeHref(mailto);
-    const onclick = `try{navigator.clipboard.writeText(${JSON.stringify(body)})}catch(e){}this.innerHTML=${JSON.stringify(CHECK_SVG)};setTimeout(function(a){a.innerHTML=${JSON.stringify(PENCIL_SVG)}},1500,this)`;
-    return `<a id="v2-pencil-${idSuffix}" href="${href}" onclick="${esc(onclick)}" title="Email this section to ${esc(pmContact?.name ?? "the project manager")} (also copies the text)" style="display:inline-flex;margin-left:6px;vertical-align:middle;color:inherit;text-decoration:none">${PENCIL_SVG}</a>`;
+    const onclick = `try{navigator.clipboard.writeText(${JSON.stringify(body)})}catch(e){}var i=this.firstChild;i.innerHTML=${JSON.stringify(CHECK_SVG)};setTimeout(function(){i.innerHTML=${JSON.stringify(PENCIL_SVG)}},1500)`;
+    return `<a id="v2-pencil-${idSuffix}" href="${href}" onclick="${esc(onclick)}" title="Email this section to ${esc(pmContact?.name ?? "the project manager")} (also copies the text)" style="display:inline-flex;align-items:center;margin-left:6px;vertical-align:middle;color:inherit;text-decoration:none${linkText ? `;${textStyle};color:${C.accent700}` : ""}"><span>${PENCIL_SVG}</span>${linkText ? `<span>${esc(linkText)}</span>` : ""}</a>`;
   };
 
   /* ── Band A — Header bar ──────────────────────────────────────────────────────────────────── */
@@ -1131,14 +1134,15 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   /** Whole-section accordion — the label is the toggle, shaded like the milestone headers
    *  (same font/style/underline, plus a background tint) so sections don't blend together. */
-  const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string; headerExtra?: string } = {}) => {
-    const { marginBottom = 28, defaultOpen = false, id, headerExtra = "" } = opts;
+  const railSection = (label: string, body: string, opts: { marginBottom?: number; defaultOpen?: boolean; id?: string; mailLink?: string } = {}) => {
+    const { marginBottom = 28, defaultOpen = false, id, mailLink = "" } = opts;
     return `
       <details data-v2-rail${defaultOpen ? " open" : ""}${id ? ` id="${id}"` : ""} style="margin-bottom:${marginBottom}px">
         <summary style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};background:${C.n200};border-bottom:2px solid ${C.divider};padding:8px 10px;margin-bottom:12px">
-          <span style="display:inline-flex;align-items:center">${esc(label)}${headerExtra}</span>
+          <span>${esc(label)}</span>
           <span class="v2-rail-chev">&#9656;</span>
         </summary>
+        ${mailLink ? `<div style="margin-bottom:12px">${mailLink}</div>` : ""}
         ${body}
       </details>`;
   };
@@ -1174,27 +1178,29 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     `- ${iss.title} [${iss.severity}, ${iss.status}${iss.owner ? `, ${iss.owner}` : ""}]${iss.description ? `\n    ${iss.description}` : ""}${iss.resolution ? `\n    Resolution: ${iss.resolution}` : ""}`));
   const resourcesText = textOrNone(resourcesList.map((r) => `- ${r.label}: ${r.url}`));
 
+  const RAIL_MAIL_TEXT = "Email this section to the PM";
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
     businessCaseFilled.length > 0
       ? railSection("Business case", businessCaseHtml, {
           id: "v2-band-businesscase",
-          headerExtra: sectionMailLink(
+          mailLink: sectionMailLink(
             "Business case",
             businessCaseFilled.map(([label, value]) => `${label}:\n${value!.trim()}`).join("\n\n"),
             "bizcase",
+            RAIL_MAIL_TEXT,
           ),
         })
       : "",
-    railSection("Status log", statusLogHtml, { id: "v2-status-log", headerExtra: sectionMailLink("Status log", statusLogText, "statuslog") }),
-    railSection("Internal team", teamHtml, { id: "v2-internal-team", headerExtra: sectionMailLink("Internal team", teamText, "team") }),
-    railSection("External team", externalTeamHtml, { id: "v2-external-team", headerExtra: sectionMailLink("External team", externalTeamText, "extteam") }),
-    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders", headerExtra: sectionMailLink("Stakeholders", stakeholdersText, "stakeholders") }),
-    railSection("Meetings", meetingsHtml, { id: "v2-meetings", headerExtra: sectionMailLink("Meetings", meetingsText, "meetings") }),
-    railSection("Decisions", decisionsHtml, { id: "v2-decisions", headerExtra: sectionMailLink("Decisions", decisionsText, "decisions") }),
-    railSection("Risk register", risksHtml, { id: "v2-risk-register", headerExtra: sectionMailLink("Risk register", risksText, "risks") }),
-    railSection("Issues", issuesHtml, { id: "v2-issues", headerExtra: sectionMailLink("Issues", issuesText, "issues") }),
-    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources", headerExtra: sectionMailLink("Resources", resourcesText, "resources") }),
+    railSection("Status log", statusLogHtml, { id: "v2-status-log", mailLink: sectionMailLink("Status log", statusLogText, "statuslog", RAIL_MAIL_TEXT) }),
+    railSection("Internal team", teamHtml, { id: "v2-internal-team", mailLink: sectionMailLink("Internal team", teamText, "team", RAIL_MAIL_TEXT) }),
+    railSection("External team", externalTeamHtml, { id: "v2-external-team", mailLink: sectionMailLink("External team", externalTeamText, "extteam", RAIL_MAIL_TEXT) }),
+    railSection("Stakeholders", stakeholdersHtml, { id: "v2-stakeholders", mailLink: sectionMailLink("Stakeholders", stakeholdersText, "stakeholders", RAIL_MAIL_TEXT) }),
+    railSection("Meetings", meetingsHtml, { id: "v2-meetings", mailLink: sectionMailLink("Meetings", meetingsText, "meetings", RAIL_MAIL_TEXT) }),
+    railSection("Decisions", decisionsHtml, { id: "v2-decisions", mailLink: sectionMailLink("Decisions", decisionsText, "decisions", RAIL_MAIL_TEXT) }),
+    railSection("Risk register", risksHtml, { id: "v2-risk-register", mailLink: sectionMailLink("Risk register", risksText, "risks", RAIL_MAIL_TEXT) }),
+    railSection("Issues", issuesHtml, { id: "v2-issues", mailLink: sectionMailLink("Issues", issuesText, "issues", RAIL_MAIL_TEXT) }),
+    railSection("Resources", resourcesHtml, { marginBottom: 0, id: "v2-resources", mailLink: sectionMailLink("Resources", resourcesText, "resources", RAIL_MAIL_TEXT) }),
   ].join("");
 
   const bandG = `
