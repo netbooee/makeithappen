@@ -1178,7 +1178,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
     `- ${iss.title} [${iss.severity}, ${iss.status}${iss.owner ? `, ${iss.owner}` : ""}]${iss.description ? `\n    ${iss.description}` : ""}${iss.resolution ? `\n    Resolution: ${iss.resolution}` : ""}`));
   const resourcesText = textOrNone(resourcesList.map((r) => `- ${r.label}: ${r.url}`));
 
-  const RAIL_MAIL_TEXT = "Email this section to the PM";
+  const RAIL_MAIL_TEXT = "Send the PM any changes";
   const detailRight = railToggleAll + [
     railSection("Open registers", registersHtml, { defaultOpen: true }),
     businessCaseFilled.length > 0
