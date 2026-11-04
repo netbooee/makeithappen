@@ -338,16 +338,16 @@ export async function generateNextActionsSummary(
   const updateLine = latestExecutiveUpdate
     ? `${latestExecutiveUpdate.when}: ${latestExecutiveUpdate.text}`
     : "None yet.";
-  const system = `You write short, plain-text summaries for a busy PM that combine an executive status update with a project's next action items. 1-3 sentences max, no headers, no bullet lists, no greeting or sign-off. Output only the summary text.`;
+  const system = `You write a short, plain-text "Coming up next" paragraph for a busy PM. It describes the project's upcoming tasks — what each next action is, what it involves, and where it sits in the project — and nothing else. The latest executive update is shown separately right beside your text, so do not restate, summarize, or paraphrase it; use it only as background so you do not repeat it. 1-3 sentences max, no headers, no bullet lists, no greeting or sign-off. Never invent facts, dates, or names. Output only the paragraph.`;
   const prompt = `Project: "${project.title}"
 
-Most recent executive update:
-${updateLine}
-
-Next action items:
+Next action items (the subject of your paragraph):
 ${itemLines}
 
-Write a short summary that combines the most recent executive update with these next action items. Output only the summary text, no preamble.`;
+Most recent executive update (background only — already shown to the reader; do not repeat it):
+${updateLine}
+
+Write the "Coming up next" paragraph describing these upcoming tasks. Focus on the work ahead, not on what the executive update already says. Output only the paragraph, no preamble.`;
   try {
     return await callClaude(system, [{ role: "user", content: prompt }]);
   } catch {
@@ -458,7 +458,7 @@ export async function generateExecNarrative(
 
   const system = `You write the per-project prose an executive reads in a weekly portfolio roll-up. Output exactly two lines, in this order and with these exact labels:
 
-NEXT: a forward-looking paragraph, 2-4 sentences, about what happens next — the upcoming milestones and the next actions standing in the way of them. Look forward only; do not recap what has already happened. If any high-risk items are listed, prioritize mentioning them and how they bear on what's coming next.
+NEXT: a forward-looking paragraph, 2-4 sentences, describing the upcoming work — the specific next actions and the upcoming milestones they lead to. Look forward only; do not recap what has already happened, and do not restate or paraphrase the executive update (it is shown separately, and the SINCE line covers it). If any high-risk items are listed, prioritize mentioning them and how they bear on what's coming next.
 SINCE: exactly one sentence compressing the most recent executive update into what changed since it was written. Write "SINCE: none" if there is no executive update. Do not start it with "Since last update".
 
 Plain text only. No headers, bullets, greeting, or sign-off. Never invent facts, dates, names, or numbers beyond what you are given. Do not repeat the project name, RAG colour, percentage, due date, or budget — those already appear beside your text.`;
