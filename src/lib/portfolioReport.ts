@@ -68,8 +68,27 @@ export const PHASE_STATUS_COLOR: Record<Status, string> = {
 const RAG_SEVERITY: Record<Rag, number> = { green: 0, amber: 1, red: 2 };
 const RAG_ORDER: Rag[] = ["green", "amber", "red"];
 
-function worstRag(a: Rag, b: Rag): Rag {
-  return RAG_SEVERITY[b] > RAG_SEVERITY[a] ? b : a;
+/** Plain-English statement of how overall portfolio health is rated — shown as a tooltip. */
+export const PORTFOLIO_HEALTH_RULE =
+  "Red when a third or more of projects are red, or any Tier 1 project is red. " +
+  "Amber when any project is red, or a third or more are amber or red. Otherwise green.";
+
+/** Overall portfolio RAG — proportional rather than worst-of, so one red project doesn't paint the
+ *  whole portfolio red, except a Tier 1 project, which always counts in full. See PORTFOLIO_HEALTH_RULE. */
+function portfolioHealth(rows: PortfolioRow[]): Rag {
+  const n = rows.length;
+  if (n === 0) return "green";
+  const red = rows.filter((r) => r.rag === "red");
+  const flagged = rows.filter((r) => r.rag !== "green").length;
+  if (red.length * 3 >= n || red.some((r) => r.project.tier === "1")) return "red";
+  if (red.length > 0 || flagged * 3 >= n) return "amber";
+  return "green";
+}
+
+/** Names for a health sentence — first three, then "and N more". */
+function shortNames(rows: PortfolioRow[]): string {
+  const names = rows.map((r) => r.project.title);
+  return names.length <= 3 ? joinNames(names) : `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`;
 }
 
 function joinNames(names: string[]): string {
@@ -138,6 +157,8 @@ export interface PortfolioSummary {
   totalProjects: number;
   needsAttention: number;
   portfolioRag: Rag;
+  /** How many projects sit at each RAG — shown under the portfolio health colour. */
+  ragCounts: Record<Rag, number>;
   pct: number;
   doneTasks: number;
   totalTasks: number;
@@ -226,7 +247,7 @@ export function buildPortfolioReport(
 
   if (rows.length === 0) {
     return {
-      rows: [], totalProjects: 0, needsAttention: 0, portfolioRag: "green", pct: 0,
+      rows: [], totalProjects: 0, needsAttention: 0, ragCounts: { green: 0, amber: 0, red: 0 }, portfolioRag: "green", pct: 0,
       doneTasks: 0, totalTasks: 0, phasesOpen: 0, onDateCount: 0,
       categoryCounts: {
         timeline: { green: 0, amber: 0, red: 0 },
@@ -242,8 +263,9 @@ export function buildPortfolioReport(
     };
   }
 
-  const portfolioRag = rows.reduce<Rag>((acc, r) => worstRag(acc, r.rag), "green");
+  const portfolioRag = portfolioHealth(rows);
   const needsAttention = rows.filter((r) => r.rag !== "green").length;
+  const ragCounts = tally(rows.map((r) => r.rag));
   const doneTasks = rows.reduce((a, r) => a + r.done, 0);
   const totalTasks = rows.reduce((a, r) => a + r.total, 0);
   const pct = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
@@ -291,11 +313,30 @@ export function buildPortfolioReport(
         : "",
   ].filter(Boolean).join(" ");
 
-  const healthNote = redRows.length
-    ? `${joinNames(redRows.map((r) => r.project.title))} ${redRows.length === 1 ? "holds" : "hold"} the portfolio at red.`
-    : amberRows.length
-      ? `${joinNames(amberRows.map((r) => r.project.title))} ${amberRows.length === 1 ? "holds" : "hold"} the portfolio off green.`
-      : "All projects are green.";
+  // Explains *why* the portfolio landed on its colour, not just which project is worst.
+  const n = rows.length;
+  const isAre = (k: number) => (k === 1 ? "is" : "are");
+  const needs = (k: number) => (k === 1 ? "needs" : "need");
+  const tier1Red = redRows.filter((r) => r.project.tier === "1");
+  const restClause = (() => {
+    const parts = [
+      amberRows.length ? `${amberRows.length} ${needs(amberRows.length)} attention` : "",
+      greenRows.length ? `${greenRows.length} ${isAre(greenRows.length)} on track` : "",
+    ].filter(Boolean);
+    return parts.length ? ` ${parts.join("; ")}.` : "";
+  })();
+  const healthNote =
+    portfolioRag === "red" && tier1Red.length
+      ? `${shortNames(tier1Red)} ${isAre(tier1Red.length)} Tier 1 and red, which holds the portfolio at red.${redRows.length > tier1Red.length ? ` ${redRows.length} of ${n} projects are red in total.` : ""}${restClause}`
+      : portfolioRag === "red"
+        ? `${redRows.length} of ${n} project${n === 1 ? "" : "s"} ${isAre(redRows.length)} red (${shortNames(redRows)})${n >= 3 ? ", a third or more of the portfolio" : ""}.${restClause}`
+        : portfolioRag === "amber" && redRows.length
+          ? `${redRows.length} of ${n} project${n === 1 ? "" : "s"} ${isAre(redRows.length)} red (${shortNames(redRows)}).${restClause} No Tier 1 project is red.`
+          : portfolioRag === "amber"
+            ? `${amberRows.length} of ${n} project${n === 1 ? "" : "s"} ${needs(amberRows.length)} attention (${shortNames(amberRows)})${n >= 3 ? ", a third or more of the portfolio" : ""}.${greenRows.length ? ` ${greenRows.length} ${isAre(greenRows.length)} on track.` : ""}`
+            : amberRows.length
+              ? `${amberRows.length} of ${n} project${n === 1 ? "" : "s"} ${needs(amberRows.length)} attention (${shortNames(amberRows)}); the rest are on track.`
+              : `All ${n} project${n === 1 ? " is" : "s are"} on track.`;
 
   const catLabels: Record<"timeline" | "budget" | "resourcing", string> = { timeline: "Timeline", budget: "Budget", resourcing: "Resourcing" };
   const catEntries = (Object.keys(categoryCounts) as (keyof typeof categoryCounts)[])
@@ -312,7 +353,7 @@ export function buildPortfolioReport(
     : "All projects are tracking to their gates.";
 
   const worstRow = [...rows].sort((a, b) => RAG_SEVERITY[b.rag] - RAG_SEVERITY[a.rag])[0];
-  const composedSummary = portfolioRag === "green"
+  const composedSummary = needsAttention === 0
     ? `All ${rows.length} project${rows.length === 1 ? "" : "s"} ${rows.length === 1 ? "is" : "are"} on track.`
     : (() => {
         const cats: [Rag, string][] = [
@@ -324,7 +365,7 @@ export function buildPortfolioReport(
       })();
 
   return {
-    rows, totalProjects: rows.length, needsAttention, portfolioRag, pct,
+    rows, totalProjects: rows.length, needsAttention, ragCounts, portfolioRag, pct,
     doneTasks, totalTasks, phasesOpen, onDateCount, categoryCounts,
     approvedTotal, spentTotal, drawnPct,
     nextMilestone,
