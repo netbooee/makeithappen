@@ -539,11 +539,12 @@ export function ExecutiveUpdate() {
                   const entry = entriesById.get(row.project.id);
                   const isEditing = editing === row.project.id;
                   const isBusy = busy === row.project.id;
+                  // Each note takes the text colour of the RAG rating it explains.
                   const subNotes = (
                     [
-                      ["Risk", row.project.riskNote],
-                      ["Timeline", row.project.timelineNote],
-                    ] as [string, string | undefined][]
+                      ["Risk", row.project.riskNote, row.rag],
+                      ["Timeline", row.project.timelineNote, row.timeline],
+                    ] as [string, string | undefined, Rag][]
                   ).filter(([, note]) => note?.trim());
                   const isEditingBudgetNote = editingBudgetNote === row.project.id;
                   const isEditingExecUpdate = editingExecUpdate === row.project.id;
@@ -722,10 +723,10 @@ export function ExecutiveUpdate() {
                             )}
                           </div>
                           <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                            {subNotes.map(([label, note]) => (
+                            {subNotes.map(([label, note, rag]) => (
                               <div key={label}>
                                 <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700, marginBottom: 2 }}>{label} note</div>
-                                <div style={{ fontSize: 13, lineHeight: 1.45, color: N800 }}>{note}</div>
+                                <div style={{ fontSize: 13, lineHeight: 1.45, color: RAG[rag].text }}>{note}</div>
                               </div>
                             ))}
                             <div>
@@ -758,7 +759,7 @@ export function ExecutiveUpdate() {
                               ) : (
                                 <div
                                   onClick={() => startEditBudgetNote(row.project)}
-                                  style={{ fontSize: 13, lineHeight: 1.45, color: row.project.budgetNote ? N800 : N600, fontStyle: row.project.budgetNote ? "normal" : "italic", cursor: "pointer" }}
+                                  style={{ fontSize: 13, lineHeight: 1.45, color: row.project.budgetNote ? RAG[row.budget].text : N600, fontStyle: row.project.budgetNote ? "normal" : "italic", cursor: "pointer" }}
                                 >
                                   {row.project.budgetNote || "No budget note — click to add one."}
                                 </div>
