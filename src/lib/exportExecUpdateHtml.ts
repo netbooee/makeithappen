@@ -7,7 +7,7 @@
  * portfolioReport.ts rather than recomputing it, per this codebase's precedent of importing
  * shared pure-logic modules into export files (see exportHtmlV2.ts).
  */
-import { formatMoneyShort, NEXT_TAG_STYLE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
+import { formatMoneyShort, NEXT_TAG_STYLE, PORTFOLIO_HEALTH_RULE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
 import { safeHref } from "./safeUrl";
 import { PROJECT_TYPE_LABEL } from "../components/ui";
 
@@ -134,13 +134,13 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
   const bandC = `
   <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid ${C.divider}">
     <div style="padding:20px 32px 22px">
-      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Portfolio health</div>
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px;cursor:help" title="${esc(PORTFOLIO_HEALTH_RULE)}">Portfolio health <span style="text-transform:none;font-size:11px">ⓘ</span></div>
       <div style="display:flex;align-items:center;gap:9px">
         ${ragChip(report.portfolioRag)}
         <span style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${RAG_NAME[report.portfolioRag]}</span>
         <span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${RAG[report.portfolioRag].label}</span>
       </div>
-      <div style="font-size:13px;color:${C.n700};margin-top:4px">${report.totalProjects - report.needsAttention} of ${report.totalProjects} project${report.totalProjects === 1 ? "" : "s"} on track</div>
+      <div style="display:flex;align-items:center;gap:12px;font-size:13px;color:${C.n700};margin-top:4px">${RAG_ORDER.map((k) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;background:${RAG[k].swatch};display:block"></span>${report.ragCounts[k]} ${k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}</span>`).join("")}</div>
       <div style="display:flex;gap:2px;margin-top:12px">${ragScale}</div>
       <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">${ragScaleLabels}</div>
       <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.healthNote)}</p>

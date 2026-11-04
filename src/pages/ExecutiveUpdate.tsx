@@ -8,7 +8,7 @@ import type { Project, ProjectContactRef, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
 import { generateExecNarrative, localExecNext, localExecSince, suggestExecNextEdits, suggestStatusUpdateEdits } from "../lib/claude";
 import { safeHref } from "../lib/safeUrl";
-import { buildPortfolioReport, formatMoneyShort, nextActionMeta, NEXT_TAG_STYLE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type Rag } from "../lib/portfolioReport";
+import { buildPortfolioReport, formatMoneyShort, nextActionMeta, NEXT_TAG_STYLE, PORTFOLIO_HEALTH_RULE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type Rag } from "../lib/portfolioReport";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
 /* ================= Executive update — data layer ================= */
@@ -445,14 +445,19 @@ export function ExecutiveUpdate() {
           {/* Band C — Portfolio metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderBottom: `2px solid ${DIVIDER}` }}>
             <div style={{ padding: "20px 32px 22px" }}>
-              <div style={{ ...kicker, marginBottom: 8 }}>Portfolio health</div>
+              <div style={{ ...kicker, marginBottom: 8, cursor: "help" }} title={PORTFOLIO_HEALTH_RULE}>Portfolio health <span style={{ textTransform: "none", fontSize: 11 }}>ⓘ</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <RagChip rag={report.portfolioRag} />
                 <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{RAG_NAME[report.portfolioRag]}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>{RAG[report.portfolioRag].label}</span>
               </div>
-              <div style={{ fontSize: 13, color: N700, marginTop: 4 }}>
-                {report.totalProjects - report.needsAttention} of {report.totalProjects} project{report.totalProjects === 1 ? "" : "s"} on track
+              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: N700, marginTop: 4 }}>
+                {RAG_ORDER.map((k) => (
+                  <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ width: 9, height: 9, background: RAG[k].swatch, display: "block" }} />
+                    {report.ragCounts[k]} {k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}
+                  </span>
+                ))}
               </div>
               <RagScale active={report.portfolioRag} />
               <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.healthNote}</p>
