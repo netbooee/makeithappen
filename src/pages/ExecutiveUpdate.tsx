@@ -8,7 +8,7 @@ import type { Project, ProjectContactRef, StatusUpdate } from "../lib/types";
 import { exportExecUpdateHtml } from "../lib/exportExecUpdateHtml";
 import { generateExecNarrative, localExecNext, localExecSince, suggestExecNextEdits, suggestStatusUpdateEdits } from "../lib/claude";
 import { safeHref } from "../lib/safeUrl";
-import { buildPortfolioReport, formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type Rag } from "../lib/portfolioReport";
+import { buildPortfolioReport, formatMoneyShort, nextActionMeta, NEXT_TAG_STYLE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type Rag } from "../lib/portfolioReport";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
 
 /* ================= Executive update — data layer ================= */
@@ -17,7 +17,7 @@ export interface ExecEntry {
   project: Project;
   execUpdate: StatusUpdate | null;
   /** Next-action item texts pulled from milestone subtasks and the task lists. */
-  nextItems: { text: string; source?: string; owner?: string }[];
+  nextItems: NextActionItem[];
   /** The forward-looking "coming next" paragraph shown on the card. */
   statement: string;
   /** One-sentence recap of the latest executive update, shown under the paragraph. Empty when there is none. */
@@ -98,12 +98,34 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
   );
 }
 
+/** Owner + due date (same small italic as the owner) and status pills after a next-action's text. */
+function NextItemMeta({ item, color }: { item: NextActionItem; color: string }) {
+  const meta = [item.owner ? `@${item.owner}` : "", item.due ? `due\u00a0${item.due.replace(/ /g, "\u00a0")}` : ""].filter(Boolean).join(" · ");
+  return (
+    <>
+      {meta && <span style={{ fontSize: 11, fontStyle: "italic", color }}> {meta}</span>}
+      {item.tags.map((tag) => (
+        <span
+          key={tag.label}
+          style={{
+            display: "inline-block", marginLeft: 6, padding: "1px 7px", borderRadius: 999, verticalAlign: "1px",
+            fontSize: 9.5, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.5,
+            background: NEXT_TAG_STYLE[tag.tone].bg, color: NEXT_TAG_STYLE[tag.tone].fg,
+          }}
+        >
+          {tag.label}
+        </span>
+      ))}
+    </>
+  );
+}
+
 /** Full next-action list for one project, opened from the "See all" link in the right rail
  *  when there are more items than fit inline. */
 function NextActionsPopup({
   projectTitle, items, close,
 }: {
-  projectTitle: string; items: { text: string; source?: string; owner?: string }[]; close: () => void;
+  projectTitle: string; items: NextActionItem[]; close: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
@@ -132,7 +154,7 @@ function NextActionsPopup({
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, lineHeight: 1.45 }}>
                   {item.text}
-                  {item.owner && <span style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-4)" }}> @{item.owner}</span>}
+                  <NextItemMeta item={item} color="var(--ink-4)" />
                 </div>
                 {item.source && <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 2 }}>{item.source}</div>}
               </div>
@@ -178,11 +200,11 @@ export function ExecutiveUpdate() {
       };
       const nextItems = [
         ...project.milestones.flatMap((m) =>
-          m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title, owner: ownerOf(s.assignee, s.who) })),
+          m.subtasks.filter((s) => s.next && !s.done).map((s) => ({ text: s.t, source: m.title, owner: ownerOf(s.assignee, s.who), ...nextActionMeta(s) })),
         ),
         ...taskPool
           .filter((t) => t.project === project.title && t.next && !t.done)
-          .map((t) => ({ text: t.text, source: t.context, owner: ownerOf(t.assignee, t.who) })),
+          .map((t) => ({ text: t.text, source: t.context, owner: ownerOf(t.assignee, t.who), ...nextActionMeta(t) })),
       ];
       const stored = project.execStatement?.trim();
       const statement = stored || localExecNext(project.nextActionsAiSummary?.trim() || null);
@@ -668,7 +690,7 @@ export function ExecutiveUpdate() {
                                     <div style={{ minWidth: 0 }}>
                                       <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}>
                                         {item.text}
-                                        {item.owner && <span style={{ fontSize: 11, fontStyle: "italic", color: N600 }}> @{item.owner}</span>}
+                                        <NextItemMeta item={item} color={N600} />
                                       </div>
                                       {item.source && <div style={{ fontSize: 11, color: N600, marginTop: 1 }}>{item.source}</div>}
                                     </div>
