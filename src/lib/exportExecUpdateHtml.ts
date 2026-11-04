@@ -66,6 +66,12 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
   const exportDate = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const asOf = fmtLongDate(today);
 
+  const ragScale = RAG_ORDER
+    .map((k) => `<span style="flex:1;height:8px;background:${k === report.portfolioRag ? RAG[k].swatch : C.n300};display:block"></span>`)
+    .join("");
+  const ragScaleLabels = RAG_ORDER.map((k) => `<span style="flex:1">${RAG_NAME[k]}</span>`).join("");
+  const ragCountsHtml = RAG_ORDER.map((k) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;background:${RAG[k].swatch};display:block"></span>${report.ragCounts[k]} ${k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}</span>`).join("");
+
   const bandB = `
   <div style="display:grid;grid-template-columns:1.85fr 1fr;border-bottom:2px solid ${C.divider};margin-top:20px">
     <div style="padding:20px 32px 32px">
@@ -88,18 +94,16 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     </div>
     <div style="border-left:2px solid ${C.divider};padding:20px 32px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
       <div>
-        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:10px">Portfolio completion</div>
-        <div style="display:flex;align-items:baseline;gap:10px">
-          <span style="font-family:${FONT};font-weight:800;font-size:72px;line-height:.85;letter-spacing:-0.04em">${report.pct}</span>
-          <span style="font-family:${FONT};font-weight:800;font-size:24px;line-height:1">%</span>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:10px;cursor:help" title="${esc(PORTFOLIO_HEALTH_RULE)}">Portfolio health <span style="text-transform:none;font-size:11px">ⓘ</span></div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="width:30px;height:30px;display:inline-block;background:${RAG[report.portfolioRag].swatch};flex-shrink:0"></span>
+          <span style="font-family:${FONT};font-weight:800;font-size:56px;line-height:.9;letter-spacing:-0.03em">${RAG_NAME[report.portfolioRag]}</span>
+          <span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${RAG[report.portfolioRag].label}</span>
         </div>
-        <div style="height:10px;background:${C.n300};margin-top:18px;display:flex">
-          <div style="width:${report.pct}%;background:${C.accent}"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">
-          <span>${report.doneTasks} of ${report.totalTasks} tasks complete</span>
-          <span>${report.phasesOpen} phases open</span>
-        </div>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:13px;color:${C.n700};margin-top:12px">${ragCountsHtml}</div>
+        <div style="display:flex;gap:2px;margin-top:12px">${ragScale}</div>
+        <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">${ragScaleLabels}</div>
+        <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.healthNote)}</p>
       </div>
       <div style="border-top:1px solid ${C.divider};padding-top:16px">
         <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Next portfolio milestone</div>
@@ -111,10 +115,6 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     </div>
   </div>`;
 
-  const ragScale = RAG_ORDER
-    .map((k) => `<span style="flex:1;height:8px;background:${k === report.portfolioRag ? RAG[k].swatch : C.n300};display:block"></span>`)
-    .join("");
-  const ragScaleLabels = RAG_ORDER.map((k) => `<span style="flex:1">${RAG_NAME[k]}</span>`).join("");
 
   const catLabel = (cat: "timeline" | "budget" | "resourcing") =>
     cat === "timeline" ? "Timeline" : cat === "budget" ? "Budget" : "Resourcing";
@@ -133,19 +133,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
 
   const bandC = `
   <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid ${C.divider}">
-    <div style="padding:20px 32px 22px">
-      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px;cursor:help" title="${esc(PORTFOLIO_HEALTH_RULE)}">Portfolio health <span style="text-transform:none;font-size:11px">ⓘ</span></div>
-      <div style="display:flex;align-items:center;gap:9px">
-        ${ragChip(report.portfolioRag)}
-        <span style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${RAG_NAME[report.portfolioRag]}</span>
-        <span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${RAG[report.portfolioRag].label}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;font-size:13px;color:${C.n700};margin-top:4px">${RAG_ORDER.map((k) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;background:${RAG[k].swatch};display:block"></span>${report.ragCounts[k]} ${k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}</span>`).join("")}</div>
-      <div style="display:flex;gap:2px;margin-top:12px">${ragScale}</div>
-      <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">${ragScaleLabels}</div>
-      <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.healthNote)}</p>
-    </div>
-    <div style="padding:20px 24px 22px;border-left:1px solid ${C.divider}">
+    <div style="padding:20px 24px 22px">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Risk breakdown · all projects</div>
       <div style="display:flex;flex-direction:column;gap:7px">${riskRowsHtml}</div>
       <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.riskNote)}</p>
@@ -155,7 +143,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
       <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.onDateCount} of ${report.totalProjects} on time</div>
       <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.scheduleNote)}</p>
     </div>
-    <div style="padding:20px 32px 22px;border-left:1px solid ${C.divider}">
+    <div style="padding:20px 24px 22px;border-left:1px solid ${C.divider}">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Budget</div>
       <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.drawnPct === null ? "No budget set" : `${report.drawnPct}% drawn`}</div>
       <div style="display:flex;gap:20px;margin-top:10px">
@@ -171,6 +159,17 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">Remaining</div>
           <div style="font-family:${FONT};font-weight:800;font-size:15px">${formatMoneyShort(Math.max(report.approvedTotal - report.spentTotal, 0))}</div>
         </div>
+      </div>
+    </div>
+    <div style="padding:20px 32px 22px;border-left:1px solid ${C.divider}">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Portfolio completion</div>
+      <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.pct}% complete</div>
+      <div style="height:8px;background:${C.n300};margin-top:12px;display:flex">
+        <div style="width:${report.pct}%;background:${C.accent}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n600}">
+        <span>${report.doneTasks} of ${report.totalTasks} tasks</span>
+        <span>${report.phasesOpen} phases open</span>
       </div>
     </div>
   </div>`;

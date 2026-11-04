@@ -413,18 +413,22 @@ export function ExecutiveUpdate() {
             </div>
             <div style={{ borderLeft: `2px solid ${DIVIDER}`, padding: "20px 32px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 24 }}>
               <div>
-                <div style={{ ...kicker, marginBottom: 10 }}>Portfolio completion</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 72, lineHeight: 0.85, letterSpacing: "-0.04em" }}>{report.pct}</span>
-                  <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>%</span>
+                <div style={{ ...kicker, marginBottom: 10, cursor: "help" }} title={PORTFOLIO_HEALTH_RULE}>Portfolio health <span style={{ textTransform: "none", fontSize: 11 }}>ⓘ</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <RagChip rag={report.portfolioRag} style={{ width: 30, height: 30 }} />
+                  <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 56, lineHeight: 0.9, letterSpacing: "-0.03em" }}>{RAG_NAME[report.portfolioRag]}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>{RAG[report.portfolioRag].label}</span>
                 </div>
-                <div style={{ height: 10, background: N300, marginTop: 18, display: "flex" }}>
-                  <div style={{ width: `${report.pct}%`, background: ACCENT }} />
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 13, color: N700, marginTop: 12 }}>
+                  {RAG_ORDER.map((k) => (
+                    <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <span style={{ width: 9, height: 9, background: RAG[k].swatch, display: "block" }} />
+                      {report.ragCounts[k]} {k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}
+                    </span>
+                  ))}
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, ...label11 }}>
-                  <span>{report.doneTasks} of {report.totalTasks} tasks complete</span>
-                  <span>{report.phasesOpen} phases open</span>
-                </div>
+                <RagScale active={report.portfolioRag} />
+                <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.healthNote}</p>
               </div>
               <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: 16 }}>
                 <div style={{ ...kicker, marginBottom: 6 }}>Next portfolio milestone</div>
@@ -444,25 +448,7 @@ export function ExecutiveUpdate() {
 
           {/* Band C — Portfolio metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderBottom: `2px solid ${DIVIDER}` }}>
-            <div style={{ padding: "20px 32px 22px" }}>
-              <div style={{ ...kicker, marginBottom: 8, cursor: "help" }} title={PORTFOLIO_HEALTH_RULE}>Portfolio health <span style={{ textTransform: "none", fontSize: 11 }}>ⓘ</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <RagChip rag={report.portfolioRag} />
-                <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{RAG_NAME[report.portfolioRag]}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>{RAG[report.portfolioRag].label}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: N700, marginTop: 4 }}>
-                {RAG_ORDER.map((k) => (
-                  <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 9, height: 9, background: RAG[k].swatch, display: "block" }} />
-                    {report.ragCounts[k]} {k === "green" ? "on track" : k === "amber" ? "attention" : "at risk"}
-                  </span>
-                ))}
-              </div>
-              <RagScale active={report.portfolioRag} />
-              <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.healthNote}</p>
-            </div>
-            <div style={{ padding: "20px 24px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
+            <div style={{ padding: "20px 24px 22px" }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Risk breakdown · all projects</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                 {(["timeline", "budget", "resourcing"] as const).map((cat) => {
@@ -487,7 +473,7 @@ export function ExecutiveUpdate() {
               <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.onDateCount} of {report.totalProjects} on time</div>
               <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.scheduleNote}</p>
             </div>
-            <div style={{ padding: "20px 32px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
+            <div style={{ padding: "20px 24px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Budget</div>
               <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>
                 {report.drawnPct === null ? "No budget set" : `${report.drawnPct}% drawn`}
@@ -505,6 +491,17 @@ export function ExecutiveUpdate() {
                   <div style={label11}>Remaining</div>
                   <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15 }}>{formatMoneyShort(Math.max(report.approvedTotal - report.spentTotal, 0))}</div>
                 </div>
+              </div>
+            </div>
+            <div style={{ padding: "20px 32px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
+              <div style={{ ...kicker, marginBottom: 8 }}>Portfolio completion</div>
+              <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.pct}% complete</div>
+              <div style={{ height: 8, background: N300, marginTop: 12, display: "flex" }}>
+                <div style={{ width: `${report.pct}%`, background: ACCENT }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, ...label11 }}>
+                <span>{report.doneTasks} of {report.totalTasks} tasks</span>
+                <span>{report.phasesOpen} phases open</span>
               </div>
             </div>
           </div>
