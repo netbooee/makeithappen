@@ -34,7 +34,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/pages/Contacts.tsx` | Contact list + contact detail |
 | `src/pages/Assistant.tsx` | Claude chat page |
 | `src/pages/ProjectSites.tsx` | Project links/sites index |
-| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, editable summary poster, per-project detail), plus the per-project ExecEntry data layer used to build the portfolio report |
+| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, editable summary poster, per-project detail with RAG-coloured risk/timeline/budget notes, Next actions with owner, due date and Late/Blocked/Waiting/Delegated pills), plus the per-project ExecEntry data layer used to build the portfolio report |
 | `src/pages/Help.tsx` | Help & Getting Started page — collapsible sections explaining each part of the app |
 | `src/pages/Login.tsx` | Supabase sign-in (only shows if env-configured) |
 
@@ -43,7 +43,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `ProjectList.tsx` | The projects index grid |
-| `ProjectDetail.tsx` | **The big one** — project page layout, header, tabs, right-rail assembly |
+| `ProjectDetail.tsx` | **The big one** — project page layout, header, tabs, right-rail assembly, export menu, and the Internal Team card (incl. the crown toggle that tags a member as project manager → `projectManagerContactId`) |
 | `ProjectModal.tsx` | Create/edit project dialog |
 | `MilestoneCard.tsx` | A milestone + its subtasks |
 | `AddMilestone.tsx` | Add-milestone form |
@@ -68,9 +68,9 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/components/ui.tsx` | Shared primitives: `Avatar`, `StatusChip`, `Checkbox`, `DateInput`, `ProgressDial`, date formatters |
-| `src/components/MarkdownPreview.tsx` | Shared Markdown render styles (`mdComponents`) and a `MarkdownPreview` component, used by Project Notes and Meeting Agenda notes |
-| `src/components/TaskEditPanel.tsx` | Slide-out task editor |
-| `src/components/SubtaskEditPanel.tsx` | Slide-out subtask editor |
+| `src/components/MarkdownPreview.tsx` | Shared Markdown render styles (`mdComponents`) and a `MarkdownPreview` component, used by Project Notes, Meeting Agenda notes, and the task/subtask notes preview |
+| `src/components/TaskEditPanel.tsx` | Slide-out task editor — includes the notes Markdown Preview toggle and the "Email status" button that opens `TaskStatusEmailPanel` |
+| `src/components/SubtaskEditPanel.tsx` | Slide-out subtask editor — same notes Preview toggle and "Email status" button as `TaskEditPanel` |
 | `src/components/SearchModal.tsx` | Global search |
 | `src/components/TweaksPanel.tsx` | Settings / preferences panel |
 | `src/components/OnboardingChecklist.tsx` | Dismissible first-run checklist card, shown at the top of the Projects page until dismissed (`localStorage`) |
@@ -82,10 +82,10 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/lib/exportHtml.ts` | **All project exports** — project report HTML, PDF, agenda HTML, status CSV. Self-contained HTML strings, separate from the live UI |
-| `src/lib/exportHtmlV2.ts` | "Export v2.0" — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle. Self-contained, does not import from `exportHtml.ts` |
+| `src/lib/exportHtmlV2.ts` | "Export status" (v2.0) — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle, right-rail collapsible registers (incl. Business case), and the per-section "email the PM" links (header pencils + "Send the PM any changes" in rail sections; mailto to the tagged project manager, clipboard fallback). Self-contained, does not import from `exportHtml.ts` |
 | `src/lib/exportExecUpdateHtml.ts` | Static HTML export of the Modernist portfolio report shown on the Executive Update page — mirrors its bands (title, metrics, summary poster, project detail, footer), built from the shared `PortfolioSummary` in `portfolioReport.ts` |
-| `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, phase stepper, budget/schedule aggregation, composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
-| `src/lib/claude.ts` | Every AI call: draft/suggest-edits for status updates, agenda notes, and the exec "coming up next" line, draft email, summarize next actions, write the executive narrative, assistant chat, business-case + contact import parsing |
+| `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, the proportional portfolio-health rule (`portfolioHealth`, described in plain English by `PORTFOLIO_HEALTH_RULE`) and its explanatory note, phase stepper, budget/schedule aggregation, next-action due dates + status pills (`nextActionMeta`, `NEXT_TAG_STYLE`), composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
+| `src/lib/claude.ts` | Every AI call: draft/suggest-edits for status updates, agenda notes, and the exec "coming up next" line, draft email, the project "Coming up next" paragraph (describes upcoming tasks; doesn't restate the exec update), write the executive narrative, assistant chat, business-case + contact import parsing |
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge; `progressStatusLabel` — one-string progress status for a Task/Subtask |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
