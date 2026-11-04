@@ -98,6 +98,57 @@ function PhaseStepper({ row, tall }: { row: PortfolioRow; tall?: boolean }) {
   );
 }
 
+/** Editable note under a metric in the Executive Update metrics row. Shows the hand-written `value`
+ *  when set, else the auto-composed `autoText` (if any), else a placeholder. Saving empty text clears
+ *  the hand-written note, so an auto-composed note comes back. */
+function MetricNote({
+  label, value, autoText, placeholder = "Add a note…", onSave,
+}: {
+  label: string; value?: string; autoText?: string; placeholder?: string; onSave: (text: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const shown = value || autoText || "";
+  const start = () => { setDraft(shown); setEditing(true); };
+
+  if (editing) {
+    return (
+      <div style={{ marginTop: 10 }}>
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={3}
+          autoFocus
+          aria-label={label}
+          style={{ width: "100%", fontSize: 13, lineHeight: 1.45, color: INK, padding: "6px 8px", border: `1px solid ${DIVIDER}`, background: "#fff", resize: "vertical", fontFamily: "inherit" }}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+          <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => { onSave(draft === autoText ? "" : draft); setEditing(false); }}>Save</button>
+          <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setEditing(false)}>Cancel</button>
+          {value && autoText && (
+            <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => { onSave(""); setEditing(false); }}>Reset to auto</button>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={start}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); start(); } }}
+      title={`Edit ${label.toLowerCase()}`}
+      style={{ display: "flex", gap: 6, alignItems: "flex-start", marginTop: 10, cursor: "pointer" }}
+    >
+      <p style={{ fontSize: 13, lineHeight: 1.45, margin: 0, color: shown ? N800 : N600, fontStyle: shown ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
+        {shown || placeholder}
+      </p>
+      <Pencil size={11} style={{ color: N700, flexShrink: 0, marginTop: 4 }} />
+    </div>
+  );
+}
+
 /** Owner + due date (same small italic as the owner) and status pills after a next-action's text. */
 function NextItemMeta({ item, color }: { item: NextActionItem; color: string }) {
   const meta = [item.owner ? `@${item.owner}` : "", item.due ? `due\u00a0${item.due.replace(/ /g, "\u00a0")}` : ""].filter(Boolean).join(" · ");
@@ -170,7 +221,7 @@ function NextActionsPopup({
 /* ================= Page ================= */
 
 export function ExecutiveUpdate() {
-  const { data, all, setExecPortfolioSummary, updateProject, updateStatusUpdate, addUpdate } = useStore();
+  const { data, all, setExecPortfolioSummary, setExecMetricNote, updateProject, updateStatusUpdate, addUpdate } = useStore();
   const navigate = useNavigate();
   const [view, setView] = useState<"executive" | "full">("full");
   const [busy, setBusy] = useState<string | null>(null);
@@ -360,7 +411,11 @@ export function ExecutiveUpdate() {
           <button
             className="btn btn-ghost"
             style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            onClick={() => exportExecUpdateHtml(report, all.user.name, all.user.feedbackEmail)}
+            onClick={() => exportExecUpdateHtml(report, all.user.name, all.user.feedbackEmail, {
+              budget: data.execBudgetNote,
+              risk: data.execRiskNote,
+              schedule: data.execScheduleNote,
+            })}
           >
             <Download size={13} /> Export HTML
           </button>
@@ -430,19 +485,6 @@ export function ExecutiveUpdate() {
                 <RagScale active={report.portfolioRag} />
                 <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.healthNote}</p>
               </div>
-              <div style={{ borderTop: `1px solid ${DIVIDER}`, paddingTop: 16 }}>
-                <div style={{ ...kicker, marginBottom: 6 }}>Next portfolio milestone</div>
-                {report.nextMilestone ? (
-                  <>
-                    <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.nextMilestone.date}</div>
-                    <div style={{ fontSize: 13, color: N700, marginTop: 2 }}>
-                      {report.nextMilestone.label} · {report.nextMilestone.daysOut <= 0 ? "due now" : `${report.nextMilestone.daysOut} days`}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 13, color: N700 }}>No upcoming gates on the books.</div>
-                )}
-              </div>
             </div>
           </div>
 
@@ -460,18 +502,28 @@ export function ExecutiveUpdate() {
                       <span style={{ width: 11, height: 11, background: RAG[worst].swatch, display: "block", flexShrink: 0 }} />
                       <span style={{ fontSize: 13, flex: 1 }}>{catLabel}</span>
                       <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: N700 }}>
-                        {counts.green}G · {counts.amber}A · {counts.red}R
+                        <span style={{ color: RAG.green.text }}>{counts.green}G</span> · <span style={{ color: RAG.amber.text }}>{counts.amber}A</span> · <span style={{ color: RAG.red.text }}>{counts.red}R</span>
                       </span>
                     </div>
                   );
                 })}
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.riskNote}</p>
+              <MetricNote
+                label="Risk breakdown note"
+                value={data.execRiskNote}
+                autoText={report.riskNote}
+                onSave={(text) => setExecMetricNote("execRiskNote", text)}
+              />
             </div>
             <div style={{ padding: "20px 24px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Schedule</div>
               <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 22, letterSpacing: "-0.01em" }}>{report.onDateCount} of {report.totalProjects} on time</div>
-              <p style={{ fontSize: 13, lineHeight: 1.45, color: N800, margin: "10px 0 0" }}>{report.scheduleNote}</p>
+              <MetricNote
+                label="Schedule note"
+                value={data.execScheduleNote}
+                autoText={report.scheduleNote}
+                onSave={(text) => setExecMetricNote("execScheduleNote", text)}
+              />
             </div>
             <div style={{ padding: "20px 24px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Budget</div>
@@ -492,6 +544,12 @@ export function ExecutiveUpdate() {
                   <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15 }}>{formatMoneyShort(Math.max(report.approvedTotal - report.spentTotal, 0))}</div>
                 </div>
               </div>
+              <MetricNote
+                label="Portfolio budget note"
+                value={data.execBudgetNote}
+                placeholder="Add a budget note…"
+                onSave={(text) => setExecMetricNote("execBudgetNote", text)}
+              />
             </div>
             <div style={{ padding: "20px 32px 22px", borderLeft: `1px solid ${DIVIDER}` }}>
               <div style={{ ...kicker, marginBottom: 8 }}>Portfolio completion</div>

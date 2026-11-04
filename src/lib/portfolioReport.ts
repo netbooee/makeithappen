@@ -168,7 +168,6 @@ export interface PortfolioSummary {
   approvedTotal: number;
   spentTotal: number;
   drawnPct: number | null;
-  nextMilestone: { label: string; date: string; daysOut: number } | null;
   lede: string;
   healthNote: string;
   riskNote: string;
@@ -255,7 +254,6 @@ export function buildPortfolioReport(
         resourcing: { green: 0, amber: 0, red: 0 },
       },
       approvedTotal: 0, spentTotal: 0, drawnPct: null,
-      nextMilestone: null,
       lede: "No active projects to report on.",
       healthNote: "", riskNote: "", scheduleNote: "",
       summary: storedSummary || "No active projects to report on.",
@@ -286,19 +284,6 @@ export function buildPortfolioReport(
   const approvedTotal = rows.reduce((a, r) => a + r.approved, 0);
   const spentTotal = rows.reduce((a, r) => a + r.spent, 0);
   const drawnPct = approvedTotal > 0 ? Math.round((spentTotal / approvedTotal) * 100) : null;
-
-  const now = new Date();
-
-  const upcoming = rows
-    .filter((r) => r.gateIso && !r.gateSlipped)
-    .sort((a, b) => a.gateIso.localeCompare(b.gateIso));
-  const nextMilestone = upcoming.length
-    ? (() => {
-        const r = upcoming[0];
-        const days = Math.round((new Date(r.gateIso).getTime() - new Date(toDateInputValue(now.toISOString())).getTime()) / 86_400_000);
-        return { label: `${r.project.title} — ${r.stage}`, date: r.gate, daysOut: days };
-      })()
-    : null;
 
   const redRows = rows.filter((r) => r.rag === "red");
   const amberRows = rows.filter((r) => r.rag === "amber");
@@ -365,7 +350,6 @@ export function buildPortfolioReport(
     rows, totalProjects: rows.length, needsAttention, ragCounts, portfolioRag, pct,
     doneTasks, totalTasks, phasesOpen, onDateCount, categoryCounts,
     approvedTotal, spentTotal, drawnPct,
-    nextMilestone,
     lede, healthNote, riskNote, scheduleNote,
     summary: storedSummary || composedSummary,
     summaryIsStored: Boolean(storedSummary),

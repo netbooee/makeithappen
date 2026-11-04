@@ -307,6 +307,12 @@ export interface WorkspaceData {
   /** Manually-edited portfolio executive summary shown on the Executive Update poster band. Falls back to an auto-composed one when unset. */
   execPortfolioSummary?: string;
   execPortfolioSummaryAt?: string;
+  /** Hand-written note shown under the Budget block in the Executive Update metrics row (and its export). */
+  execBudgetNote?: string;
+  /** Hand-edited override of the auto-composed Risk breakdown note; cleared → back to auto. */
+  execRiskNote?: string;
+  /** Hand-edited override of the auto-composed Schedule note; cleared → back to auto. */
+  execScheduleNote?: string;
 }
 
 export interface Tweaks {

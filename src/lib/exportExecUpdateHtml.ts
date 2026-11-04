@@ -61,7 +61,11 @@ function phaseStepper(row: PortfolioRow): string {
     </div>`;
 }
 
-export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: string, feedbackEmail?: string): void {
+export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: string, feedbackEmail?: string, notes: { budget?: string; risk?: string; schedule?: string } = {}): void {
+  // Hand-written metric notes win over the auto-composed ones; budget has no auto note.
+  const budgetNote = notes.budget?.trim() ?? "";
+  const riskNote = notes.risk?.trim() || report.riskNote;
+  const scheduleNote = notes.schedule?.trim() || report.scheduleNote;
   const today = new Date();
   const exportDate = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const asOf = fmtLongDate(today);
@@ -105,13 +109,6 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         <div style="display:flex;gap:2px;margin-top:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600}">${ragScaleLabels}</div>
         <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.healthNote)}</p>
       </div>
-      <div style="border-top:1px solid ${C.divider};padding-top:16px">
-        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Next portfolio milestone</div>
-        ${report.nextMilestone
-          ? `<div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${esc(report.nextMilestone.date)}</div>
-             <div style="font-size:13px;color:${C.n700};margin-top:2px">${esc(report.nextMilestone.label)} · ${report.nextMilestone.daysOut <= 0 ? "due now" : `${report.nextMilestone.daysOut} days`}</div>`
-          : `<div style="font-size:13px;color:${C.n700}">No upcoming gates on the books.</div>`}
-      </div>
     </div>
   </div>`;
 
@@ -126,7 +123,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:11px;height:11px;background:${RAG[worst].swatch};display:block;flex-shrink:0"></span>
           <span style="font-size:13px;flex:1">${catLabel(cat)}</span>
-          <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}">${counts.green}G · ${counts.amber}A · ${counts.red}R</span>
+          <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${C.n700}"><span style="color:${RAG.green.text}">${counts.green}G</span> · <span style="color:${RAG.amber.text}">${counts.amber}A</span> · <span style="color:${RAG.red.text}">${counts.red}R</span></span>
         </div>`;
     })
     .join("");
@@ -136,12 +133,12 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
     <div style="padding:20px 24px 22px">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Risk breakdown · all projects</div>
       <div style="display:flex;flex-direction:column;gap:7px">${riskRowsHtml}</div>
-      <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.riskNote)}</p>
+      <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0;white-space:pre-wrap">${esc(riskNote)}</p>
     </div>
     <div style="padding:20px 24px 22px;border-left:1px solid ${C.divider}">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Schedule</div>
       <div style="font-family:${FONT};font-weight:800;font-size:22px;letter-spacing:-0.01em">${report.onDateCount} of ${report.totalProjects} on time</div>
-      <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0">${esc(report.scheduleNote)}</p>
+      <p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0;white-space:pre-wrap">${esc(scheduleNote)}</p>
     </div>
     <div style="padding:20px 24px 22px;border-left:1px solid ${C.divider}">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Budget</div>
@@ -160,6 +157,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           <div style="font-family:${FONT};font-weight:800;font-size:15px">${formatMoneyShort(Math.max(report.approvedTotal - report.spentTotal, 0))}</div>
         </div>
       </div>
+      ${budgetNote ? `<p style="font-size:13px;line-height:1.45;color:${C.n800};margin:10px 0 0;white-space:pre-wrap">${esc(budgetNote)}</p>` : ""}
     </div>
     <div style="padding:20px 32px 22px;border-left:1px solid ${C.divider}">
       <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">Portfolio completion</div>
