@@ -70,17 +70,17 @@ const RAG_ORDER: Rag[] = ["green", "amber", "red"];
 
 /** Plain-English statement of how overall portfolio health is rated — shown as a tooltip. */
 export const PORTFOLIO_HEALTH_RULE =
-  "Red when a third or more of projects are red, or any Tier 1 project is red. " +
+  "Red when a third or more of projects are red. " +
   "Amber when any project is red, or a third or more are amber or red. Otherwise green.";
 
 /** Overall portfolio RAG — proportional rather than worst-of, so one red project doesn't paint the
- *  whole portfolio red, except a Tier 1 project, which always counts in full. See PORTFOLIO_HEALTH_RULE. */
+ *  whole portfolio red. Tier doesn't change the weighting. See PORTFOLIO_HEALTH_RULE. */
 function portfolioHealth(rows: PortfolioRow[]): Rag {
   const n = rows.length;
   if (n === 0) return "green";
   const red = rows.filter((r) => r.rag === "red");
   const flagged = rows.filter((r) => r.rag !== "green").length;
-  if (red.length * 3 >= n || red.some((r) => r.project.tier === "1")) return "red";
+  if (red.length * 3 >= n) return "red";
   if (red.length > 0 || flagged * 3 >= n) return "amber";
   return "green";
 }
@@ -317,7 +317,6 @@ export function buildPortfolioReport(
   const n = rows.length;
   const isAre = (k: number) => (k === 1 ? "is" : "are");
   const needs = (k: number) => (k === 1 ? "needs" : "need");
-  const tier1Red = redRows.filter((r) => r.project.tier === "1");
   const restClause = (() => {
     const parts = [
       amberRows.length ? `${amberRows.length} ${needs(amberRows.length)} attention` : "",
@@ -326,12 +325,10 @@ export function buildPortfolioReport(
     return parts.length ? ` ${parts.join("; ")}.` : "";
   })();
   const healthNote =
-    portfolioRag === "red" && tier1Red.length
-      ? `${shortNames(tier1Red)} ${isAre(tier1Red.length)} Tier 1 and red, which holds the portfolio at red.${redRows.length > tier1Red.length ? ` ${redRows.length} of ${n} projects are red in total.` : ""}${restClause}`
-      : portfolioRag === "red"
+    portfolioRag === "red"
         ? `${redRows.length} of ${n} project${n === 1 ? "" : "s"} ${isAre(redRows.length)} red (${shortNames(redRows)})${n >= 3 ? ", a third or more of the portfolio" : ""}.${restClause}`
         : portfolioRag === "amber" && redRows.length
-          ? `${redRows.length} of ${n} project${n === 1 ? "" : "s"} ${isAre(redRows.length)} red (${shortNames(redRows)}).${restClause} No Tier 1 project is red.`
+          ? `${redRows.length} of ${n} project${n === 1 ? "" : "s"} ${isAre(redRows.length)} red (${shortNames(redRows)}).${restClause}`
           : portfolioRag === "amber"
             ? `${amberRows.length} of ${n} project${n === 1 ? "" : "s"} ${needs(amberRows.length)} attention (${shortNames(amberRows)})${n >= 3 ? ", a third or more of the portfolio" : ""}.${greenRows.length ? ` ${greenRows.length} ${isAre(greenRows.length)} on track.` : ""}`
             : amberRows.length
