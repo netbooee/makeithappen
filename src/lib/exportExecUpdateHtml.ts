@@ -7,7 +7,7 @@
  * portfolioReport.ts rather than recomputing it, per this codebase's precedent of importing
  * shared pure-logic modules into export files (see exportHtmlV2.ts).
  */
-import { formatMoneyShort, RAG, RAG_NAME, RAG_ORDER, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
+import { formatMoneyShort, NEXT_TAG_STYLE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
 import { safeHref } from "./safeUrl";
 import { PROJECT_TYPE_LABEL } from "../components/ui";
 
@@ -226,14 +226,18 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
       const spendHtml = row.project.budget
         ? `${formatMoneyShort(row.approved)} − ${formatMoneyShort(row.spent)} = <span style="color:${remaining >= 0 ? RAG.green.text : RAG.red.text}">${remainingLabel}</span>`
         : "—";
-      const renderNextItem = (item: { text: string; source?: string; owner?: string }) => `
+      const renderNextItem = (item: NextActionItem) => {
+        const meta = [item.owner ? `@${item.owner}` : "", item.due ? `due\u00a0${item.due.replace(/ /g, "\u00a0")}` : ""].filter(Boolean).join(" · ");
+        const pills = item.tags.map((tag) => `<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;vertical-align:1px;font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.5;background:${NEXT_TAG_STYLE[tag.tone].bg};color:${NEXT_TAG_STYLE[tag.tone].fg}">${esc(tag.label)}</span>`).join("");
+        return `
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <span style="width:5px;height:5px;border-radius:50%;background:${C.n600};flex-shrink:0;margin-top:6px"></span>
             <div style="min-width:0">
-              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${esc(item.text)}${item.owner ? ` <span style="font-size:11px;font-style:italic;color:${C.n600}">@${esc(item.owner)}</span>` : ""}</div>
+              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${esc(item.text)}${meta ? ` <span style="font-size:11px;font-style:italic;color:${C.n600}">${esc(meta)}</span>` : ""}${pills}</div>
               ${item.source ? `<div style="font-size:11px;color:${C.n600};margin-top:1px">${esc(item.source)}</div>` : ""}
             </div>
           </div>`;
+      };
       const visibleNextItems = row.nextItems.slice(0, NEXT_ACTIONS_VISIBLE);
       const moreNextItems = row.nextItems.slice(NEXT_ACTIONS_VISIBLE);
       const nextActionsHtml = row.nextItems.length === 0

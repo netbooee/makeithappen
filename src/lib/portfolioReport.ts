@@ -6,7 +6,7 @@
  * the "composed prose" bands (lede, health/risk/schedule notes, summary) are deterministic
  * templates over that data, not AI- or hand-written copy.
  */
-import type { Milestone, Project, Status } from "./types";
+import type { Milestone, Project, Status, Subtask, Task } from "./types";
 import { fmtDue, isOverdue, toDateInputValue } from "../components/ui";
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
 
@@ -19,6 +19,44 @@ export const RAG: Record<Rag, { swatch: string; text: string; label: string }> =
   red: { swatch: "#ec3013", text: "#ae1800", label: "At risk" },
 };
 export const RAG_NAME: Record<Rag, string> = { green: "Green", amber: "Amber", red: "Red" };
+
+/* ---------- next-action tags (Executive Update "Next actions" column + its HTML export) ---------- */
+
+export type NextActionTagTone = "red" | "amber" | "neutral";
+export interface NextActionTag { label: string; tone: NextActionTagTone }
+/** One row of a project's Next actions list. */
+export interface NextActionItem {
+  text: string;
+  source?: string;
+  owner?: string;
+  /** Short due date ("Nov 12"), when the task has one. */
+  due?: string;
+  tags: NextActionTag[];
+}
+
+/** Pill colours per tone — red is solid so "Late"/"Blocked" read at a glance. */
+export const NEXT_TAG_STYLE: Record<NextActionTagTone, { bg: string; fg: string }> = {
+  red: { bg: "#ec3013", fg: "#ffffff" },
+  amber: { bg: "#fbe8c4", fg: "#8a5200" },
+  neutral: { bg: "#e6e3e3", fg: "#444141" },
+};
+
+/** Due date + status tags for a next-action task or subtask, derived from its own fields only. */
+export function nextActionMeta(task: Task | Subtask): Pick<NextActionItem, "due" | "tags"> {
+  const dueRaw = task.due && task.due !== "No date" && task.due !== "Not set" ? task.due : undefined;
+  const tags: NextActionTag[] = [];
+  const late = Boolean(task.late) || isOverdue(dueRaw, task.done);
+  if (late) tags.push({ label: "Late", tone: "red" });
+  if ("taskStatus" in task && task.taskStatus === "blocked") tags.push({ label: "Blocked", tone: "red" });
+  if (!late && dueRaw) {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (toDateInputValue(dueRaw) === today) tags.push({ label: "Due today", tone: "amber" });
+  }
+  if (task.state === "waiting") tags.push({ label: task.waitFor ? `Waiting on ${task.waitFor}` : "Waiting", tone: "amber" });
+  if (task.state === "delegated") tags.push({ label: task.to ? `Delegated to ${task.to}` : "Delegated", tone: "neutral" });
+  return { due: dueRaw ? fmtDue(dueRaw) : undefined, tags };
+}
 
 /** Phase stepper chicklet color, keyed by the milestone's own status (not the project's RAG). */
 export const PHASE_STATUS_COLOR: Record<Status, string> = {
@@ -91,7 +129,7 @@ export interface PortfolioRow {
   next: string;
   /** Next-action item texts pulled from milestone subtasks and the task lists — same data the
    *  "coming next" statement draws from, kept as a raw list for the Next Actions column. */
-  nextItems: { text: string; source?: string; owner?: string }[];
+  nextItems: NextActionItem[];
   phaseCells: PhaseCell[];
 }
 
