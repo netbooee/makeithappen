@@ -86,6 +86,8 @@ export interface Store {
   addContacts: (contacts: Contact[]) => void;
   setExecUpdateOrder: (order: string[]) => void;
   setExecPortfolioSummary: (text: string) => void;
+  /** Sets (or, with empty text, clears) one of the hand-written Executive Update metric notes. */
+  setExecMetricNote: (key: "execBudgetNote" | "execRiskNote" | "execScheduleNote", text: string) => void;
   resetDemoData: () => void;
   importData: (data: AppData) => void;
   updateUser: (patch: Partial<import("../lib/types").User>) => void;
@@ -397,6 +399,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const trimmed = text.trim();
           d.execPortfolioSummary = trimmed || undefined;
           d.execPortfolioSummaryAt = trimmed ? new Date().toLocaleString() : undefined;
+        }),
+
+      setExecMetricNote: (key, text) =>
+        mutate((d) => {
+          d[key] = text.trim() || undefined;
         }),
 
       resetDemoData: () => {
