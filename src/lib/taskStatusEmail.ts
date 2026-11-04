@@ -111,7 +111,12 @@ export function buildTaskStatusEmailHtml(info: TaskEmailInfo, statusToEmail: str
         <tr><td align="center" style="padding:0 32px 32px">
           <table role="presentation" cellpadding="0" cellspacing="0">
             <tr><td style="background:${ACCENT};mso-padding-alt:16px 36px;border-radius:6px">
-              <a href="${ctaHref}" style="display:inline-block;padding:16px 36px;font-family:${FONT};font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none">Provide Status</a>
+              <!-- Outlook's Word rendering engine overrides an <a>'s own color with its default
+                   hyperlink color — the button text only stays white when the color is also
+                   set on a nested span (and, for old Outlook, a <font> tag) around the text. -->
+              <a href="${ctaHref}" style="display:inline-block;padding:16px 36px;font-family:${FONT};font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;mso-line-height-rule:exactly">
+                <font color="#FFFFFF"><span style="color:#FFFFFF;text-decoration:none">Provide Status</span></font>
+              </a>
             </td></tr>
           </table>
         </td></tr>
