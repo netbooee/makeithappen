@@ -250,7 +250,7 @@ export async function suggestStatusUpdateEdits(project: Project, currentText: st
     await new Promise((r) => setTimeout(r, 900));
     return currentText.trim();
   }
-  const system = `You lightly edit project status updates for clarity, concision, and professionalism. Preserve the author's meaning, facts, and tone — do not invent new information. Plain text, no greeting or sign-off, no headers, no commentary. Output only the corrected text.`;
+  const system = `You lightly edit project status updates for clarity, concision, and professionalism. Preserve the author's meaning, facts, and tone — do not invent new information. Keep every link exactly as written, including [label](url) links and bare URLs. Plain text, no greeting or sign-off, no headers, no commentary. Output only the corrected text.`;
   const prompt = `Project: "${project.title}"
 
 Here is a draft status update the author typed:
