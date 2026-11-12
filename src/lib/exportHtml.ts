@@ -3,6 +3,7 @@ import { toDateInputValue } from "../components/ui";
 import { localNextActionsSummary } from "./claude";
 import { safeHref } from "./safeUrl";
 import { applyManualOrder } from "./manualOrder";
+import { linkifyHtml } from "./linkify";
 
 function dueDateCompare(a: { due: string }, b: { due: string }): number {
   const da = toDateInputValue(a.due);
@@ -453,6 +454,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     "heads-up":  ["rgba(245,158,11,.13)",      "#B45309", "Heads up"],
     "blocked":   ["rgba(239,68,68,.13)",        "#DC2626", "Blocked"],
     "win":       ["rgba(16,185,129,.13)",       "#059669", "Win"],
+    "whats-new": ["rgba(236,72,153,.13)",       "#BE185D", "What's new"],
     "executive": ["rgba(99,102,241,.13)",       "#4338CA", "Executive Status"],
   };
   const updateTypePill = (type?: string) => {
@@ -465,7 +467,7 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
             ${updateTypePill(u.type)}
             <span style="font-size:11px;color:#6B7280;margin-left:auto">${esc(u.when)}</span>
           </div>
-          <div style="font-size:12.5px;color:#4B5563;line-height:1.55">${esc(u.text)}</div>
+          <div style="font-size:12.5px;color:#4B5563;line-height:1.55">${linkifyHtml(u.text, esc, "color:#4F6BED;text-decoration:underline")}</div>
         </div>`;
   const RECENT_UPDATES_COUNT = 3;
   const recentUpdates = project.updates.slice(0, RECENT_UPDATES_COUNT);
@@ -482,9 +484,9 @@ export function exportProjectHtml(project: Project, contacts: Contact[], feedbac
     ? (() => {
         const needsToggle = execUpdate.text.length > 180;
         const body = needsToggle
-          ? `<div style="font-size:13px;color:#374151;line-height:1.55;max-height:4.7em;overflow:hidden">${esc(execUpdate.text)}</div>
+          ? `<div style="font-size:13px;color:#374151;line-height:1.55;max-height:4.7em;overflow:hidden">${linkifyHtml(execUpdate.text, esc, "color:#4F6BED;text-decoration:underline")}</div>
              <a href="#" onclick="var d=this.previousElementSibling;var c=d.style.maxHeight==='4.7em';d.style.maxHeight=c?'':'4.7em';d.style.overflow=c?'visible':'hidden';this.textContent=c?'Show less':'Read more';return false;" style="font-size:11px;color:#6366F1;cursor:pointer;display:inline-block;margin-top:4px;text-decoration:none">Read more</a>`
-          : `<div style="font-size:13px;color:#374151;line-height:1.55">${esc(execUpdate.text)}</div>`;
+          : `<div style="font-size:13px;color:#374151;line-height:1.55">${linkifyHtml(execUpdate.text, esc, "color:#4F6BED;text-decoration:underline")}</div>`;
         return `${body}<div style="font-size:11px;color:#6B7280;margin-top:6px">${esc(execUpdate.when)}</div>`;
       })()
     : `<div style="font-size:12.5px;color:#6B7280;font-style:italic">No executive updates yet.</div>`;
@@ -822,7 +824,7 @@ export function exportProjectPdf(project: Project, contacts: Contact[]): void {
   const execUpdate = project.updates.find((u) => u.type === "executive") ?? null;
   const execHtml = execUpdate
     ? `<div style="padding:9px 11px;background:#F9FAFB;border:0.5px solid #F0F1F3;border-radius:6px">
-        <div style="font-size:10.5px;color:#374151;line-height:1.5">${esc(execUpdate.text)}</div>
+        <div style="font-size:10.5px;color:#374151;line-height:1.5">${linkifyHtml(execUpdate.text, esc, "color:#4F6BED;text-decoration:underline")}</div>
         <div style="font-size:9.5px;color:#6B7280;margin-top:5px">${esc(execUpdate.when)}</div>
        </div>`
     : `<div style="font-size:10px;color:#6B7280;font-style:italic">No executive update yet.</div>`;

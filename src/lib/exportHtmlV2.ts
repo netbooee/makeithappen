@@ -10,6 +10,7 @@ import { TASK_STATUS_LABEL, parseTimestamp } from "../components/ui";
 import { nextActionSubtasks } from "../pages/projects/NextActionsSection";
 import { assigneeAvatar, findProjectContact, projectContactPool } from "./projectContacts";
 import { applyManualOrder } from "./manualOrder";
+import { linkifyHtml, linksAsPlainText } from "./linkify";
 
 /* ── Design tokens (Modernist, from the handoff's styles.css + README RAG additions) ───────── */
 const C = {
@@ -554,40 +555,34 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   const execUpdate = execUpdates.length > 0
     ? execUpdates.reduce((a, b) => (parseTimestamp(b.when) > parseTimestamp(a.when) ? b : a))
     : undefined;
-  const decided = [...(project.decisions ?? [])]
-    .filter((d) => d.status === "decided")
-    .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate))[0];
-  const OPEN_DECISIONS_IN_POSTER = 3;
-  const openDecisionsAll = [...(project.decisions ?? [])]
-    .filter((d) => d.status === "proposed")
-    .sort((a, b) => b.decidedDate.localeCompare(a.decidedDate));
-  const openDecisionsShown = openDecisionsAll.slice(0, OPEN_DECISIONS_IN_POSTER);
-  const openDecisionsMore = openDecisionsAll.length - openDecisionsShown.length;
-  const hasDecisionContent = Boolean(decided) || openDecisionsAll.length > 0;
+  // "What's new and exciting" — status updates tagged What's new, newest first, beside the poster.
+  const WHATS_NEW_IN_POSTER = 3;
+  const whatsNewAll = project.updates
+    .filter((u) => u.type === "whats-new")
+    .sort((a, b) => parseTimestamp(b.when) - parseTimestamp(a.when));
+  const whatsNewShown = whatsNewAll.slice(0, WHATS_NEW_IN_POSTER);
+  const whatsNewMore = whatsNewAll.length - whatsNewShown.length;
+  const posterLink = "color:inherit;text-decoration:underline;text-underline-offset:2px";
 
-  const bandD = !execUpdate ? "" : `
-  <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
-    <div class="v2-2col v2-band-d" style="grid-template-columns:${hasDecisionContent ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
-      <div>
-        <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}${sectionMailLink("Executive update", execUpdate.text, "exec")}</div>
-        <p class="v2-poster-stmt" style="font-family:${FONT};font-weight:800;font-size:34px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:46ch">${esc(execUpdate.text)}</p>
-      </div>
-      ${hasDecisionContent ? `
-      <div class="v2-band-d-right" style="border-left:2px solid rgba(243,242,242,.45);padding-left:24px">
-        ${decided ? `
-        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:10px">Decision on record</div>
-        <div style="font-family:${FONT};font-weight:800;font-size:17px;line-height:1.25">${esc(decided.title)}</div>
-        ${decided.description ? `<div style="font-size:13px;line-height:1.45;margin-top:8px;opacity:.9">${esc(decided.description)}</div>` : ""}
-        ` : ""}
-        ${openDecisionsShown.length ? `
-        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-top:${decided ? "20px" : "0"};margin-bottom:10px">Open decision${openDecisionsAll.length === 1 ? "" : "s"}</div>
-        ${openDecisionsShown.map((d) => `
-        <div style="margin-bottom:10px">
-          <div style="font-family:${FONT};font-weight:700;font-size:15px;line-height:1.3">${esc(d.title)}</div>
-          ${d.owner ? `<div style="font-size:12px;opacity:.85;margin-top:2px">Owner: ${esc(d.owner)}</div>` : ""}
+  const whatsNewHtml = whatsNewShown.length === 0 ? "" : `
+        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:12px">What's new and exciting</div>
+        ${whatsNewShown.map((u, i) => `
+        <div style="${i < whatsNewShown.length - 1 ? "padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid rgba(243,242,242,.35)" : ""}">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8;margin-bottom:4px">${esc(u.when)}</div>
+          <div style="font-family:${FONT};font-weight:700;font-size:15px;line-height:1.35">${linkifyHtml(u.text, esc, posterLink)}</div>
         </div>`).join("")}
-        ${openDecisionsMore > 0 ? `<a href="#v2-decisions" onclick="var d=document.getElementById('v2-decisions');if(d)d.open=true" style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:inherit;opacity:.85">+${openDecisionsMore} more ↓</a>` : ""}
-        ` : ""}
+        ${whatsNewMore > 0 ? `<a href="#v2-status-log" onclick="var d=document.getElementById('v2-status-log');if(d)d.open=true" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:inherit;opacity:.85">+${whatsNewMore} more in the status log ↓</a>` : ""}`;
+
+  const bandD = !execUpdate && !whatsNewHtml ? "" : `
+  <div style="background:${C.accent600};color:${C.bg};padding:44px 32px 40px;border-bottom:2px solid ${C.divider}">
+    <div class="v2-2col v2-band-d" style="grid-template-columns:${execUpdate && whatsNewHtml ? "1.85fr 1fr" : "1fr"};gap:40px;align-items:start">
+      ${execUpdate ? `
+      <div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:18px">Executive update · ${esc(execUpdate.when)}${sectionMailLink("Executive update", linksAsPlainText(execUpdate.text), "exec")}</div>
+        <p class="v2-poster-stmt" style="font-family:${FONT};font-weight:800;font-size:34px;line-height:1.18;letter-spacing:-0.02em;margin:0;max-width:46ch">${linkifyHtml(execUpdate.text, esc, posterLink)}</p>
+      </div>` : ""}
+      ${whatsNewHtml ? `
+      <div class="v2-band-d-right" style="${execUpdate ? "border-left:2px solid rgba(243,242,242,.45);padding-left:24px" : ""}">${whatsNewHtml}
       </div>` : ""}
     </div>
   </div>`;
@@ -787,7 +782,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
   // Status log
   const updateTypeChip = (type?: string) => {
     if (type === "executive") return chipFilled("Executive");
-    const labels: Record<string, string> = { update: "Update", "heads-up": "Heads up", blocked: "Blocked", win: "Win" };
+    const labels: Record<string, string> = { update: "Update", "heads-up": "Heads up", blocked: "Blocked", win: "Win", "whats-new": "What's new" };
     return chipOutline(labels[type ?? "update"] ?? "Update");
   };
   const renderUpdateRow = (u: (typeof project.updates)[number], withDivider: boolean) => `
@@ -796,7 +791,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
             ${updateTypeChip(u.type)}
             <span style="font-size:11px;color:${C.n700}">${esc(u.when)}</span>
           </div>
-          <p style="font-size:14px;line-height:1.45;margin:8px 0 0">${esc(u.text)}</p>
+          <p style="font-size:14px;line-height:1.45;margin:8px 0 0">${linkifyHtml(u.text, esc, `color:${C.accent700};text-decoration:underline`)}</p>
         </div>`;
   const STATUS_LOG_SHOWN = 2;
   const shownUpdates = project.updates.slice(0, STATUS_LOG_SHOWN);
@@ -1160,7 +1155,7 @@ export function exportProjectHtmlV2(project: Project, contacts: Contact[], feedb
 
   // Plain-text versions of each rail register, for the "email the PM" pencil in its header.
   const textOrNone = (lines: string[]) => (lines.length ? lines.join("\n") : "(None yet)");
-  const statusLogText = textOrNone(project.updates.map((u) => `- ${u.when} [${u.type ?? "update"}]: ${u.text}`));
+  const statusLogText = textOrNone(project.updates.map((u) => `- ${u.when} [${u.type ?? "update"}]: ${linksAsPlainText(u.text)}`));
   const teamText = textOrNone(members.flatMap((mem) => {
     const c = contacts.find((x) => x.id === mem.contactId);
     return c ? [`- ${c.name}${mem.role ? ` — ${mem.role}` : ""}`] : [];

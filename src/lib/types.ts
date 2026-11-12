@@ -55,7 +55,8 @@ export interface Milestone {
   subtaskOrder?: string[];
 }
 
-export type UpdateType = "update" | "heads-up" | "blocked" | "win" | "executive";
+/** "whats-new" updates feed the "What's new and exciting" band of the status export. */
+export type UpdateType = "update" | "heads-up" | "blocked" | "win" | "whats-new" | "executive";
 
 export interface StatusUpdate {
   id: string;

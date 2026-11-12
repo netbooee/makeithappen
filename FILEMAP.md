@@ -61,13 +61,14 @@ A lookup so you can name the right files when opening a scoped brief.
 | `MeetingAgendasSection.tsx` | Meeting agendas: build, edit, export |
 | `ProjectNotesSection.tsx` | Project notes: markdown notes + links, edit/view toggle |
 | `DraftEmailPanel.tsx` | AI-drafted status email panel |
-| `UpdateTypeTag.tsx` | The update / heads-up / blocked / win pills |
+| `UpdateTypeTag.tsx` | The update / heads-up / blocked / win / what's new / executive pills and the type picker |
 
 ## Shared components
 
 | File | What it is |
 |---|---|
 | `src/components/ui.tsx` | Shared primitives: `Avatar`, `StatusChip`, `Checkbox`, `DateInput`, `ProgressDial`, date formatters |
+| `src/components/LinkifiedText.tsx` | Renders status-update text with `[label](url)` and bare http(s)/www links made clickable (new tab), via `linkify.ts` |
 | `src/components/MarkdownPreview.tsx` | Shared Markdown render styles (`mdComponents`) and a `MarkdownPreview` component, used by Project Notes, Meeting Agenda notes, and the task/subtask notes preview |
 | `src/components/TaskEditPanel.tsx` | Slide-out task editor — includes the notes Markdown Preview toggle and the "Email status" button that opens `TaskStatusEmailPanel` |
 | `src/components/SubtaskEditPanel.tsx` | Slide-out subtask editor — same notes Preview toggle and "Email status" button as `TaskEditPanel` |
@@ -82,12 +83,13 @@ A lookup so you can name the right files when opening a scoped brief.
 | File | What it is |
 |---|---|
 | `src/lib/exportHtml.ts` | **All project exports** — project report HTML, PDF, agenda HTML, status CSV. Self-contained HTML strings, separate from the live UI |
-| `src/lib/exportHtmlV2.ts` | "Export status" (v2.0) — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle, right-rail collapsible registers (incl. Business case), and the per-section "email the PM" links (header pencils + "Send the PM any changes" in rail sections; mailto to the tagged project manager, clipboard fallback). Self-contained, does not import from `exportHtml.ts` |
+| `src/lib/exportHtmlV2.ts` | "Export status" (v2.0) — independent recreation of the project report in the "Modernist" design system (flat, zero-radius, Archivo, 2px rules), with its own Executive/Full-detail toggle, a "What's new and exciting" column beside the executive-update poster (status updates tagged What's new), right-rail collapsible registers (incl. Business case), and the per-section "email the PM" links (header pencils + "Send the PM any changes" in rail sections; mailto to the tagged project manager, clipboard fallback). Self-contained, does not import from `exportHtml.ts` |
 | `src/lib/exportExecUpdateHtml.ts` | Static HTML export of the Modernist portfolio report shown on the Executive Update page — mirrors its bands (title, metrics, summary poster, project detail, footer), built from the shared `PortfolioSummary` in `portfolioReport.ts` |
 | `src/lib/portfolioReport.ts` | Pure computation for the Modernist portfolio view in `ExecutiveUpdate.tsx` — RAG roll-ups, the proportional portfolio-health rule (`portfolioHealth`, described in plain English by `PORTFOLIO_HEALTH_RULE`) and its explanatory note, phase stepper, budget/schedule aggregation, next-action due dates + status pills (`nextActionMeta`, `NEXT_TAG_STYLE`), composed (templated, not AI) narrative bands, and the poster `summary` (manual override when set, else auto-composed) |
 | `src/lib/claude.ts` | Every AI call: draft/suggest-edits for status updates, agenda notes, and the exec "coming up next" line, draft email, the project "Coming up next" paragraph (describes upcoming tasks; doesn't restate the exec update), write the executive narrative, assistant chat, business-case + contact import parsing |
 | `src/lib/tasks.ts` | `nextActionCount` — the shared undone-next-action count (Tasks + Subtasks) used by both the Tasks page and the Shell nav badge; `progressStatusLabel` — one-string progress status for a Task/Subtask |
 | `src/lib/supabase.ts` | Auth + cloud save/load (env-gated; app works without it) |
+| `src/lib/linkify.ts` | Link detection for plain-text fields (status updates): `linkTokens`, `linkifyHtml` for the HTML exports, `linksAsPlainText` for emails/clipboard. Every href goes through `safeHref` |
 | `src/lib/safeUrl.ts` | URL sanitizer for user-entered links |
 | `src/lib/safeStorage.ts` | `safeGetItem`/`safeSetItem`/`safeRemoveItem` — localStorage wrappers that swallow a thrown access (Safari Private Browsing, blocked site data) instead of crashing render |
 | `src/lib/constants.ts` | Context lists per workspace |

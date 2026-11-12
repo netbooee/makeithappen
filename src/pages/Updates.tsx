@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Download, ExternalLink, Pencil, Trash2 } from "
 import { useStore } from "../store/store";
 import { exportStatusUpdatesCsv } from "../lib/exportHtml";
 import { parseTimestamp } from "../components/ui";
+import { LinkifiedText } from "../components/LinkifiedText";
 import type { StatusUpdate, UpdateType } from "../lib/types";
 
 type SortCol = "when" | "project" | "type";
@@ -14,6 +15,7 @@ const UPDATE_TYPE_META: Record<UpdateType, { label: string; bg: string; color: s
   "heads-up":  { label: "Heads up",  bg: "rgba(245,158,11,.13)", color: "#B45309"       },
   "blocked":   { label: "Blocked",   bg: "rgba(239,68,68,.13)",  color: "#DC2626"       },
   "win":       { label: "Win",       bg: "rgba(16,185,129,.13)", color: "#059669"       },
+  "whats-new": { label: "What's new", bg: "rgba(236,72,153,.13)", color: "#BE185D"      },
   "executive": { label: "Executive", bg: "rgba(99,102,241,.13)", color: "#4338CA"       },
 };
 
@@ -255,7 +257,7 @@ export function Updates() {
                       </div>
                     ) : (
                       <span style={{ fontSize: 13, color: "var(--ink-2)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        {u.text}
+                        <LinkifiedText text={u.text} />
                       </span>
                     )}
                   </td>

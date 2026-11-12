@@ -10,6 +10,7 @@ import { generateExecNarrative, localExecNext, localExecSince, suggestExecNextEd
 import { safeHref } from "../lib/safeUrl";
 import { buildPortfolioReport, formatMoneyShort, nextActionMeta, NEXT_TAG_STYLE, PORTFOLIO_HEALTH_RULE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type Rag } from "../lib/portfolioReport";
 import { assigneeAvatar, projectContactPool } from "../lib/projectContacts";
+import { LinkifiedText } from "../components/LinkifiedText";
 
 /* ================= Executive update — data layer ================= */
 
@@ -671,7 +672,7 @@ export function ExecutiveUpdate() {
                             </div>
                           ) : (
                             <>
-                              <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 6px" }}>{row.update}</p>
+                              <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 6px" }}><LinkifiedText text={row.update} linkColor={ACCENT700} /></p>
                               {entry && (
                                 <button
                                   className="btn btn-ghost"

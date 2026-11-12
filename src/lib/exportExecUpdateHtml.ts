@@ -9,6 +9,7 @@
  */
 import { formatMoneyShort, NEXT_TAG_STYLE, PORTFOLIO_HEALTH_RULE, RAG, RAG_NAME, RAG_ORDER, type NextActionItem, type PortfolioRow, type PortfolioSummary, type Rag } from "./portfolioReport";
 import { safeHref } from "./safeUrl";
+import { linkifyHtml } from "./linkify";
 import { PROJECT_TYPE_LABEL } from "../components/ui";
 
 function esc(s: string): string {
@@ -256,7 +257,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
           </div>
           <div style="font-size:12px;font-style:italic;color:${C.n600};margin-bottom:10px">${esc(row.project.owner)}${row.project.technicalLead ? ` · Tech lead: ${esc(row.project.technicalLead)}` : ""}</div>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Executive update${row.updateDate ? ` · ${esc(row.updateDate)}` : ""}</div>
-          <p style="font-size:14px;line-height:1.5;margin:0 0 14px">${esc(row.update)}</p>
+          <p style="font-size:14px;line-height:1.5;margin:0 0 14px">${linkifyHtml(row.update, esc, `color:${C.accent700};text-decoration:underline`)}</p>
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Coming up next</div>
           <p style="font-size:13px;line-height:1.5;margin:0;color:${C.n800}">${esc(row.next || "No upcoming step recorded.")}</p>
         </div>

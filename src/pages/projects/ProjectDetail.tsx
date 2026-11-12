@@ -11,6 +11,7 @@ import { exportProjectHtml } from "../../lib/exportHtml";
 import { exportProjectHtmlV2 } from "../../lib/exportHtmlV2";
 import { draftStatusUpdate, generateNextActionsSummary, suggestStatusUpdateEdits } from "../../lib/claude";
 import type { Contact, ProjectMember, StatusUpdate, UpdateType } from "../../lib/types";
+import { LinkifiedText } from "../../components/LinkifiedText";
 import { CONTACT_COLORS, lastNameOf } from "../../lib/types";
 import { applyManualOrder } from "../../lib/manualOrder";
 import { KpiSection } from "./KpiSection";
@@ -704,6 +705,9 @@ export function ProjectDetail() {
                     <Sparkles size={12} /> {aiBusy === "suggest" ? "Improving…" : "Suggest corrections"}
                   </button>
                 </div>
+                <div style={{ fontSize: 11, color: "var(--ink-4)" }}>
+                  Tip: paste a URL, or write <code>[link text](https://…)</code>, to add a link.
+                </div>
                 <UpdateTypePicker value={updateType} onChange={setUpdateType} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={submitUpdate}>
@@ -757,7 +761,7 @@ export function ProjectDetail() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>{u.text}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}><LinkifiedText text={u.text} /></div>
                 )}
                 <button
                   className="btn btn-soft"
