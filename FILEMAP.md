@@ -34,7 +34,7 @@ A lookup so you can name the right files when opening a scoped brief.
 | `src/pages/Contacts.tsx` | Contact list + contact detail |
 | `src/pages/Assistant.tsx` | Claude chat page |
 | `src/pages/ProjectSites.tsx` | Project links/sites index |
-| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, editable summary poster, per-project detail with RAG-coloured risk/timeline/budget notes, Next actions with owner, due date and Late/Blocked/Waiting/Delegated pills), plus the per-project ExecEntry data layer used to build the portfolio report |
+| `src/pages/ExecutiveUpdate.tsx` | Portfolio Executive Update page — Modernist-styled roll-up across every active project (health, risk, budget, schedule, editable summary poster, per-project detail with RAG-coloured risk/timeline/budget notes, Next actions with owner, due date and Late/Blocked/Waiting/Delegated pills, and "What's new and exciting" from What's-new status updates beneath them), plus the per-project ExecEntry data layer used to build the portfolio report |
 | `src/pages/Help.tsx` | Help & Getting Started page — collapsible sections explaining each part of the app |
 | `src/pages/Login.tsx` | Supabase sign-in (only shows if env-configured) |
 

@@ -247,6 +247,18 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
             <div style="margin-top:10px">${moreNextItems.map(renderNextItem).join("")}</div>
           </details>`);
 
+      const WHATS_NEW_VISIBLE = 3;
+      const whatsNewHtml = row.whatsNew.length === 0 ? "" : `
+          <div style="border-top:1px solid ${C.divider};margin-top:16px;padding-top:14px">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:8px">What's new and exciting</div>
+            ${row.whatsNew.slice(0, WHATS_NEW_VISIBLE).map((u) => `
+            <div style="margin-bottom:10px">
+              <div style="font-size:13px;line-height:1.4;color:${C.ink}">${linkifyHtml(u.text, esc, `color:${C.accent700};text-decoration:underline`)}</div>
+              <div style="font-size:11px;color:${C.n600};margin-top:1px">${esc((u.when.match(/^([A-Za-z]{3,9} \d{1,2})/) ?? [u.when])[0])}</div>
+            </div>`).join("")}
+            ${row.whatsNew.length > WHATS_NEW_VISIBLE ? `<div style="font-size:11px;color:${C.n600}">+${row.whatsNew.length - WHATS_NEW_VISIBLE} more in the project's status log</div>` : ""}
+          </div>`;
+
       return `
     <div style="border-top:2px solid ${C.divider};padding:18px 0 24px">
       <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;align-items:start">
@@ -263,7 +275,7 @@ export function exportExecUpdateHtml(report: PortfolioSummary, programmeOwner: s
         </div>
         <div style="border-left:2px solid ${C.divider};padding-left:24px">
           <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${C.n600};margin-bottom:6px">Next actions</div>
-          ${nextActionsHtml}
+          ${nextActionsHtml}${whatsNewHtml}
         </div>
         <div style="border-left:2px solid ${C.divider};padding-left:24px">
           <div style="padding-bottom:14px;border-bottom:1px solid ${C.divider};margin-bottom:4px">${phaseStepper(row)}</div>
