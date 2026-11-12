@@ -52,6 +52,8 @@ const label11: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpac
 
 /** How many next-action items show inline in the right rail before collapsing behind "See all". */
 const NEXT_ACTIONS_VISIBLE = 5;
+/** How many "What's new" updates show under Next actions. */
+const WHATS_NEW_VISIBLE = 3;
 
 function fmtLongDate(d: Date): string {
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -768,6 +770,24 @@ export function ExecutiveUpdate() {
                                 </button>
                               )}
                             </>
+                          )}
+                          {row.whatsNew.length > 0 && (
+                            <div style={{ borderTop: `1px solid ${DIVIDER}`, marginTop: 16, paddingTop: 14 }}>
+                              <div style={{ ...kicker, marginBottom: 8 }}>What's new and exciting</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {row.whatsNew.slice(0, WHATS_NEW_VISIBLE).map((u, i) => (
+                                  <div key={i}>
+                                    <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}><LinkifiedText text={u.text} linkColor={ACCENT700} /></div>
+                                    <div style={{ fontSize: 11, color: N600, marginTop: 1 }}>{shortDate(u.when)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              {row.whatsNew.length > WHATS_NEW_VISIBLE && (
+                                <div style={{ fontSize: 11, color: N600, marginTop: 8 }}>
+                                  +{row.whatsNew.length - WHATS_NEW_VISIBLE} more in the project's status log
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
 

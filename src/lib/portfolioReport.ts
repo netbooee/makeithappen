@@ -7,7 +7,7 @@
  * templates over that data, not AI- or hand-written copy.
  */
 import type { Milestone, Project, Status, Subtask, Task } from "./types";
-import { fmtDue, isOverdue, toDateInputValue } from "../components/ui";
+import { fmtDue, isOverdue, parseTimestamp, toDateInputValue } from "../components/ui";
 import type { ExecEntry } from "../pages/ExecutiveUpdate";
 
 export type Rag = "green" | "amber" | "red";
@@ -149,6 +149,8 @@ export interface PortfolioRow {
   /** Next-action item texts pulled from milestone subtasks and the task lists — same data the
    *  "coming next" statement draws from, kept as a raw list for the Next Actions column. */
   nextItems: NextActionItem[];
+  /** Status updates tagged "What's new", newest first — the "What's new and exciting" list. */
+  whatsNew: { when: string; text: string }[];
   phaseCells: PhaseCell[];
 }
 
@@ -240,6 +242,10 @@ export function buildPortfolioReport(
       update: entry?.execUpdate?.text ?? "No executive update recorded yet.",
       next: entry?.statement ?? "",
       nextItems: entry?.nextItems ?? [],
+      whatsNew: project.updates
+        .filter((u) => u.type === "whats-new")
+        .sort((a, b) => parseTimestamp(b.when) - parseTimestamp(a.when))
+        .map((u) => ({ when: u.when, text: u.text })),
       phaseCells: phaseCells(project.milestones, phase),
     };
   });
